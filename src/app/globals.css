@@ -85,3 +85,27 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  .watermark-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: -10; /* Garante que fique bem atrás */
+    opacity: 0.03; /* Bem sutil */
+    pointer-events: none; /* Não interfere com cliques */
+  }
+
+  .watermark-svg {
+    width: 400px; /* Ajustar tamanho conforme necessário */
+    height: 400px;
+    stroke: hsl(var(--foreground)); /* Usa a cor do texto do tema */
+  }
+
+  /* Ajuste para modo escuro se necessário, para manter a sutileza */
+  .dark .watermark-svg {
+    opacity: 0.02; /* Pode ser ainda mais sutil no modo escuro */
+     stroke: hsl(var(--foreground)); /* Usa a cor do texto do tema escuro */
+  }
+}

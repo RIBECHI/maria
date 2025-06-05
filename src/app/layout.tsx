@@ -42,6 +42,31 @@ const navItems = [
   { href: '/legal-reminder', label: 'Lembrete Legal', icon: <Lightbulb /> },
 ];
 
+function JusticeSymbolWatermark() {
+  return (
+    <div className="watermark-container" aria-hidden="true">
+      <svg 
+        xmlns="http://www.w3.org/2000/svg" 
+        viewBox="0 0 24 24" 
+        fill="none" 
+        stroke="currentColor" 
+        strokeWidth="1" 
+        strokeLinecap="round" 
+        strokeLinejoin="round" 
+        className="watermark-svg"
+      >
+        <path d="M12 3v18"/>
+        <path d="M3 7h18"/>
+        <path d="M12 7V3"/>
+        <path d="M6 15a6 6 0 0 0 12 0"/>
+        <path d="M6 7a2 2 0 0 0-2 2v2a2 2 0 0 0 4 0V9a2 2 0 0 0-2-2z"/>
+        <path d="M18 7a2 2 0 0 0-2 2v2a2 2 0 0 0 4 0V9a2 2 0 0 0-2-2z"/>
+      </svg>
+    </div>
+  );
+}
+
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -56,6 +81,7 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
+        <JusticeSymbolWatermark />
         <SidebarProvider defaultOpen>
           <Sidebar collapsible="icon" variant="sidebar" side="left">
             <SidebarHeader className="h-16 flex items-center p-4 border-b border-sidebar-border">
