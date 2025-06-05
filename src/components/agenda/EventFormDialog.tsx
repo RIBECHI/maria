@@ -42,7 +42,7 @@ export interface CalendarEvent {
   description: string;
   time?: string; // HH:MM (optional)
   client?: string; // Optional
-  process?: string; // Optional
+  process?: string; // Optional, agora será o ID do processo
 }
 
 const eventFormSchema = z.object({
@@ -53,7 +53,7 @@ const eventFormSchema = z.object({
     message: "Hora inválida (formato HH:MM)."
   }),
   client: z.string().optional(),
-  process: z.string().optional(),
+  process: z.string().optional(), // Este será o ID do processo
 });
 
 export type EventFormValues = z.infer<typeof eventFormSchema>;
@@ -65,9 +65,22 @@ interface EventFormDialogProps {
   eventData?: CalendarEvent;
 }
 
+// Mock de processos com associação de cliente para o diálogo
+const MOCK_LINKABLE_PROCESSES = [
+  { id: "PROC001", description: "Petição Inicial - Alpha", clientName: "Empresa Alpha Ltda." },
+  { id: "PROC00A", description: "Contestação - Alpha", clientName: "Empresa Alpha Ltda." },
+  { id: "PROC002", description: "Audiência - Silva", clientName: "João Silva" },
+  { id: "PROC00B", description: "Recurso - Silva", clientName: "João Silva" },
+  { id: "PROC003", description: "Parecer - Oliveira", clientName: "Maria Oliveira" },
+  { id: "PROC004", description: "Consultoria - Beta", clientName: "Construtora Beta S.A." },
+  // Adicione mais processos mockados conforme necessário
+];
+
+
 export function EventFormDialog({ isOpen, onClose, onSubmit, eventData }: EventFormDialogProps) {
   const [isLoading, setIsLoading] = React.useState(false);
   const [isClientSearchOpen, setIsClientSearchOpen] = React.useState(false);
+  const [processOptions, setProcessOptions] = React.useState<{ value: string; label: string }[]>([]);
 
   const form = useForm<EventFormValues>({
     resolver: zodResolver(eventFormSchema),
@@ -81,6 +94,26 @@ export function EventFormDialog({ isOpen, onClose, onSubmit, eventData }: EventF
     },
   });
 
+  const selectedClient = form.watch("client");
+
+  React.useEffect(() => {
+    if (selectedClient) {
+      const filtered = MOCK_LINKABLE_PROCESSES.filter(p => p.clientName === selectedClient);
+      const options = filtered.map(p => ({ value: p.id, label: `${p.id} - ${p.description}` }));
+      setProcessOptions(options);
+
+      // Resetar o campo processo se o processo atual não for válido para o novo cliente
+      const currentProcessValue = form.getValues("process");
+      if (currentProcessValue && !options.find(opt => opt.value === currentProcessValue)) {
+        form.setValue("process", "");
+      }
+    } else {
+      setProcessOptions([]);
+      form.setValue("process", ""); // Limpa o processo se nenhum cliente estiver selecionado
+    }
+  }, [selectedClient, form]);
+
+
   React.useEffect(() => {
     if (isOpen) { 
       if (eventData) {
@@ -92,6 +125,15 @@ export function EventFormDialog({ isOpen, onClose, onSubmit, eventData }: EventF
           client: eventData.client || "",
           process: eventData.process || "",
         });
+        // Disparar a lógica de filtro de processo para o cliente inicial, se houver
+        if (eventData.client) {
+             const filtered = MOCK_LINKABLE_PROCESSES.filter(p => p.clientName === eventData.client);
+             const options = filtered.map(p => ({ value: p.id, label: `${p.id} - ${p.description}` }));
+             setProcessOptions(options);
+        } else {
+            setProcessOptions([]);
+        }
+
       } else {
         form.reset({
           date: format(new Date(), 'yyyy-MM-dd'),
@@ -101,6 +143,7 @@ export function EventFormDialog({ isOpen, onClose, onSubmit, eventData }: EventF
           client: "",
           process: "",
         });
+        setProcessOptions([]);
       }
     }
   }, [eventData, form, isOpen]);
@@ -131,6 +174,7 @@ export function EventFormDialog({ isOpen, onClose, onSubmit, eventData }: EventF
 
   const handleClientSelected = (clientName: string) => {
     form.setValue("client", clientName);
+    // O useEffect [selectedClient] cuidará de atualizar as opções de processo
     setIsClientSearchOpen(false);
   };
 
@@ -239,9 +283,30 @@ export function EventFormDialog({ isOpen, onClose, onSubmit, eventData }: EventF
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Processo (Opcional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Número ou identificação do processo" {...field} />
-                    </FormControl>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      value={field.value} 
+                      disabled={!selectedClient || processOptions.length === 0}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={!selectedClient ? "Selecione um cliente primeiro" : (processOptions.length === 0 ? "Nenhum processo para este cliente" : "Selecione o processo")} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {processOptions.length > 0 ? (
+                          processOptions.map(option => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))
+                        ) : (
+                           <SelectItem value="no-process" disabled>
+                             {selectedClient ? "Nenhum processo encontrado" : "Selecione um cliente"}
+                           </SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -274,3 +339,5 @@ export function EventFormDialog({ isOpen, onClose, onSubmit, eventData }: EventF
     </>
   );
 }
+
+
