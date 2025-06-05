@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { UploadCloud, Eye, Download, Edit, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { UploadCloud, Eye, Download, Edit, Trash2, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -96,6 +97,15 @@ export default function DocumentsPage() {
         <Button onClick={() => handleOpenFormDialog()}>
           <UploadCloud className="mr-2 h-5 w-5" /> Carregar Documento
         </Button>
+      </div>
+      
+      <div className="mb-6 flex items-center gap-2">
+        <Search className="h-5 w-5 text-muted-foreground" />
+        <Input
+          placeholder="Buscar documentos por nome, processo ou tag..."
+          className="max-w-sm"
+          // onChange={(e) => setSearchTerm(e.target.value)} // Lógica de filtro a ser implementada
+        />
       </div>
 
       <Card className="shadow-lg">

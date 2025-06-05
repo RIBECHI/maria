@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { PlusCircle, Edit, FolderOpen, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { PlusCircle, Edit, FolderOpen, Trash2, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -98,6 +99,15 @@ export default function ProcessesPage() {
         <Button onClick={() => handleOpenFormDialog()}>
           <PlusCircle className="mr-2 h-5 w-5" /> Adicionar Processo
         </Button>
+      </div>
+
+      <div className="mb-6 flex items-center gap-2">
+        <Search className="h-5 w-5 text-muted-foreground" />
+        <Input
+          placeholder="Buscar processos por Nº, cliente ou tipo..."
+          className="max-w-sm"
+          // onChange={(e) => setSearchTerm(e.target.value)} // Lógica de filtro a ser implementada
+        />
       </div>
 
       <Card className="shadow-lg">

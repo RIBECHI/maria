@@ -2,10 +2,11 @@
 "use client";
 
 import * as React from "react";
-import { PlusCircle, Edit, Trash2 } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -86,6 +87,15 @@ export default function ClientsPage() {
         <Button onClick={() => handleOpenFormDialog()}>
           <PlusCircle className="mr-2 h-5 w-5" /> Adicionar Cliente
         </Button>
+      </div>
+
+      <div className="mb-6 flex items-center gap-2">
+        <Search className="h-5 w-5 text-muted-foreground" />
+        <Input
+          placeholder="Buscar clientes por nome, ID ou contato..."
+          className="max-w-sm"
+          // onChange={(e) => setSearchTerm(e.target.value)} // Lógica de filtro a ser implementada
+        />
       </div>
 
       <Card className="shadow-lg">
