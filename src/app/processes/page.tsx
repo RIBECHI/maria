@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, Edit, FolderOpen, Trash2, Search } from "lucide-react";
+import { PlusCircle, Edit, FolderOpen, Trash2, Search, CheckCircle, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -22,17 +22,17 @@ import {
 import { ProcessFormDialog, type ProcessFormValues, type Process } from "@/components/processes/ProcessFormDialog";
 
 const initialProcesses: Process[] = [
-  { id: "PROC001", client: "Empresa Alpha Ltda.", type: "Cível", status: "Em Andamento", nextDeadline: "2024-08-15", documents: 5 },
-  { id: "PROC002", client: "João Silva", type: "Trabalhista", status: "Concluído", nextDeadline: "-", documents: 3 },
-  { id: "PROC003", client: "Maria Oliveira", type: "Tributário", status: "Suspenso", nextDeadline: "2024-09-01", documents: 8 },
-  { id: "PROC004", client: "Construtora Beta S.A.", type: "Administrativo", status: "Em Andamento", nextDeadline: "2024-07-30", documents: 2 },
+  { id: "PROC001", client: "Empresa Alpha Ltda.", type: "Cível", status: "Em Andamento", nextDeadline: "2024-08-15", documents: 5, monitorProjudi: true },
+  { id: "PROC002", client: "João Silva", type: "Trabalhista", status: "Concluído", nextDeadline: "-", documents: 3, monitorProjudi: false },
+  { id: "PROC003", client: "Maria Oliveira", type: "Tributário", status: "Suspenso", nextDeadline: "2024-09-01", documents: 8, monitorProjudi: true },
+  { id: "PROC004", client: "Construtora Beta S.A.", type: "Administrativo", status: "Em Andamento", nextDeadline: "2024-07-30", documents: 2, monitorProjudi: false },
 ];
 
 const getStatusBadgeVariant = (status: string) => {
   switch (status) {
     case "Em Andamento": return "default";
     case "Concluído": return "secondary"; 
-    case "Suspenso": return "outline"; // Changed to outline for better contrast with destructive actions
+    case "Suspenso": return "outline";
     default: return "outline";
   }
 }
@@ -58,14 +58,15 @@ export default function ProcessesPage() {
   const handleSubmitProcessForm = (data: ProcessFormValues) => {
     if (editingProcess) {
       setProcesses(processes.map(p => 
-        p.id === editingProcess.id ? { ...editingProcess, ...data, documents: editingProcess.documents } : p
+        p.id === editingProcess.id ? { ...editingProcess, ...data, documents: editingProcess.documents, monitorProjudi: data.monitorProjudi } : p
       ));
       toast({ title: "Processo atualizado!", description: `O processo ${data.client} - ${data.type} foi atualizado.` });
     } else {
       const newProcess: Process = {
         id: `PROC${String(processes.length + 1).padStart(3, '0')}`,
         ...data,
-        documents: 0, // Default for new process
+        documents: 0, 
+        monitorProjudi: data.monitorProjudi,
       };
       setProcesses([...processes, newProcess]);
       toast({ title: "Processo adicionado!", description: `Novo processo para ${newProcess.client} foi adicionado.` });
@@ -106,7 +107,6 @@ export default function ProcessesPage() {
         <Input
           placeholder="Buscar processos por Nº, cliente ou tipo..."
           className="max-w-sm"
-          // onChange={(e) => setSearchTerm(e.target.value)} // Lógica de filtro a ser implementada
         />
       </div>
 
@@ -124,6 +124,7 @@ export default function ProcessesPage() {
                 <TableHead>Status</TableHead>
                 <TableHead>Próximo Prazo</TableHead>
                 <TableHead className="text-center">Docs</TableHead>
+                <TableHead className="text-center">Monitorar PROJUDI</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -138,6 +139,13 @@ export default function ProcessesPage() {
                   </TableCell>
                   <TableCell>{process.nextDeadline}</TableCell>
                   <TableCell className="text-center">{process.documents}</TableCell>
+                  <TableCell className="text-center">
+                    {process.monitorProjudi ? (
+                      <CheckCircle className="h-5 w-5 text-green-600 mx-auto" />
+                    ) : (
+                      <XCircle className="h-5 w-5 text-red-500 mx-auto" />
+                    )}
+                  </TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="icon" className="hover:text-accent" onClick={() => handleOpenFormDialog(process)}>
                       <Edit className="h-4 w-4" />
@@ -182,3 +190,4 @@ export default function ProcessesPage() {
     </div>
   );
 }
+

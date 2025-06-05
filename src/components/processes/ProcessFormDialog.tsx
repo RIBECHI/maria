@@ -30,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Loader2 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -40,6 +41,7 @@ export interface Process {
   status: 'Em Andamento' | 'Concluído' | 'Suspenso';
   nextDeadline: string; // YYYY-MM-DD or '-'
   documents: number;
+  monitorProjudi?: boolean;
 }
 
 const processFormSchema = z.object({
@@ -47,6 +49,7 @@ const processFormSchema = z.object({
   type: z.string().min(3, { message: "O tipo do processo deve ter pelo menos 3 caracteres." }),
   status: z.enum(['Em Andamento', 'Concluído', 'Suspenso'], { required_error: "Status é obrigatório."}),
   nextDeadline: z.string().refine((val) => val === '-' || !isNaN(Date.parse(val)), { message: "Data inválida ou '-'." }),
+  monitorProjudi: z.boolean().optional(),
 });
 
 export type ProcessFormValues = z.infer<typeof processFormSchema>;
@@ -68,6 +71,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
       type: "",
       status: "Em Andamento",
       nextDeadline: format(new Date(), 'yyyy-MM-dd'),
+      monitorProjudi: false,
     },
   });
 
@@ -79,6 +83,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
             type: processData.type,
             status: processData.status,
             nextDeadline: processData.nextDeadline === '-' ? '' : format(new Date(processData.nextDeadline + 'T00:00:00'), 'yyyy-MM-dd'),
+            monitorProjudi: processData.monitorProjudi || false,
             });
         } else {
             form.reset({
@@ -86,6 +91,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
             type: "",
             status: "Em Andamento",
             nextDeadline: format(new Date(), 'yyyy-MM-dd'),
+            monitorProjudi: false,
             });
         }
     }
@@ -97,7 +103,6 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
     const deadline = data.nextDeadline === '' || data.nextDeadline === '-' ? '-' : format(new Date(data.nextDeadline + 'T00:00:00'), 'yyyy-MM-dd');
     onSubmit({ ...data, nextDeadline: deadline });
     setIsLoading(false);
-    // onClose(); // Closing is handled by the parent
   };
   
   const handleDialogClose = () => {
@@ -180,6 +185,26 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
                 )}
                 />
             </div>
+             <FormField
+              control={form.control}
+              name="monitorProjudi"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm mt-4">
+                  <div className="space-y-0.5">
+                    <FormLabel>Monitorar no PROJUDI?</FormLabel>
+                    <DialogDescription className="text-xs">
+                      Marque para indicar que este processo deve ser monitorado para atualizações no PROJUDI-GO.
+                    </DialogDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
             <DialogFooter>
               <Button type="button" variant="outline" onClick={handleDialogClose} disabled={isLoading}>
                 Cancelar
@@ -201,3 +226,4 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
     </Dialog>
   );
 }
+
