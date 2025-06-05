@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, Edit, FolderOpen, Trash2, Search, CheckCircle, XCircle } from "lucide-react";
+import { PlusCircle, Edit, FolderOpen, Trash2, Search, CheckCircle, XCircle, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -19,13 +19,36 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ProcessFormDialog, type ProcessFormValues, type Process } from "@/components/processes/ProcessFormDialog";
+import { ProcessFormDialog, type ProcessFormValues, type Process, type TimelineEvent } from "@/components/processes/ProcessFormDialog";
 
 const initialProcesses: Process[] = [
-  { id: "PROC001", client: "Empresa Alpha Ltda.", type: "Cível", status: "Em Andamento", nextDeadline: "2024-08-15", documents: 5, monitorProjudi: true },
-  { id: "PROC002", client: "João Silva", type: "Trabalhista", status: "Concluído", nextDeadline: "-", documents: 3, monitorProjudi: false },
-  { id: "PROC003", client: "Maria Oliveira", type: "Tributário", status: "Suspenso", nextDeadline: "2024-09-01", documents: 8, monitorProjudi: true },
-  { id: "PROC004", client: "Construtora Beta S.A.", type: "Administrativo", status: "Em Andamento", nextDeadline: "2024-07-30", documents: 2, monitorProjudi: false },
+  { 
+    id: "PROC001", 
+    client: "Empresa Alpha Ltda.", 
+    type: "Cível", 
+    status: "Em Andamento", 
+    nextDeadline: "2024-08-15", 
+    documents: 5, 
+    monitorProjudi: true,
+    timeline: [
+      { id: "TL1", date: "2024-07-20", description: "Publicação de despacho referente à perícia.", source: "Resumo de E-mail PROJUDI"},
+      { id: "TL2", date: "2024-07-15", description: "Petição protocolada.", source: "Nota Manual"},
+    ]
+  },
+  { id: "PROC002", client: "João Silva", type: "Trabalhista", status: "Concluído", nextDeadline: "-", documents: 3, monitorProjudi: false, timeline: [] },
+  { 
+    id: "PROC003", 
+    client: "Maria Oliveira", 
+    type: "Tributário", 
+    status: "Suspenso", 
+    nextDeadline: "2024-09-01", 
+    documents: 8, 
+    monitorProjudi: true,
+    timeline: [
+       { id: "TL3", date: "2024-06-10", description: "Suspensão do processo deferida.", source: "Resumo de E-mail PROJUDI"},
+    ]
+  },
+  { id: "PROC004", client: "Construtora Beta S.A.", type: "Administrativo", status: "Em Andamento", nextDeadline: "2024-07-30", documents: 2, monitorProjudi: false, timeline: [] },
 ];
 
 const getStatusBadgeVariant = (status: string) => {
@@ -55,10 +78,16 @@ export default function ProcessesPage() {
     setIsFormDialogOpen(false);
   };
 
-  const handleSubmitProcessForm = (data: ProcessFormValues) => {
+  const handleSubmitProcessForm = (data: ProcessFormValues & { timeline?: TimelineEvent[] }) => {
     if (editingProcess) {
       setProcesses(processes.map(p => 
-        p.id === editingProcess.id ? { ...editingProcess, ...data, documents: editingProcess.documents, monitorProjudi: data.monitorProjudi } : p
+        p.id === editingProcess.id ? { 
+            ...editingProcess, 
+            ...data, 
+            documents: editingProcess.documents, // Manter contagem de documentos existente
+            monitorProjudi: data.monitorProjudi,
+            timeline: data.timeline || editingProcess.timeline // Atualizar timeline
+        } : p
       ));
       toast({ title: "Processo atualizado!", description: `O processo ${data.client} - ${data.type} foi atualizado.` });
     } else {
@@ -67,6 +96,7 @@ export default function ProcessesPage() {
         ...data,
         documents: 0, 
         monitorProjudi: data.monitorProjudi,
+        timeline: data.timeline || [] // Inicializar timeline
       };
       setProcesses([...processes, newProcess]);
       toast({ title: "Processo adicionado!", description: `Novo processo para ${newProcess.client} foi adicionado.` });
@@ -92,6 +122,14 @@ export default function ProcessesPage() {
     console.log("Abrir pasta do processo:", proc);
     toast({ title: "Ação: Abrir Pasta", description: `Simulando abertura da pasta do processo: ${proc.id}` });
   };
+  
+  const handleViewDetails = (proc: Process) => {
+    // Por enquanto, vamos abrir o dialog de edição que agora contém a linha do tempo.
+    // No futuro, poderia ser um dialog de visualização dedicado.
+    handleOpenFormDialog(proc);
+    // toast({ title: "Visualizar Detalhes", description: `Mostrando detalhes/timeline do processo ${proc.id}` });
+  };
+
 
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
@@ -147,13 +185,16 @@ export default function ProcessesPage() {
                     )}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" className="hover:text-accent" onClick={() => handleOpenFormDialog(process)}>
+                    <Button variant="ghost" size="icon" className="hover:text-accent" onClick={() => handleViewDetails(process)} title="Ver Detalhes/Timeline">
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="hover:text-accent" onClick={() => handleOpenFormDialog(process)} title="Editar Processo">
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="hover:text-accent" onClick={() => handleOpenFolder(process)}>
+                    <Button variant="ghost" size="icon" className="hover:text-accent" onClick={() => handleOpenFolder(process)} title="Abrir Pasta (Simulado)">
                       <FolderOpen className="h-4 w-4" />
                     </Button>
-                     <Button variant="ghost" size="icon" className="hover:text-destructive" onClick={() => handleDeleteConfirmation(process)}>
+                     <Button variant="ghost" size="icon" className="hover:text-destructive" onClick={() => handleDeleteConfirmation(process)} title="Excluir Processo">
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </TableCell>
