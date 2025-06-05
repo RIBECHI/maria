@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { List, ListItem } from "@/components/ui/list";
 import { CalendarDays, Activity, AlertTriangle } from "lucide-react";
@@ -22,7 +23,7 @@ export default function DashboardPage() {
 
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
-      <h1 className="text-3xl font-headline font-bold mb-8 text-primary">Dashboard</h1>
+      <h1 className="text-3xl font-headline font-bold mb-8 text-primary">Painel</h1>
       
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <Card className="shadow-lg">

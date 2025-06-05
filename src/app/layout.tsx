@@ -8,7 +8,7 @@ import {
   FileText,
   Lightbulb,
   Settings,
-} from 'lucide-react'; // UserCircle was not used
+} from 'lucide-react';
 import {
   SidebarProvider,
   Sidebar,
@@ -16,12 +16,11 @@ import {
   SidebarContent,
   SidebarMenu,
   SidebarMenuItem,
-  SidebarMenuButton, // Re-added SidebarMenuButton import
+  SidebarMenuButton,
   SidebarFooter,
   SidebarInset,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
-// import { Button } from '@/components/ui/button'; // Button was not used here
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Toaster } from "@/components/ui/toaster";
 import Logo from '@/components/layout/Logo';
@@ -30,15 +29,15 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'LexManager',
-  description: 'Legal Practice Management Application',
+  description: 'Software de Gestão Jurídica',
 };
 
 const navItems = [
-  { href: '/', label: 'Dashboard', icon: <LayoutDashboard /> },
-  { href: '/clients', label: 'Clients', icon: <Users /> },
-  { href: '/processes', label: 'Processes', icon: <Briefcase /> },
-  { href: '/documents', label: 'Documents', icon: <FileText /> },
-  { href: '/legal-reminder', label: 'Legal Reminder', icon: <Lightbulb /> },
+  { href: '/', label: 'Painel', icon: <LayoutDashboard /> },
+  { href: '/clients', label: 'Clientes', icon: <Users /> },
+  { href: '/processes', label: 'Processos', icon: <Briefcase /> },
+  { href: '/documents', label: 'Documentos', icon: <FileText /> },
+  { href: '/legal-reminder', label: 'Lembrete Legal', icon: <Lightbulb /> },
 ];
 
 export default function RootLayout({
@@ -47,7 +46,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="pt-BR" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -77,21 +76,20 @@ export default function RootLayout({
             <SidebarFooter className="p-2 border-t border-sidebar-border">
               <SidebarMenu>
                 <SidebarMenuItem>
-                  {/* This remains as SidebarMenuButton as it's not part of the dynamic navItems */}
                   <Link href="/settings" passHref legacyBehavior>
                     <SidebarMenuButton
                       as="a"
-                      tooltip={{ children: 'Settings', side: 'right', align: 'center' }}
+                      tooltip={{ children: 'Configurações', side: 'right', align: 'center' }}
                     >
                       <Settings />
-                      <span>Settings</span>
+                      <span>Configurações</span>
                     </SidebarMenuButton>
                   </Link>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                    <div className="flex items-center gap-2 p-2 group-data-[collapsible=icon]:justify-center">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src="https://placehold.co/40x40.png" alt="User Avatar" data-ai-hint="user avatar" />
+                        <AvatarImage src="https://placehold.co/40x40.png" alt="Avatar do Usuário" data-ai-hint="user avatar" />
                         <AvatarFallback>LA</AvatarFallback>
                       </Avatar>
                       <div className="group-data-[collapsible=icon]:hidden">
@@ -107,7 +105,7 @@ export default function RootLayout({
             <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 py-4">
               <SidebarTrigger className="md:hidden">
                 <PanelLeftIcon className="h-5 w-5" />
-                <span className="sr-only">Toggle Menu</span>
+                <span className="sr-only">Alternar Menu</span>
               </SidebarTrigger>
               {/* Placeholder for breadcrumbs or global actions */}
             </header>
