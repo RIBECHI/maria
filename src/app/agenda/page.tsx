@@ -6,22 +6,24 @@ import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { List, ListItem } from "@/components/ui/list";
-import { PlusCircle, Clock, Users, BriefcaseIcon } from "lucide-react";
+import { PlusCircle, Clock, Users, BriefcaseIcon, Edit3, Trash2 } from "lucide-react";
 import { Button } from '@/components/ui/button';
-import { format, isSameDay, parseISO } from 'date-fns';
+import { format, isSameDay, parseISO, startOfToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { EventFormDialog, type EventFormValues, type CalendarEvent } from "@/components/agenda/EventFormDialog";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
-interface CalendarEvent {
-  id: string;
-  date: string; // YYYY-MM-DD
-  type: 'prazo' | 'audiencia' | 'consulta';
-  description: string;
-  time?: string; // HH:MM (optional)
-  client?: string; // Optional
-  process?: string; // Optional
-}
-
-const mockEvents: CalendarEvent[] = [
+const initialEvents: CalendarEvent[] = [
   { id: '1', date: '2024-08-15', type: 'prazo', description: 'Entrega de petição inicial - Processo Alpha', process: 'PROC001', client: 'Empresa Alpha Ltda.' },
   { id: '2', date: '2024-08-15', type: 'consulta', description: 'Reunião com Sr. João Silva sobre novo caso', time: '14:00', client: 'João Silva' },
   { id: '3', date: '2024-08-22', type: 'audiencia', description: 'Audiência de conciliação - Caso Beta', time: '10:30', process: 'PROC002', client: 'Construtora Beta S.A.' },
@@ -46,27 +48,73 @@ const getEventTypeDetails = (type: CalendarEvent['type']) => {
 
 export default function AgendaPage() {
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(new Date());
+  const [events, setEvents] = React.useState<CalendarEvent[]>(initialEvents);
+  const [isFormDialogOpen, setIsFormDialogOpen] = React.useState(false);
+  const [editingEvent, setEditingEvent] = React.useState<CalendarEvent | undefined>(undefined);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
+  const [eventToDelete, setEventToDelete] = React.useState<CalendarEvent | null>(null);
+  const { toast } = useToast();
+
+  const handleOpenFormDialog = (event?: CalendarEvent) => {
+    setEditingEvent(event);
+    setIsFormDialogOpen(true);
+  };
+
+  const handleCloseFormDialog = () => {
+    setEditingEvent(undefined);
+    setIsFormDialogOpen(false);
+  };
+
+  const handleSubmitEventForm = (data: EventFormValues) => {
+    if (editingEvent) {
+      setEvents(events.map(e => 
+        e.id === editingEvent.id ? { ...editingEvent, ...data, date: data.date } : e // Ensure date is properly updated
+      ));
+      toast({ title: "Evento atualizado!", description: `O evento "${data.description}" foi atualizado.` });
+    } else {
+      const newEvent: CalendarEvent = {
+        id: `EVT${String(events.length + 1).padStart(3, '0')}`,
+        ...data,
+        date: data.date, // Ensure date is properly set
+      };
+      setEvents([...events, newEvent]);
+      toast({ title: "Evento adicionado!", description: `O evento "${newEvent.description}" foi adicionado.` });
+    }
+    handleCloseFormDialog();
+  };
+
+  const handleDeleteConfirmation = (event: CalendarEvent) => {
+    setEventToDelete(event);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteEvent = () => {
+    if (eventToDelete) {
+      setEvents(events.filter(e => e.id !== eventToDelete.id));
+      toast({ title: "Evento excluído!", description: `O evento "${eventToDelete.description}" foi excluído.`});
+      setEventToDelete(null);
+    }
+    setIsDeleteDialogOpen(false);
+  };
 
   const eventsForSelectedDate = selectedDate
-    ? mockEvents.filter(event => isSameDay(parseISO(event.date), selectedDate))
+    ? events.filter(event => isSameDay(parseISO(event.date), selectedDate))
     : [];
   
-  const today = new Date();
-  today.setHours(0,0,0,0);
+  const today = startOfToday();
 
-  const upcomingEvents = mockEvents
+  const upcomingEvents = events
     .filter(event => parseISO(event.date) >= today)
     .sort((a,b) => parseISO(a.date).getTime() - parseISO(b.date).getTime())
     .slice(0, 5);
 
-
-  const eventDays = mockEvents.map(event => parseISO(event.date));
+  const eventDays = events.map(event => parseISO(event.date));
 
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-headline font-bold text-primary">Agenda</h1>
-        <Button>
+        <Button onClick={() => handleOpenFormDialog()}>
           <PlusCircle className="mr-2 h-5 w-5" /> Adicionar Evento
         </Button>
       </div>
@@ -106,12 +154,12 @@ export default function AgendaPage() {
                 {eventsForSelectedDate.map(event => {
                   const eventTypeDetails = getEventTypeDetails(event.type);
                   return (
-                    <ListItem key={event.id} className="mb-3 p-3 border rounded-md shadow-sm hover:bg-muted/50">
+                    <ListItem key={event.id} className="mb-3 p-3 border rounded-md shadow-sm hover:bg-muted/50 group">
                       <div className="flex items-start space-x-3">
                         <span className={`p-2 rounded-full ${eventTypeDetails.color}`}>
                           {eventTypeDetails.icon}
                         </span>
-                        <div>
+                        <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                              <Badge variant="outline" className={eventTypeDetails.color}>{eventTypeDetails.label}</Badge>
                              {event.time && <span className="text-xs text-muted-foreground">{event.time}</span>}
@@ -119,6 +167,14 @@ export default function AgendaPage() {
                           <p className="font-medium">{event.description}</p>
                           {event.client && <p className="text-sm text-muted-foreground">Cliente: {event.client}</p>}
                           {event.process && <p className="text-sm text-muted-foreground">Processo: {event.process}</p>}
+                        </div>
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button variant="ghost" size="icon" className="hover:text-accent" onClick={() => handleOpenFormDialog(event)}>
+                                <Edit3 className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="hover:text-destructive" onClick={() => handleDeleteConfirmation(event)}>
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
                         </div>
                       </div>
                     </ListItem>
@@ -143,12 +199,12 @@ export default function AgendaPage() {
               {upcomingEvents.map(event => {
                 const eventTypeDetails = getEventTypeDetails(event.type);
                 return (
-                  <ListItem key={event.id} className="mb-3 p-3 border rounded-md shadow-sm hover:bg-muted/50">
+                  <ListItem key={event.id} className="mb-3 p-3 border rounded-md shadow-sm hover:bg-muted/50 group">
                     <div className="flex items-start space-x-3">
                       <span className={`p-2 rounded-full ${eventTypeDetails.color}`}>
                         {eventTypeDetails.icon}
                       </span>
-                      <div>
+                      <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                            <Badge variant="outline" className={eventTypeDetails.color}>{eventTypeDetails.label}</Badge>
                            <span className="text-sm font-semibold">{format(parseISO(event.date), 'dd/MM/yyyy', { locale: ptBR })}</span>
@@ -158,6 +214,14 @@ export default function AgendaPage() {
                         {event.client && <p className="text-sm text-muted-foreground">Cliente: {event.client}</p>}
                         {event.process && <p className="text-sm text-muted-foreground">Processo: {event.process}</p>}
                       </div>
+                       <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button variant="ghost" size="icon" className="hover:text-accent" onClick={() => handleOpenFormDialog(event)}>
+                                <Edit3 className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="hover:text-destructive" onClick={() => handleDeleteConfirmation(event)}>
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </div>
                     </div>
                   </ListItem>
                 );
@@ -168,6 +232,30 @@ export default function AgendaPage() {
           )}
         </CardContent>
       </Card>
+
+      <EventFormDialog
+        isOpen={isFormDialogOpen}
+        onClose={handleCloseFormDialog}
+        onSubmit={handleSubmitEventForm}
+        eventData={editingEvent}
+      />
+
+      {eventToDelete && (
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja excluir o evento "{eventToDelete.description}"? Esta ação não poderá ser desfeita.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDeleteEvent} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </div>
   );
 }
