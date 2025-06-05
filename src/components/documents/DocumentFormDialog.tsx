@@ -24,12 +24,13 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2 } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
+import { ProcessSearchDialog } from "@/components/processes/ProcessSearchDialog";
 
 export interface Document {
   id: string;
   name: string;
-  process: string;
+  process: string; // ID do processo
   tags: string[];
   uploadDate: string;
 }
@@ -51,6 +52,7 @@ interface DocumentFormDialogProps {
 
 export function DocumentFormDialog({ isOpen, onClose, onSubmit, documentData }: DocumentFormDialogProps) {
   const [isLoading, setIsLoading] = React.useState(false);
+  const [isProcessSearchOpen, setIsProcessSearchOpen] = React.useState(false);
 
   const form = useForm<DocumentFormValues>({
     resolver: zodResolver(documentFormSchema),
@@ -84,7 +86,6 @@ export function DocumentFormDialog({ isOpen, onClose, onSubmit, documentData }: 
     await new Promise(resolve => setTimeout(resolve, 700));
     onSubmit(data);
     setIsLoading(false);
-    // onClose(); // Closing is handled by the parent or useEffect
   };
 
   const handleDialogClose = () => {
@@ -93,74 +94,98 @@ export function DocumentFormDialog({ isOpen, onClose, onSubmit, documentData }: 
     }
   };
 
+  const handleProcessSelected = (processId: string) => {
+    form.setValue("process", processId);
+    setIsProcessSearchOpen(false);
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && handleDialogClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{documentData ? "Editar Documento" : "Carregar Novo Documento"}</DialogTitle>
-          <DialogDescription>
-            {documentData ? "Altere os metadados do documento abaixo." : "Preencha os metadados do novo documento."}
-          </DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 py-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome do Arquivo</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: Peticao_Inicial_Caso_XYZ.pdf" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="process"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Processo Vinculado</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: PROC001 ou Caso Silva" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="tagsString"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Tags (separadas por vírgula)</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Ex: Contrato, Petição, Importante" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={handleDialogClose} disabled={isLoading}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Salvando...
-                  </>
-                ) : (
-                  documentData ? "Salvar Alterações" : "Adicionar Documento"
+    <>
+      <Dialog open={isOpen} onOpenChange={(open) => !open && handleDialogClose()}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{documentData ? "Editar Documento" : "Carregar Novo Documento"}</DialogTitle>
+            <DialogDescription>
+              {documentData ? "Altere os metadados do documento abaixo." : "Preencha os metadados do novo documento."}
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 py-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome do Arquivo</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: Peticao_Inicial_Caso_XYZ.pdf" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+              />
+              <FormField
+                control={form.control}
+                name="process"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Processo Vinculado (ID)</FormLabel>
+                    <div className="flex items-center gap-2">
+                      <FormControl>
+                        <Input placeholder="Ex: PROC001" {...field} />
+                      </FormControl>
+                       <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setIsProcessSearchOpen(true)}
+                        aria-label="Buscar processo"
+                      >
+                        <Search className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="tagsString"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tags (separadas por vírgula)</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Ex: Contrato, Petição, Importante" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={handleDialogClose} disabled={isLoading}>
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    documentData ? "Salvar Alterações" : "Adicionar Documento"
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      <ProcessSearchDialog
+        isOpen={isProcessSearchOpen}
+        onClose={() => setIsProcessSearchOpen(false)}
+        onProcessSelected={handleProcessSelected}
+      />
+    </>
   );
 }
