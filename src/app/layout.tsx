@@ -8,6 +8,7 @@ import {
   FileText,
   Lightbulb,
   Settings,
+  CalendarDays, // Adicionado ícone para Agenda
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -37,6 +38,7 @@ const navItems = [
   { href: '/clients', label: 'Clientes', icon: <Users /> },
   { href: '/processes', label: 'Processos', icon: <Briefcase /> },
   { href: '/documents', label: 'Documentos', icon: <FileText /> },
+  { href: '/agenda', label: 'Agenda', icon: <CalendarDays /> }, // Novo item de menu
   { href: '/legal-reminder', label: 'Lembrete Legal', icon: <Lightbulb /> },
 ];
 
