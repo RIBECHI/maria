@@ -1,5 +1,6 @@
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import Link from 'next/link';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { List, ListItem } from "@/components/ui/list";
 import { CalendarDays, Activity, AlertTriangle } from "lucide-react";
 
@@ -26,57 +27,63 @@ export default function DashboardPage() {
       <h1 className="text-3xl font-headline font-bold mb-8 text-primary">Painel</h1>
       
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="shadow-lg">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xl font-medium font-headline">Próximos Prazos</CardTitle>
-            <CalendarDays className="h-6 w-6 text-accent" />
-          </CardHeader>
-          <CardContent>
-            <List>
-              {upcomingDeadlines.map((item) => (
-                <ListItem key={item.id} className="flex justify-between">
-                  <span>{item.text}</span>
-                  <span className="text-sm text-muted-foreground">{item.date}</span>
-                </ListItem>
-              ))}
-            </List>
-          </CardContent>
-        </Card>
+        <Link href="/agenda" className="block">
+          <Card className="shadow-lg h-full cursor-pointer transition-all duration-200 ease-in-out hover:shadow-xl hover:ring-1 hover:ring-primary/30">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-xl font-medium font-headline">Próximos Prazos</CardTitle>
+              <CalendarDays className="h-6 w-6 text-accent" />
+            </CardHeader>
+            <CardContent>
+              <List>
+                {upcomingDeadlines.map((item) => (
+                  <ListItem key={item.id} className="flex justify-between">
+                    <span>{item.text}</span>
+                    <span className="text-sm text-muted-foreground">{item.date}</span>
+                  </ListItem>
+                ))}
+              </List>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="shadow-lg">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xl font-medium font-headline">Atividade Recente</CardTitle>
-            <Activity className="h-6 w-6 text-accent" />
-          </CardHeader>
-          <CardContent>
-            <List>
-              {recentActivities.map((item) => (
-                <ListItem key={item.id} className="flex justify-between">
-                  <span>{item.text}</span>
-                  <span className="text-sm text-muted-foreground">{item.time}</span>
-                </ListItem>
-              ))}
-            </List>
-          </CardContent>
-        </Card>
+        <Link href="/agenda" className="block">
+          <Card className="shadow-lg h-full cursor-pointer transition-all duration-200 ease-in-out hover:shadow-xl hover:ring-1 hover:ring-primary/30">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-xl font-medium font-headline">Atividade Recente</CardTitle>
+              <Activity className="h-6 w-6 text-accent" />
+            </CardHeader>
+            <CardContent>
+              <List>
+                {recentActivities.map((item) => (
+                  <ListItem key={item.id} className="flex justify-between">
+                    <span>{item.text}</span>
+                    <span className="text-sm text-muted-foreground">{item.time}</span>
+                  </ListItem>
+                ))}
+              </List>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="shadow-lg md:col-span-2 lg:col-span-1">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xl font-medium font-headline">Atualizações Importantes</CardTitle>
-            <AlertTriangle className="h-6 w-6 text-destructive" />
-          </CardHeader>
-          <CardContent>
-            <List>
-              {importantUpdates.map((item) => (
-                <ListItem key={item.id}>
-                  <p className={`${item.type === 'warning' ? 'text-destructive' : 'text-foreground'}`}>
-                    {item.text}
-                  </p>
-                </ListItem>
-              ))}
-            </List>
-          </CardContent>
-        </Card>
+        <Link href="/legal-reminder" className="block md:col-span-2 lg:col-span-1">
+          <Card className="shadow-lg h-full cursor-pointer transition-all duration-200 ease-in-out hover:shadow-xl hover:ring-1 hover:ring-primary/30">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-xl font-medium font-headline">Atualizações Importantes</CardTitle>
+              <AlertTriangle className="h-6 w-6 text-destructive" />
+            </CardHeader>
+            <CardContent>
+              <List>
+                {importantUpdates.map((item) => (
+                  <ListItem key={item.id}>
+                    <p className={`${item.type === 'warning' ? 'text-destructive' : 'text-foreground'}`}>
+                      {item.text}
+                    </p>
+                  </ListItem>
+                ))}
+              </List>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
     </div>
   );
