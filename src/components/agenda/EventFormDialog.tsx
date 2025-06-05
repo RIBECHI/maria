@@ -31,8 +31,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 import { format } from "date-fns";
+import { ClientSearchDialog } from "@/components/clients/ClientSearchDialog";
 
 export interface CalendarEvent {
   id: string;
@@ -66,6 +67,7 @@ interface EventFormDialogProps {
 
 export function EventFormDialog({ isOpen, onClose, onSubmit, eventData }: EventFormDialogProps) {
   const [isLoading, setIsLoading] = React.useState(false);
+  const [isClientSearchOpen, setIsClientSearchOpen] = React.useState(false);
 
   const form = useForm<EventFormValues>({
     resolver: zodResolver(eventFormSchema),
@@ -80,10 +82,10 @@ export function EventFormDialog({ isOpen, onClose, onSubmit, eventData }: EventF
   });
 
   React.useEffect(() => {
-    if (isOpen) { // Reset form when dialog opens or eventData changes
+    if (isOpen) { 
       if (eventData) {
         form.reset({
-          date: format(parseISOAdjusted(eventData.date), 'yyyy-MM-dd'), // Ensure date is correctly parsed and formatted
+          date: format(parseISOAdjusted(eventData.date), 'yyyy-MM-dd'), 
           type: eventData.type,
           description: eventData.description,
           time: eventData.time || "",
@@ -103,26 +105,22 @@ export function EventFormDialog({ isOpen, onClose, onSubmit, eventData }: EventF
     }
   }, [eventData, form, isOpen]);
   
-  // Helper function to parse ISO date string, adjusting for potential timezone issues if dates are just 'YYYY-MM-DD'
   const parseISOAdjusted = (dateString: string) => {
-    if (dateString.length === 10) { // YYYY-MM-DD
-        return new Date(dateString + 'T00:00:00'); // Assume local midnight
+    if (dateString.length === 10) { 
+        return new Date(dateString + 'T00:00:00'); 
     }
-    return new Date(dateString); // Let Date parse if it includes time/timezone
+    return new Date(dateString); 
   };
-
 
   const handleFormSubmit: SubmitHandler<EventFormValues> = async (data) => {
     setIsLoading(true);
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 700));
     const submittedData = {
       ...data,
-      date: format(new Date(data.date + 'T00:00:00'), 'yyyy-MM-dd') // Ensure the date is stored as YYYY-MM-DD
+      date: format(new Date(data.date + 'T00:00:00'), 'yyyy-MM-dd') 
     };
     onSubmit(submittedData);
     setIsLoading(false);
-    // form.reset(); // Resetting is handled by useEffect on isOpen change
   };
   
   const handleDialogClose = () => {
@@ -131,124 +129,148 @@ export function EventFormDialog({ isOpen, onClose, onSubmit, eventData }: EventF
     }
   };
 
+  const handleClientSelected = (clientName: string) => {
+    form.setValue("client", clientName);
+    setIsClientSearchOpen(false);
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && handleDialogClose()}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{eventData ? "Editar Evento" : "Adicionar Novo Evento"}</DialogTitle>
-          <DialogDescription>
-            {eventData ? "Altere os dados do evento abaixo." : "Preencha os dados para cadastrar um novo evento."}
-          </DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 py-4">
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Descrição</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Ex: Audiência de conciliação sobre o caso X" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <>
+      <Dialog open={isOpen} onOpenChange={(open) => !open && handleDialogClose()}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{eventData ? "Editar Evento" : "Adicionar Novo Evento"}</DialogTitle>
+            <DialogDescription>
+              {eventData ? "Altere os dados do evento abaixo." : "Preencha os dados para cadastrar um novo evento."}
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 py-4">
               <FormField
                 control={form.control}
-                name="date"
+                name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Data</FormLabel>
+                    <FormLabel>Descrição</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <Textarea placeholder="Ex: Audiência de conciliação sobre o caso X" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="date"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Data</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de Evento</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o tipo" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="prazo">Prazo</SelectItem>
+                          <SelectItem value="audiencia">Audiência</SelectItem>
+                          <SelectItem value="consulta">Consulta</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               <FormField
                 control={form.control}
-                name="type"
+                name="time"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tipo de Evento</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o tipo" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="prazo">Prazo</SelectItem>
-                        <SelectItem value="audiencia">Audiência</SelectItem>
-                        <SelectItem value="consulta">Consulta</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <FormLabel>Hora (Opcional)</FormLabel>
+                    <FormControl>
+                      <Input type="time" placeholder="HH:MM" {...field} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            </div>
-            <FormField
-              control={form.control}
-              name="time"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Hora (Opcional)</FormLabel>
-                  <FormControl>
-                    <Input type="time" placeholder="HH:MM" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField
-              control={form.control}
-              name="client"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Cliente (Opcional)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Nome do cliente" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField
-              control={form.control}
-              name="process"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Processo (Opcional)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Número ou identificação do processo" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={handleDialogClose} disabled={isLoading}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Salvando...
-                  </>
-                ) : (
-                  eventData ? "Salvar Alterações" : "Adicionar Evento"
+               <FormField
+                control={form.control}
+                name="client"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Cliente (Opcional)</FormLabel>
+                    <div className="flex items-center gap-2">
+                      <FormControl>
+                        <Input placeholder="Nome do cliente" {...field} className="flex-grow" />
+                      </FormControl>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setIsClientSearchOpen(true)}
+                        aria-label="Buscar cliente"
+                      >
+                        <Search className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
                 )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+              />
+               <FormField
+                control={form.control}
+                name="process"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Processo (Opcional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Número ou identificação do processo" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={handleDialogClose} disabled={isLoading}>
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    eventData ? "Salvar Alterações" : "Adicionar Evento"
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      <ClientSearchDialog
+        isOpen={isClientSearchOpen}
+        onClose={() => setIsClientSearchOpen(false)}
+        onClientSelected={handleClientSelected}
+      />
+    </>
   );
 }
