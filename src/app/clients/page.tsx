@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { PlusCircle, Edit, Trash2, Search } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Search, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -18,6 +18,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ClientFormDialog, type ClientFormValues, type Client } from "@/components/clients/ClientFormDialog";
+import { ClientDetailsDialog } from "@/components/clients/ClientDetailsDialog"; // Importar o novo dialog
 import { useToast } from "@/hooks/use-toast";
 
 const initialClients: Client[] = [
@@ -33,6 +34,8 @@ export default function ClientsPage() {
   const [editingClient, setEditingClient] = React.useState<Client | undefined>(undefined);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const [clientToDelete, setClientToDelete] = React.useState<Client | null>(null);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = React.useState(false); // Estado para o dialog de detalhes
+  const [selectedClientForDetails, setSelectedClientForDetails] = React.useState<Client | null>(null); // Estado para o cliente selecionado
   const { toast } = useToast();
 
   const handleOpenFormDialog = (client?: Client) => {
@@ -47,18 +50,16 @@ export default function ClientsPage() {
 
   const handleSubmitClientForm = (data: ClientFormValues) => {
     if (editingClient) {
-      // Editar cliente
       setClients(clients.map(c => 
         c.id === editingClient.id ? { ...editingClient, ...data } : c
       ));
       toast({ title: "Cliente atualizado!", description: `O cliente ${data.name} foi atualizado com sucesso.` });
     } else {
-      // Adicionar novo cliente
       const newClient: Client = {
-        id: `CLI${String(clients.length + 1).padStart(3, '0')}`, // Simple ID generation
+        id: `CLI${String(clients.length + 1).padStart(3, '0')}`,
         ...data,
-        caseCount: 0, // Default para novo cliente
-        lastActivity: new Date().toISOString().split('T')[0], // Data atual
+        caseCount: 0,
+        lastActivity: new Date().toISOString().split('T')[0],
       };
       setClients([...clients, newClient]);
       toast({ title: "Cliente adicionado!", description: `O cliente ${newClient.name} foi adicionado com sucesso.` });
@@ -80,6 +81,16 @@ export default function ClientsPage() {
     setIsDeleteDialogOpen(false);
   };
 
+  const handleOpenDetailsDialog = (client: Client) => {
+    setSelectedClientForDetails(client);
+    setIsDetailsDialogOpen(true);
+  };
+
+  const handleCloseDetailsDialog = () => {
+    setSelectedClientForDetails(null);
+    setIsDetailsDialogOpen(false);
+  };
+
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
       <div className="flex items-center justify-between mb-8">
@@ -94,7 +105,6 @@ export default function ClientsPage() {
         <Input
           placeholder="Buscar clientes por nome, ID ou contato..."
           className="max-w-sm"
-          // onChange={(e) => setSearchTerm(e.target.value)} // Lógica de filtro a ser implementada
         />
       </div>
 
@@ -116,17 +126,33 @@ export default function ClientsPage() {
             </TableHeader>
             <TableBody>
               {clients.map((client) => (
-                <TableRow key={client.id}>
+                <TableRow 
+                  key={client.id} 
+                  onClick={() => handleOpenDetailsDialog(client)}
+                  className="cursor-pointer hover:bg-muted/60"
+                >
                   <TableCell>{client.id}</TableCell>
                   <TableCell className="font-medium">{client.name}</TableCell>
                   <TableCell>{client.contact}</TableCell>
                   <TableCell className="text-center">{client.caseCount}</TableCell>
                   <TableCell>{client.lastActivity}</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" className="hover:text-accent" onClick={() => handleOpenFormDialog(client)}>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="hover:text-accent" 
+                      onClick={(e) => { e.stopPropagation(); handleOpenFormDialog(client); }}
+                      aria-label="Editar cliente"
+                    >
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="hover:text-destructive" onClick={() => handleDeleteConfirmation(client)}>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="hover:text-destructive" 
+                      onClick={(e) => { e.stopPropagation(); handleDeleteConfirmation(client); }}
+                      aria-label="Excluir cliente"
+                    >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </TableCell>
@@ -142,6 +168,12 @@ export default function ClientsPage() {
         onClose={handleCloseFormDialog}
         onSubmit={handleSubmitClientForm}
         clientData={editingClient}
+      />
+
+      <ClientDetailsDialog
+        isOpen={isDetailsDialogOpen}
+        onClose={handleCloseDetailsDialog}
+        clientData={selectedClientForDetails}
       />
 
       {clientToDelete && (
