@@ -301,7 +301,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
               </CardHeader>
               <CardContent>
                 <Form {...timelineForm}>
-                  <form onSubmit={timelineForm.handleSubmit(handleAddTimelineEvent)} className="space-y-3 mb-6 p-4 border rounded-md">
+                  <div className="space-y-3 mb-6 p-4 border rounded-md">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
                       <FormField
                         control={timelineForm.control}
@@ -340,7 +340,12 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
                           </FormItem>
                         )}
                       />
-                       <Button type="submit" size="sm" className="md:self-end h-10"> {/* Ajuste de altura */}
+                       <Button 
+                          type="button" 
+                          size="sm" 
+                          className="md:self-end h-10" 
+                          onClick={timelineForm.handleSubmit(handleAddTimelineEvent)}
+                        >
                           <PlusCircle className="mr-2 h-4 w-4" /> Adicionar
                         </Button>
                     </div>
@@ -357,7 +362,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
                           </FormItem>
                         )}
                       />
-                  </form>
+                  </div>
                 </Form>
 
                 {currentTimeline.length > 0 ? (
