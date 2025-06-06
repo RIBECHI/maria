@@ -31,6 +31,7 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'LexManager',
   description: 'Software de Gestão Jurídica',
+  manifest: '/manifest.json',
 };
 
 const navItems = [
@@ -79,6 +80,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
         <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap" rel="stylesheet" />
+        <meta name="theme-color" content="#3F51B5" />
       </head>
       <body className="font-body antialiased">
         <JusticeSymbolWatermark />
