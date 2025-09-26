@@ -23,7 +23,8 @@ import { ProcessFormDialog, type ProcessFormValues, type Process, type TimelineE
 
 const initialProcesses: Process[] = [
   { 
-    id: "PROC001", 
+    id: "PROC001",
+    processNumber: "5012345-67.2024.8.09.0051", 
     client: "Empresa Alpha Ltda.", 
     type: "Cível", 
     status: "Em Andamento", 
@@ -35,9 +36,10 @@ const initialProcesses: Process[] = [
       { id: "TL2", date: "2024-07-15", description: "Petição protocolada.", source: "Nota Manual"},
     ]
   },
-  { id: "PROC002", client: "João Silva", type: "Trabalhista", status: "Concluído", nextDeadline: "-", documents: 3, monitorProjudi: false, timeline: [] },
+  { id: "PROC002", processNumber: "0056789-12.2023.8.09.0001", client: "João Silva", type: "Trabalhista", status: "Concluído", nextDeadline: "-", documents: 3, monitorProjudi: false, timeline: [] },
   { 
     id: "PROC003", 
+    processNumber: "5554321-98.2022.8.09.0024",
     client: "Maria Oliveira", 
     type: "Tributário", 
     status: "Suspenso", 
@@ -48,7 +50,7 @@ const initialProcesses: Process[] = [
        { id: "TL3", date: "2024-06-10", description: "Suspensão do processo deferida.", source: "Resumo de E-mail PROJUDI"},
     ]
   },
-  { id: "PROC004", client: "Construtora Beta S.A.", type: "Administrativo", status: "Em Andamento", nextDeadline: "2024-07-30", documents: 2, monitorProjudi: false, timeline: [] },
+  { id: "PROC004", processNumber: "1000123-45.2024.8.09.0175", client: "Construtora Beta S.A.", type: "Administrativo", status: "Em Andamento", nextDeadline: "2024-07-30", documents: 2, monitorProjudi: false, timeline: [] },
 ];
 
 const getStatusBadgeVariant = (status: string) => {
@@ -169,7 +171,7 @@ export default function ProcessesPage() {
             <TableBody>
               {processes.map((process) => (
                 <TableRow key={process.id}>
-                  <TableCell className="font-medium">{process.id}</TableCell>
+                  <TableCell className="font-medium">{process.processNumber}</TableCell>
                   <TableCell>{process.client}</TableCell>
                   <TableCell>{process.type}</TableCell>
                   <TableCell>
@@ -218,7 +220,7 @@ export default function ProcessesPage() {
             <AlertDialogHeader>
               <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
               <AlertDialogDescription>
-                Tem certeza que deseja excluir o processo "{processToDelete.id} - {processToDelete.client}"? Esta ação não poderá ser desfeita.
+                Tem certeza que deseja excluir o processo "{processToDelete.processNumber} - {processToDelete.client}"? Esta ação não poderá ser desfeita.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -232,3 +234,6 @@ export default function ProcessesPage() {
   );
 }
 
+
+
+    
