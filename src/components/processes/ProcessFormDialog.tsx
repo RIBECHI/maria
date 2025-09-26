@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, PlusCircle, Trash2 } from "lucide-react";
+import { Loader2, PlusCircle, Trash2, Search } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardDescription as CardTimelineDescription, CardHeader, CardTitle as CardTimelineTitle } from "@/components/ui/card";
@@ -47,6 +47,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { ClientSearchDialog } from "@/components/clients/ClientSearchDialog";
 
 export interface TimelineEvent {
   id: string;
@@ -99,6 +100,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
   const [currentTimeline, setCurrentTimeline] = React.useState<TimelineEvent[]>([]);
   const [timelineEventToDelete, setTimelineEventToDelete] = React.useState<TimelineEvent | null>(null);
   const [isDeleteTimelineAlertOpen, setIsDeleteTimelineAlertOpen] = React.useState(false);
+  const [isClientSearchOpen, setIsClientSearchOpen] = React.useState(false);
   const { toast } = useToast();
 
   const form = useForm<ProcessFormValues>({
@@ -201,6 +203,12 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
     }
   };
 
+  const handleClientSelected = (clientName: string) => {
+    form.setValue("client", clientName);
+    setIsClientSearchOpen(false);
+  };
+
+
   return (
     <>
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleDialogClose()}>
@@ -227,19 +235,30 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="client"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Cliente</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Nome do cliente ou empresa" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+             <FormField
+                control={form.control}
+                name="client"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Cliente</FormLabel>
+                    <div className="flex items-center gap-2">
+                      <FormControl>
+                        <Input placeholder="Nome do cliente ou empresa" {...field} />
+                      </FormControl>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setIsClientSearchOpen(true)}
+                        aria-label="Buscar cliente"
+                      >
+                        <Search className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             <FormField
               control={form.control}
               name="type"
@@ -425,6 +444,12 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
       </DialogContent>
     </Dialog>
 
+    <ClientSearchDialog
+      isOpen={isClientSearchOpen}
+      onClose={() => setIsClientSearchOpen(false)}
+      onClientSelected={handleClientSelected}
+    />
+
     {timelineEventToDelete && (
         <AlertDialog open={isDeleteTimelineAlertOpen} onOpenChange={setIsDeleteTimelineAlertOpen}>
           <AlertDialogContent>
@@ -448,5 +473,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
 }
 
 
+
+    
 
     
