@@ -74,6 +74,10 @@ export function ClientDetailsDialog({ isOpen, onClose, clientData }: ClientDetai
             <span className={labelClass}>Nome / Razão Social:</span>
             <span className={valueClass}>{clientData.name}</span>
           </div>
+           <div className={detailItemClass}>
+            <span className={labelClass}>Cidade:</span>
+            <span className={valueClass}>{clientData.city || "Não informado"}</span>
+          </div>
           <div className={detailItemClass}>
             <span className={labelClass}>Informações de Contato:</span>
             <span className={valueClass}>{clientData.contact}</span>
@@ -86,6 +90,12 @@ export function ClientDetailsDialog({ isOpen, onClose, clientData }: ClientDetai
             <span className={labelClass}>Última Atividade:</span>
             <span className={valueClass}>{clientData.lastActivity}</span>
           </div>
+           {clientData.notes && (
+            <div className={detailItemClass}>
+              <span className={labelClass}>Anotações:</span>
+              <span className="text-foreground break-words whitespace-pre-wrap">{clientData.notes}</span>
+            </div>
+           )}
           
           {/* Seção de Processos Vinculados */}
           <div className="pt-4">

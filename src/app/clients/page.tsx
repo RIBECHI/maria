@@ -22,10 +22,10 @@ import { ClientDetailsDialog } from "@/components/clients/ClientDetailsDialog"; 
 import { useToast } from "@/hooks/use-toast";
 
 const initialClients: Client[] = [
-  { id: "CLI001", name: "Empresa Alpha Ltda.", contact: "contato@alpha.com / (11) 98765-4321", caseCount: 3, lastActivity: "2024-07-20" },
-  { id: "CLI002", name: "João Silva", contact: "joao.silva@email.com / (21) 91234-5678", caseCount: 1, lastActivity: "2024-07-15" },
-  { id: "CLI003", name: "Maria Oliveira", contact: "maria.o@server.com / (31) 99999-8888", caseCount: 5, lastActivity: "2024-07-22" },
-  { id: "CLI004", name: "Construtora Beta S.A.", contact: "juridico@beta.com / (41) 98888-7777", caseCount: 2, lastActivity: "2024-06-30" },
+  { id: "CLI001", name: "Empresa Alpha Ltda.", contact: "contato@alpha.com / (11) 98765-4321", caseCount: 3, lastActivity: "2024-07-20", city: "São Paulo - SP", notes: "Cliente corporativo de longa data." },
+  { id: "CLI002", name: "João Silva", contact: "joao.silva@email.com / (21) 91234-5678", caseCount: 1, lastActivity: "2024-07-15", city: "Rio de Janeiro - RJ" },
+  { id: "CLI003", name: "Maria Oliveira", contact: "maria.o@server.com / (31) 99999-8888", caseCount: 5, lastActivity: "2024-07-22", city: "Belo Horizonte - MG", notes: "Indicação do Dr. Carlos. Prioridade alta." },
+  { id: "CLI004", name: "Construtora Beta S.A.", contact: "juridico@beta.com / (41) 98888-7777", caseCount: 2, lastActivity: "2024-06-30", city: "Curitiba - PR" },
 ];
 
 export default function ClientsPage() {

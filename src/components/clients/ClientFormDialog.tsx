@@ -23,6 +23,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
 
 export interface Client {
@@ -31,11 +32,15 @@ export interface Client {
   contact: string;
   caseCount: number;
   lastActivity: string;
+  city?: string;
+  notes?: string;
 }
 
 const clientFormSchema = z.object({
   name: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres." }),
   contact: z.string().min(10, { message: "O contato deve ter pelo menos 10 caracteres (email ou telefone)." }),
+  city: z.string().optional(),
+  notes: z.string().optional(),
 });
 
 export type ClientFormValues = z.infer<typeof clientFormSchema>;
@@ -55,6 +60,8 @@ export function ClientFormDialog({ isOpen, onClose, onSubmit, clientData }: Clie
     defaultValues: {
       name: "",
       contact: "",
+      city: "",
+      notes: "",
     },
   });
 
@@ -63,11 +70,15 @@ export function ClientFormDialog({ isOpen, onClose, onSubmit, clientData }: Clie
       form.reset({
         name: clientData.name,
         contact: clientData.contact,
+        city: clientData.city || "",
+        notes: clientData.notes || "",
       });
     } else {
       form.reset({
         name: "",
         contact: "",
+        city: "",
+        notes: "",
       });
     }
   }, [clientData, form, isOpen]); // Adicionado isOpen para resetar quando o dialog reabre
@@ -91,7 +102,7 @@ export function ClientFormDialog({ isOpen, onClose, onSubmit, clientData }: Clie
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleDialogClose()}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{clientData ? "Editar Cliente" : "Adicionar Novo Cliente"}</DialogTitle>
           <DialogDescription>
@@ -121,6 +132,32 @@ export function ClientFormDialog({ isOpen, onClose, onSubmit, clientData }: Clie
                   <FormLabel>Contato (Email / Telefone)</FormLabel>
                   <FormControl>
                     <Input placeholder="Ex: joao.silva@email.com ou (11) 99999-9999" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="city"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Cidade</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ex: Goiânia - GO" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Anotações</FormLabel>
+                  <FormControl>
+                    <Textarea placeholder="Informações adicionais sobre o cliente..." {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
