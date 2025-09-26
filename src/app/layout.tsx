@@ -32,6 +32,7 @@ import { UserProvider } from '@/contexts/UserContext';
 import UserInfo from '@/components/layout/UserInfo';
 import { NotepadSheet } from '@/components/layout/NotepadSheet';
 
+// Metadata MUST be exported from a Server Component.
 export const metadata: Metadata = {
   title: 'LexManager',
   description: 'Software de Gestão Jurídica',
@@ -71,7 +72,31 @@ function JusticeSymbolWatermark() {
   );
 }
 
-function RootLayoutContent({ children }: { children: React.ReactNode }) {
+
+function PanelLeftIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+      <line x1="9" x2="9" y1="3" y2="21" />
+    </svg>
+  );
+}
+
+
+// This component contains all the client-side logic and state
+function ClientLayout({ children }: { children: React.ReactNode }) {
+  "use client";
   const [isNotepadOpen, setIsNotepadOpen] = React.useState(false);
 
   return (
@@ -142,6 +167,8 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
   );
 }
 
+
+// This remains the main Server Component Layout
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -158,35 +185,10 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
       </head>
       <body className="font-body antialiased">
-        <ClientWrapper>
+        <ClientLayout>
           {children}
-        </ClientWrapper>
+        </ClientLayout>
       </body>
     </html>
-  );
-}
-
-function ClientWrapper({ children }: { children: React.ReactNode }) {
-  "use client";
-  return <RootLayoutContent>{children}</RootLayoutContent>;
-}
-
-function PanelLeftIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
-      <line x1="9" x2="9" y1="3" y2="21" />
-    </svg>
   );
 }
