@@ -9,13 +9,20 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Moon, Sun } from "lucide-react";
+import { useUser } from "@/contexts/UserContext";
 
 export default function SettingsPage() {
   const { toast } = useToast();
-  const [displayName, setDisplayName] = React.useState("Laura Antonelli");
+  const { userName, setUserName } = useUser();
+  const [displayName, setDisplayName] = React.useState(userName);
   const [emailNotificationsPrazos, setEmailNotificationsPrazos] = React.useState(true);
   const [emailNotificationsLegal, setEmailNotificationsLegal] = React.useState(true);
   const [isDarkMode, setIsDarkMode] = React.useState(false);
+
+  React.useEffect(() => {
+    // Sincroniza o estado local se o nome do contexto mudar (ex: ao carregar do localStorage)
+    setDisplayName(userName);
+  }, [userName]);
 
   React.useEffect(() => {
     const storedTheme = localStorage.getItem("theme");
@@ -40,7 +47,10 @@ export default function SettingsPage() {
   };
 
   const handleSaveChanges = () => {
-    // Aqui você salvaria as configurações no backend ou localStorage
+    // Atualiza o nome de exibição no contexto global
+    setUserName(displayName);
+    
+    // Simula o salvamento das outras configurações
     console.log("Configurações salvas:", {
       displayName,
       emailNotificationsPrazos,

@@ -28,6 +28,8 @@ import { Toaster } from "@/components/ui/toaster";
 import Logo from '@/components/layout/Logo';
 import NavLink from '@/components/layout/NavLink';
 import './globals.css';
+import { UserProvider } from '@/contexts/UserContext'; // Importado
+import UserInfo from '@/components/layout/UserInfo'; // Importado
 
 export const metadata: Metadata = {
   title: 'LexManager',
@@ -85,6 +87,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#3F51B5" />
       </head>
       <body className="font-body antialiased">
+       <UserProvider>
         <JusticeSymbolWatermark />
         <SidebarProvider defaultOpen>
           <Sidebar collapsible="icon" variant="sidebar" side="left">
@@ -119,16 +122,7 @@ export default function RootLayout({
                   </Link>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                   <div className="flex items-center gap-2 p-2 group-data-[collapsible=icon]:justify-center">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src="https://placehold.co/40x40.png" alt="Avatar do Usuário" data-ai-hint="user avatar" />
-                        <AvatarFallback>LA</AvatarFallback>
-                      </Avatar>
-                      <div className="group-data-[collapsible=icon]:hidden">
-                        <p className="text-sm font-medium text-sidebar-foreground">Laura Antonelli</p>
-                        <p className="text-xs text-sidebar-foreground/70">Advogada</p>
-                      </div>
-                   </div>
+                  <UserInfo />
                 </SidebarMenuItem>
               </SidebarMenu>
             </SidebarFooter>
@@ -147,6 +141,7 @@ export default function RootLayout({
             <Toaster />
           </SidebarInset>
         </SidebarProvider>
+        </UserProvider>
       </body>
     </html>
   );
