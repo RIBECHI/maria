@@ -70,7 +70,7 @@ export default function ClientsPage() {
     try {
       if (editingClient) {
         const updatedClient = await updateClient(editingClient.id, data);
-        setClients(clients.map(c => (c.id === editingClient.id ? updatedClient : c)));
+        setClients(clients.map(c => (c.id === editingClient.id ? { ...c, ...updatedClient } : c)));
         toast({ title: "Cliente atualizado!", description: `O cliente ${data.name} foi atualizado com sucesso.` });
       } else {
         const newClient = await addClient({
@@ -78,10 +78,11 @@ export default function ClientsPage() {
           caseCount: 0,
           lastActivity: new Date().toISOString().split('T')[0],
         });
-        setClients([...clients, newClient]);
+        setClients(prevClients => [...prevClients, newClient]);
         toast({ title: "Cliente adicionado!", description: `O cliente ${newClient.name} foi adicionado com sucesso.` });
       }
       handleCloseFormDialog();
+      fetchClients(); // Re-fetch to ensure data is consistent
     } catch (error) {
         console.error("Failed to save client: ", error);
         toast({ title: "Erro ao salvar", description: "Não foi possível salvar o cliente.", variant: "destructive" });
@@ -120,10 +121,11 @@ export default function ClientsPage() {
   };
   
   const filteredClients = clients.filter(client =>
-    client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.contact.toLowerCase().includes(searchTerm.toLowerCase())
+    (client.name && client.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (client.id && client.id.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (client.contact && client.contact.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
 
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
@@ -179,7 +181,7 @@ export default function ClientsPage() {
                     onClick={() => handleOpenDetailsDialog(client)}
                     className="cursor-pointer hover:bg-muted/60"
                   >
-                    <TableCell>{client.id}</TableCell>
+                    <TableCell>{client.id.substring(0, 7)}...</TableCell>
                     <TableCell className="font-medium">{client.name}</TableCell>
                     <TableCell>{client.contact}</TableCell>
                     <TableCell className="text-center">{client.caseCount}</TableCell>
