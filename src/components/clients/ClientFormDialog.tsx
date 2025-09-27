@@ -25,8 +25,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
+import type { DocumentData, Timestamp } from "firebase/firestore";
 
-export interface Client {
+export interface Client extends DocumentData {
   id: string;
   name: string;
   contact: string;
@@ -85,16 +86,12 @@ export function ClientFormDialog({ isOpen, onClose, onSubmit, clientData }: Clie
 
   const handleFormSubmit: SubmitHandler<ClientFormValues> = async (data) => {
     setIsLoading(true);
-    // Simular uma chamada de API
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    onSubmit(data);
+    await onSubmit(data); // A lógica de submissão agora é assíncrona
     setIsLoading(false);
-    form.reset(); // Limpa o formulário após o envio
   };
   
   const handleDialogClose = () => {
     if (!isLoading) {
-      form.reset(); // Limpa o formulário ao fechar se não estiver carregando
       onClose();
     }
   };
@@ -174,7 +171,7 @@ export function ClientFormDialog({ isOpen, onClose, onSubmit, clientData }: Clie
                     Salvando...
                   </>
                 ) : (
-                  "Salvar Cliente"
+                  clientData ? "Salvar Alterações" : "Salvar Cliente"
                 )}
               </Button>
             </DialogFooter>
