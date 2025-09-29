@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from 'next/link';
@@ -23,6 +24,7 @@ import {
   SidebarFooter,
   SidebarInset,
   SidebarTrigger,
+  SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { Toaster } from "@/components/ui/toaster";
 import Logo from '@/components/layout/Logo';
@@ -31,6 +33,7 @@ import './globals.css';
 import { UserProvider } from '@/contexts/UserContext';
 import UserInfo from '@/components/layout/UserInfo';
 import { NotepadSheet } from '@/components/layout/NotepadSheet';
+import UpcomingEventsSidebar from '@/components/layout/UpcomingEventsSidebar';
 
 const navItems = [
   { href: '/', label: 'Painel', icon: <LayoutDashboard /> },
@@ -118,6 +121,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
                   </SidebarMenuButton>
                 </SidebarMenuItem>
             </SidebarMenu>
+            <SidebarSeparator className="my-2" />
+            <UpcomingEventsSidebar />
           </SidebarContent>
           <SidebarFooter className="p-2 border-t border-sidebar-border">
             <SidebarMenu>
