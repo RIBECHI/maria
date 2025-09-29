@@ -167,8 +167,9 @@ export default function ProcessesPage() {
                 <TableHead>Tipo</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Próximo Prazo</TableHead>
-                <TableHead className="text-center">Docs</TableHead>
-                <TableHead className="text-center">Monitorar PROJUDI</TableHead>
+                <TableHead className="text-center">UHD</TableHead>
+                <TableHead className="text-center">Certidão</TableHead>
+                <TableHead className="text-center">PROJUDI</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -183,6 +184,7 @@ export default function ProcessesPage() {
                     <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                     <TableCell className="text-center"><Skeleton className="h-4 w-8 mx-auto" /></TableCell>
                     <TableCell className="text-center"><Skeleton className="h-5 w-5 rounded-full mx-auto" /></TableCell>
+                    <TableCell className="text-center"><Skeleton className="h-5 w-5 rounded-full mx-auto" /></TableCell>
                     <TableCell className="text-right"><Skeleton className="h-8 w-24" /></TableCell>
                   </TableRow>
                 ))
@@ -196,7 +198,14 @@ export default function ProcessesPage() {
                       <Badge variant={getStatusBadgeVariant(process.status) as any}>{process.status}</Badge>
                     </TableCell>
                     <TableCell onClick={() => handleViewDetails(process)}>{process.nextDeadline}</TableCell>
-                    <TableCell className="text-center" onClick={() => handleViewDetails(process)}>{process.documents}</TableCell>
+                    <TableCell className="text-center" onClick={() => handleViewDetails(process)}>{process.uhd}</TableCell>
+                    <TableCell className="text-center" onClick={() => handleViewDetails(process)}>
+                      {process.certidao ? (
+                        <CheckCircle className="h-5 w-5 text-green-600 mx-auto" />
+                      ) : (
+                        <XCircle className="h-5 w-5 text-red-500 mx-auto" />
+                      )}
+                    </TableCell>
                     <TableCell className="text-center" onClick={() => handleViewDetails(process)}>
                       {process.monitorProjudi ? (
                         <CheckCircle className="h-5 w-5 text-green-600 mx-auto" />
@@ -222,7 +231,7 @@ export default function ProcessesPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center h-24">
+                  <TableCell colSpan={9} className="text-center h-24">
                     Nenhum processo encontrado.
                   </TableCell>
                 </TableRow>
@@ -258,5 +267,7 @@ export default function ProcessesPage() {
     </div>
   );
 }
+
+    
 
     

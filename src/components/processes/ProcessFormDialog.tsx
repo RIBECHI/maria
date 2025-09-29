@@ -48,6 +48,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { ClientSearchDialog } from "@/components/clients/ClientSearchDialog";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export interface TimelineEvent {
   id: string;
@@ -65,6 +66,8 @@ export interface Process {
   nextDeadline: string; // YYYY-MM-DD or '-'
   documents: number;
   monitorProjudi?: boolean;
+  uhd?: number;
+  certidao?: boolean;
   timeline?: TimelineEvent[];
 }
 
@@ -75,6 +78,8 @@ const processFormSchema = z.object({
   status: z.enum(['Em Andamento', 'Concluído', 'Suspenso'], { required_error: "Status é obrigatório."}),
   nextDeadline: z.string().refine((val) => val === '-' || !isNaN(Date.parse(val)), { message: "Data inválida ou '-'." }),
   monitorProjudi: z.boolean().optional(),
+  uhd: z.coerce.number().min(1, "UHD deve ser no mínimo 1").max(10, "UHD deve ser no máximo 10").optional(),
+  certidao: z.boolean().optional(),
 });
 
 export type ProcessFormValues = z.infer<typeof processFormSchema>;
@@ -112,6 +117,8 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
       status: "Em Andamento",
       nextDeadline: format(new Date(), 'yyyy-MM-dd'),
       monitorProjudi: false,
+      uhd: undefined,
+      certidao: false,
     },
   });
 
@@ -134,6 +141,8 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
               status: processData.status,
               nextDeadline: processData.nextDeadline === '-' ? '' : format(parseISO(processData.nextDeadline + 'T00:00:00'), 'yyyy-MM-dd'),
               monitorProjudi: processData.monitorProjudi || false,
+              uhd: processData.uhd || undefined,
+              certidao: processData.certidao || false,
             });
             setCurrentTimeline(processData.timeline || []);
         } else {
@@ -144,6 +153,8 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
               status: "Em Andamento",
               nextDeadline: format(new Date(), 'yyyy-MM-dd'),
               monitorProjudi: false,
+              uhd: undefined,
+              certidao: false,
             });
             setCurrentTimeline([]);
         }
@@ -309,6 +320,42 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
                 )}
                 />
             </div>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                    control={form.control}
+                    name="uhd"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>UHD</FormLabel>
+                        <FormControl>
+                            <Input type="number" min="1" max="10" placeholder="1-10" {...field} onChange={e => field.onChange(e.target.valueAsNumber)} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="certidao"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-row items-end space-x-3 rounded-md border p-3 h-[72px]">
+                        <FormControl>
+                            <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            id="certidao"
+                            />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                            <FormLabel htmlFor="certidao">
+                                Certidão
+                            </FormLabel>
+                            <FormMessage />
+                        </div>
+                        </FormItem>
+                    )}
+                />
+             </div>
              <FormField
               control={form.control}
               name="monitorProjudi"
@@ -473,6 +520,8 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
 }
 
 
+
+    
 
     
 
