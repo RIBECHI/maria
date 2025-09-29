@@ -65,12 +65,12 @@ export default function SettingsPage() {
 
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
-      <h1 className="text-3xl font-headline font-bold text-primary mb-8">Configurações</h1>
+      <h1 className="text-4xl font-headline font-extrabold text-primary mb-8">Configurações</h1>
 
       <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
         <Card className="lg:col-span-2 shadow-lg">
           <CardHeader>
-            <CardTitle className="text-xl font-headline">Perfil e Aparência</CardTitle>
+            <CardTitle>Perfil e Aparência</CardTitle>
             <CardDescription>Personalize suas informações e a aparência do sistema.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -100,7 +100,7 @@ export default function SettingsPage() {
 
         <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle className="text-xl font-headline">Preferências de Notificação</CardTitle>
+            <CardTitle>Preferências de Notificação</CardTitle>
             <CardDescription>Escolha como você deseja ser notificado.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">

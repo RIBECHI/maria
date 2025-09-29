@@ -139,7 +139,7 @@ export default function ProcessesPage() {
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-headline font-bold text-primary">Acompanhamento de Processos</h1>
+        <h1 className="text-4xl font-headline font-extrabold text-primary">Acompanhamento de Processos</h1>
         <Button onClick={() => handleOpenFormDialog()}>
           <PlusCircle className="mr-2 h-5 w-5" /> Adicionar Processo
         </Button>
@@ -157,7 +157,7 @@ export default function ProcessesPage() {
 
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="text-xl font-headline">Lista de Processos</CardTitle>
+          <CardTitle>Lista de Processos</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>

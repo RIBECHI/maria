@@ -24,13 +24,13 @@ export default function DashboardPage() {
 
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
-      <h1 className="text-3xl font-headline font-bold mb-8 text-primary">Painel</h1>
+      <h1 className="text-4xl font-headline font-extrabold mb-8 text-primary">Painel</h1>
       
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <Link href="/agenda" className="block">
           <Card className="shadow-lg h-full cursor-pointer transition-all duration-200 ease-in-out hover:shadow-xl hover:ring-1 hover:ring-primary/30">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xl font-medium font-headline">Próximos Prazos</CardTitle>
+              <CardTitle>Próximos Prazos</CardTitle>
               <CalendarDays className="h-6 w-6 text-accent" />
             </CardHeader>
             <CardContent>
@@ -49,7 +49,7 @@ export default function DashboardPage() {
         <Link href="/agenda" className="block">
           <Card className="shadow-lg h-full cursor-pointer transition-all duration-200 ease-in-out hover:shadow-xl hover:ring-1 hover:ring-primary/30">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xl font-medium font-headline">Atividade Recente</CardTitle>
+              <CardTitle>Atividade Recente</CardTitle>
               <Activity className="h-6 w-6 text-accent" />
             </CardHeader>
             <CardContent>
@@ -68,7 +68,7 @@ export default function DashboardPage() {
         <Link href="/legal-reminder" className="block md:col-span-2 lg:col-span-1">
           <Card className="shadow-lg h-full cursor-pointer transition-all duration-200 ease-in-out hover:shadow-xl hover:ring-1 hover:ring-primary/30">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xl font-medium font-headline">Atualizações Importantes</CardTitle>
+              <CardTitle>Atualizações Importantes</CardTitle>
               <AlertTriangle className="h-6 w-6 text-destructive" />
             </CardHeader>
             <CardContent>

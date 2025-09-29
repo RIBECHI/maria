@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -49,11 +50,11 @@ export default function LegalReminderPage() {
 
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
-      <h1 className="text-3xl font-headline font-bold text-primary mb-8">Lembrete Legal (IA)</h1>
+      <h1 className="text-4xl font-headline font-extrabold text-primary mb-8">Lembrete Legal (IA)</h1>
       
       <Card className="shadow-lg max-w-2xl mx-auto">
         <CardHeader>
-          <CardTitle className="text-xl font-headline">Analisar Relevância Legal</CardTitle>
+          <CardTitle>Analisar Relevância Legal</CardTitle>
           <CardDescription>
             Insira a descrição de um caso e as novas atualizações legais para que a IA verifique a relevância.
           </CardDescription>

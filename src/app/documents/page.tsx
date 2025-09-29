@@ -93,7 +93,7 @@ export default function DocumentsPage() {
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-headline font-bold text-primary">Gestão de Documentos</h1>
+        <h1 className="text-4xl font-headline font-extrabold text-primary">Gestão de Documentos</h1>
         <Button onClick={() => handleOpenFormDialog()}>
           <UploadCloud className="mr-2 h-5 w-5" /> Carregar Documento
         </Button>
@@ -110,7 +110,7 @@ export default function DocumentsPage() {
 
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="text-xl font-headline">Lista de Documentos</CardTitle>
+          <CardTitle>Lista de Documentos</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>

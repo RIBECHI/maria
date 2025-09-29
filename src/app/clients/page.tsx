@@ -130,7 +130,7 @@ export default function ClientsPage() {
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-headline font-bold text-primary">Gestão de Clientes</h1>
+        <h1 className="text-4xl font-headline font-extrabold text-primary">Gestão de Clientes</h1>
         <Button onClick={() => handleOpenFormDialog()}>
           <PlusCircle className="mr-2 h-5 w-5" /> Adicionar Cliente
         </Button>
@@ -148,7 +148,7 @@ export default function ClientsPage() {
 
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="text-xl font-headline">Lista de Clientes</CardTitle>
+          <CardTitle>Lista de Clientes</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from 'react';
@@ -112,7 +113,7 @@ export default function AgendaPage() {
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-headline font-bold text-primary">Agenda</h1>
+        <h1 className="text-4xl font-headline font-extrabold text-primary">Agenda</h1>
         <Button onClick={() => handleOpenFormDialog()}>
           <PlusCircle className="mr-2 h-5 w-5" /> Adicionar Evento
         </Button>
@@ -121,7 +122,7 @@ export default function AgendaPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2 shadow-lg">
           <CardHeader>
-            <CardTitle className="text-xl font-headline">Calendário</CardTitle>
+            <CardTitle>Calendário</CardTitle>
           </CardHeader>
           <CardContent className="flex justify-center">
             <Calendar
@@ -140,7 +141,7 @@ export default function AgendaPage() {
 
         <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle className="text-xl font-headline">
+            <CardTitle>
               {selectedDate ? `Eventos de ${format(selectedDate, 'PPP', { locale: ptBR })}` : 'Eventos'}
             </CardTitle>
             <CardDescription>
@@ -189,7 +190,7 @@ export default function AgendaPage() {
 
        <Card className="mt-8 shadow-lg">
         <CardHeader>
-          <CardTitle className="text-xl font-headline">Próximos Eventos</CardTitle>
+          <CardTitle>Próximos Eventos</CardTitle>
           <CardDescription>Visão geral dos seus próximos compromissos.</CardDescription>
         </CardHeader>
         <CardContent>
