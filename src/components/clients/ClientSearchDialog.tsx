@@ -15,16 +15,9 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { List, ListItem } from "@/components/ui/list";
 import type { Client } from "./ClientFormDialog"; // Reutilizando a tipagem
-
-// Lista de clientes de exemplo para prototipagem.
-// Em um aplicativo real, isso viria de um estado global, API, etc.
-const initialClients: Client[] = [
-  { id: "CLI001", name: "Empresa Alpha Ltda.", contact: "contato@alpha.com / (11) 98765-4321", caseCount: 3, lastActivity: "2024-07-20" },
-  { id: "CLI002", name: "João Silva", contact: "joao.silva@email.com / (21) 91234-5678", caseCount: 1, lastActivity: "2024-07-15" },
-  { id: "CLI003", name: "Maria Oliveira", contact: "maria.o@server.com / (31) 99999-8888", caseCount: 5, lastActivity: "2024-07-22" },
-  { id: "CLI004", name: "Construtora Beta S.A.", contact: "juridico@beta.com / (41) 98888-7777", caseCount: 2, lastActivity: "2024-06-30" },
-  { id: "CLI005", name: "Pedro Almeida", contact: "pedro.almeida@mail.com / (51) 97777-6666", caseCount: 0, lastActivity: "2024-07-25"},
-];
+import { getClients } from "@/services/clientService";
+import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ClientSearchDialogProps {
   isOpen: boolean;
@@ -34,8 +27,33 @@ interface ClientSearchDialogProps {
 
 export function ClientSearchDialog({ isOpen, onClose, onClientSelected }: ClientSearchDialogProps) {
   const [searchTerm, setSearchTerm] = React.useState("");
+  const [clients, setClients] = React.useState<Client[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const { toast } = useToast();
 
-  const filteredClients = initialClients.filter(client =>
+  React.useEffect(() => {
+    if (isOpen) {
+      const fetchClients = async () => {
+        setIsLoading(true);
+        try {
+          const clientsFromDb = await getClients();
+          setClients(clientsFromDb);
+        } catch (error) {
+          console.error("Error fetching clients for search:", error);
+          toast({
+            title: "Erro ao buscar clientes",
+            description: "Não foi possível carregar a lista para busca.",
+            variant: "destructive",
+          });
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      fetchClients();
+    }
+  }, [isOpen, toast]);
+
+  const filteredClients = clients.filter(client =>
     client.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -62,7 +80,16 @@ export function ClientSearchDialog({ isOpen, onClose, onClientSelected }: Client
         />
         <ScrollArea className="h-[300px] w-full">
           <List>
-            {filteredClients.length > 0 ? (
+            {isLoading ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <ListItem key={i} className="p-2">
+                    <div className="flex flex-col gap-2">
+                        <Skeleton className="h-4 w-40" />
+                        <Skeleton className="h-3 w-60" />
+                    </div>
+                </ListItem>
+              ))
+            ) : filteredClients.length > 0 ? (
               filteredClients.map((client) => (
                 <ListItem key={client.id} className="p-0">
                   <Button
