@@ -1,25 +1,40 @@
 
 import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
+
+export interface Note {
+  id: string;
+  content: string;
+  createdAt: Timestamp;
+}
 
 const notepadDocRef = doc(db, 'notepad', 'main');
 
 // GET
-export async function getNotepadContent(): Promise<string> {
+export async function getNotes(): Promise<Note[]> {
   const docSnap = await getDoc(notepadDocRef);
-  if (docSnap.exists()) {
-    // Retorna o conteúdo do campo 'content' ou uma string vazia se não existir
-    return docSnap.data().content || "";
+  if (docSnap.exists() && docSnap.data().notes) {
+    const notesData = docSnap.data().notes as any[];
+    // Certifica-se de que createdAt é um objeto Timestamp do Firebase, 
+    // e não uma string, para ordenação correta.
+    return notesData.map(note => ({
+      ...note,
+      createdAt: new Timestamp(note.createdAt.seconds, note.createdAt.nanoseconds)
+    })).sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
   } else {
-    // Se o documento não existe, retorna uma string vazia
-    return "";
+    return [];
   }
 }
 
 // SAVE
-export async function saveNotepadContent(content: string): Promise<void> {
+export async function saveNotes(notes: Omit<Note, 'id'>[]): Promise<void> {
+  // A ordenação já é feita no getNotes e ao adicionar, mas garantimos aqui antes de salvar.
+  const sortedNotes = [...notes].sort((a, b) => 
+    (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0)
+  );
+
   await setDoc(notepadDocRef, {
-    content: content,
+    notes: sortedNotes,
     updatedAt: serverTimestamp(),
   });
 }
