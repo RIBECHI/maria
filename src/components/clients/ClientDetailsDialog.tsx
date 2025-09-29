@@ -75,6 +75,10 @@ export function ClientDetailsDialog({ isOpen, onClose, clientData }: ClientDetai
             <span className={valueClass}>{clientData.name}</span>
           </div>
            <div className={detailItemClass}>
+            <span className={labelClass}>CPF/CNPJ:</span>
+            <span className={valueClass}>{clientData.cpf || "Não informado"}</span>
+          </div>
+           <div className={detailItemClass}>
             <span className={labelClass}>Cidade:</span>
             <span className={valueClass}>{clientData.city || "Não informado"}</span>
           </div>
@@ -87,7 +91,7 @@ export function ClientDetailsDialog({ isOpen, onClose, clientData }: ClientDetai
             <span className={valueClass}>{clientData.caseCount}</span>
           </div>
           <div className={detailItemClass}>
-            <span className={labelClass}>Última Atividade:</span>
+            <span className="font-semibold text-muted-foreground w-[140px] shrink-0">Última Atividade:</span>
             <span className={valueClass}>{clientData.lastActivity}</span>
           </div>
            {clientData.notes && (

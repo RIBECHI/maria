@@ -31,6 +31,7 @@ export interface Client extends DocumentData {
   id: string;
   name: string;
   contact: string;
+  cpf?: string;
   caseCount: number;
   lastActivity: string;
   city?: string;
@@ -40,6 +41,7 @@ export interface Client extends DocumentData {
 const clientFormSchema = z.object({
   name: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres." }),
   contact: z.string().min(10, { message: "O contato deve ter pelo menos 10 caracteres (email ou telefone)." }),
+  cpf: z.string().optional(),
   city: z.string().optional(),
   notes: z.string().optional(),
 });
@@ -61,6 +63,7 @@ export function ClientFormDialog({ isOpen, onClose, onSubmit, clientData }: Clie
     defaultValues: {
       name: "",
       contact: "",
+      cpf: "",
       city: "",
       notes: "",
     },
@@ -71,6 +74,7 @@ export function ClientFormDialog({ isOpen, onClose, onSubmit, clientData }: Clie
       form.reset({
         name: clientData.name,
         contact: clientData.contact,
+        cpf: clientData.cpf || "",
         city: clientData.city || "",
         notes: clientData.notes || "",
       });
@@ -78,6 +82,7 @@ export function ClientFormDialog({ isOpen, onClose, onSubmit, clientData }: Clie
       form.reset({
         name: "",
         contact: "",
+        cpf: "",
         city: "",
         notes: "",
       });
@@ -121,19 +126,34 @@ export function ClientFormDialog({ isOpen, onClose, onSubmit, clientData }: Clie
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="contact"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Contato (Email / Telefone)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: joao.silva@email.com ou (11) 99999-9999" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+               <FormField
+                control={form.control}
+                name="cpf"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CPF/CNPJ</FormLabel>
+                    <FormControl>
+                      <Input placeholder="000.000.000-00" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="contact"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Contato (Email / Telefone)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="(11) 99999-9999" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
              <FormField
               control={form.control}
               name="city"
