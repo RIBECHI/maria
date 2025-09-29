@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, PlusCircle, Trash2, Search } from "lucide-react";
+import { Loader2, PlusCircle, Trash2, Search, UserPlus } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardDescription as CardTimelineDescription, CardHeader, CardTitle as CardTimelineTitle } from "@/components/ui/card";
@@ -48,6 +48,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { ClientSearchDialog } from "@/components/clients/ClientSearchDialog";
+import { ClientFormDialog, type ClientFormValues } from "@/components/clients/ClientFormDialog";
+import { addClient } from "@/services/clientService";
 import { Checkbox } from "@/components/ui/checkbox";
 
 export interface TimelineEvent {
@@ -108,6 +110,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
   const [timelineEventToDelete, setTimelineEventToDelete] = React.useState<TimelineEvent | null>(null);
   const [isDeleteTimelineAlertOpen, setIsDeleteTimelineAlertOpen] = React.useState(false);
   const [isClientSearchOpen, setIsClientSearchOpen] = React.useState(false);
+  const [isNewClientDialogOpen, setIsNewClientDialogOpen] = React.useState(false);
   const { toast } = useToast();
 
   const form = useForm<ProcessFormValues>({
@@ -224,6 +227,22 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
     setIsClientSearchOpen(false);
   };
 
+  const handleAddNewClient = async (data: ClientFormValues) => {
+    try {
+        const newClient = await addClient({
+          ...data,
+          caseCount: 0,
+          lastActivity: new Date().toISOString().split('T')[0],
+        });
+        toast({ title: "Cliente adicionado!", description: `O cliente ${newClient.name} foi adicionado com sucesso.` });
+        form.setValue('client', newClient.name); // Preenche o campo de cliente no formulário do processo
+        setIsNewClientDialogOpen(false); // Fecha o dialog de novo cliente
+      } catch (error) {
+          console.error("Failed to save client: ", error);
+          toast({ title: "Erro ao salvar", description: "Não foi possível salvar o cliente.", variant: "destructive" });
+      }
+  };
+
 
   return (
     <>
@@ -284,6 +303,15 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
                         aria-label="Buscar cliente"
                       >
                         <Search className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setIsNewClientDialogOpen(true)}
+                        aria-label="Adicionar novo cliente"
+                      >
+                        <UserPlus className="h-4 w-4" />
                       </Button>
                     </div>
                     <FormMessage />
@@ -515,6 +543,12 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
       isOpen={isClientSearchOpen}
       onClose={() => setIsClientSearchOpen(false)}
       onClientSelected={handleClientSelected}
+    />
+
+    <ClientFormDialog
+      isOpen={isNewClientDialogOpen}
+      onClose={() => setIsNewClientDialogOpen(false)}
+      onSubmit={handleAddNewClient}
     />
 
     {timelineEventToDelete && (
