@@ -143,7 +143,7 @@ export default function DashboardPage() {
                                 {recentActivities.map((item) => (
                                     <ListItem key={item.id} className="flex items-center gap-3">
                                         {item.icon}
-                                        <div className="flex-1">
+                                        <div className="flex-1 min-w-0">
                                             <p className="truncate">{item.text}</p>
                                             <p className="text-xs text-muted-foreground">{item.time}</p>
                                         </div>
