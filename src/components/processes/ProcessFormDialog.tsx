@@ -153,7 +153,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
               certidao: processData.certidao || false,
               apenso: processData.apenso || "",
             });
-            setCurrentTimeline(processData.timeline || []);
+            setCurrentTimeline((processData.timeline || []).sort((a, b) => parseISO(b.date).getTime() - parseISO(a.date).getTime()));
         } else {
             form.reset({
               processNumber: "",
@@ -183,7 +183,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
       description: data.eventDescription,
       source: data.eventSource,
     };
-    setCurrentTimeline(prev => [...prev, newEvent].sort((a, b) => parseISO(b.date).getTime() - parseISO(a.date).getTime()));
+    setCurrentTimeline(prev => [newEvent, ...prev].sort((a, b) => parseISO(b.date).getTime() - parseISO(a.date).getTime()));
     timelineForm.reset({
       eventDate: format(new Date(), 'yyyy-MM-dd'),
       eventDescription: "",
@@ -212,7 +212,6 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
 
   const handleFormSubmit: SubmitHandler<ProcessFormValues> = async (data) => {
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 700));
     const deadline = data.nextDeadline === '' || data.nextDeadline === '-' ? '-' : format(parseISO(data.nextDeadline + 'T00:00:00'), 'yyyy-MM-dd');
     onSubmit({ ...data, nextDeadline: deadline, timeline: currentTimeline });
     setIsLoading(false);

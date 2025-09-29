@@ -1,6 +1,6 @@
 
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, type DocumentData, query, orderBy, limit } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, type DocumentData, query, orderBy, limit, getDoc } from 'firebase/firestore';
 import type { Process, ProcessFormValues, TimelineEvent } from '@/components/processes/ProcessFormDialog';
 
 const processesCollectionRef = collection(db, 'processes');
@@ -34,7 +34,7 @@ export async function getRecentProcesses(count?: number): Promise<Process[]> {
 
 
 // CREATE
-export async function addProcess(processData: Omit<Process, 'id'>): Promise<Process> {
+export async function addProcess(processData: Omit<Process, 'id' | 'createdAt'>): Promise<Process> {
   const docRef = await addDoc(processesCollectionRef, {
     ...processData,
     createdAt: serverTimestamp(),
