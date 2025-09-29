@@ -8,7 +8,7 @@ import { List, ListItem } from "@/components/ui/list";
 import { CalendarDays, Activity, Briefcase, FilePlus2, UserPlus, CheckSquare, Hourglass } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getEventsForDashboard } from "@/services/eventService";
-import { getRecentProcesses } from "@/services/processService";
+import { getProcesses, getRecentProcesses } from "@/services/processService";
 import { getRecentClients } from "@/services/clientService";
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -39,32 +39,38 @@ export default function DashboardPage() {
                     getEventsForDashboard(5),
                     getRecentProcesses(3),
                     getRecentClients(2),
-                    getRecentProcesses(), // Busca todos para estatísticas
+                    getProcesses(), // Busca todos para estatísticas
                 ]);
 
                 setUpcomingEvents(events);
 
                 // Montar Atividades Recentes
-                const combinedActivities = [
-                    ...processes.map(p => ({
-                        id: p.id,
-                        type: 'process' as const,
-                        text: `Novo processo para ${p.client}`,
-                        time: p.createdAt ? format(p.createdAt.toDate(), 'dd/MM/yyyy') : '',
-                        icon: <FilePlus2 className="h-5 w-5 text-accent" />
-                    })),
-                    ...clients.map(c => ({
-                        id: c.id,
-                        type: 'client' as const,
-                        text: `Cliente ${c.name} adicionado`,
-                        time: c.createdAt ? format(c.createdAt.toDate(), 'dd/MM/yyyy') : '',
-                        icon: <UserPlus className="h-5 w-5 text-accent" />
-                    }))
-                ];
-                // @ts-ignore
-                combinedActivities.sort((a, b) => new Date(b.time) - new Date(a.time));
-                // @ts-ignore
-                setRecentActivities(combinedActivities.slice(0, 5));
+                const processActivities = processes.map(p => ({
+                    id: p.id,
+                    type: 'process' as const,
+                    text: `Novo processo para ${p.client}`,
+                    createdAt: p.createdAt ? parseISO(p.createdAt) : new Date(0),
+                    icon: <FilePlus2 className="h-5 w-5 text-accent" />
+                }));
+
+                const clientActivities = clients.map(c => ({
+                    id: c.id,
+                    type: 'client' as const,
+                    text: `Cliente ${c.name} adicionado`,
+                    createdAt: c.createdAt ? parseISO(c.createdAt) : new Date(0),
+                    icon: <UserPlus className="h-5 w-5 text-accent" />
+                }));
+                
+                const combinedActivities = [...processActivities, ...clientActivities];
+
+                combinedActivities.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+                
+                const formattedActivities = combinedActivities.slice(0, 5).map(activity => ({
+                    ...activity,
+                    time: format(activity.createdAt, 'dd/MM/yyyy', { locale: ptBR }),
+                }));
+                
+                setRecentActivities(formattedActivities);
 
                 // Calcular Estatísticas de Processos
                 const stats = allProcessesForStats.reduce((acc, p) => {

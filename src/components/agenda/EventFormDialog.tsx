@@ -45,6 +45,7 @@ export interface CalendarEvent extends DocumentData {
   time?: string; // HH:MM (optional)
   client?: string; // Optional
   process?: string; // Optional, agora será o ID do processo
+  createdAt?: string;
 }
 
 const eventFormSchema = z.object({

@@ -2,7 +2,7 @@
 "use server";
 
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, orderBy, limit, serverTimestamp, getDoc, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, orderBy, limit, serverTimestamp, getDoc } from 'firebase/firestore';
 import type { CalendarEvent, EventFormValues } from '@/components/agenda/EventFormDialog';
 import { startOfToday } from 'date-fns';
 import { format } from 'date-fns/fp';
@@ -11,11 +11,19 @@ const eventsCollectionRef = collection(db, 'events');
 
 const fromFirestore = (docSnap: any): CalendarEvent => {
     const data = docSnap.data();
-    return {
+    const event: CalendarEvent = {
         id: docSnap.id,
-        ...data,
-        // As datas já estão como string 'YYYY-MM-DD', então não precisam de conversão complexa
-    } as CalendarEvent;
+        date: data.date,
+        type: data.type,
+        description: data.description,
+        time: data.time,
+        client: data.client,
+        process: data.process,
+    };
+    if (data.createdAt) {
+        event.createdAt = data.createdAt.toDate().toISOString();
+    }
+    return event;
 };
 
 // READ ALL

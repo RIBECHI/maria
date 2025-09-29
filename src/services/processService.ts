@@ -20,11 +20,24 @@ const removeUndefinedKeys = (obj: Record<string, any>) => {
 // Helper para converter dados do Firestore
 const fromFirestore = (docSnap: DocumentData): Process => {
   const data = docSnap.data();
-  return {
+  const process: Process = {
     id: docSnap.id,
-    ...data,
+    processNumber: data.processNumber,
+    client: data.client,
+    type: data.type,
+    status: data.status,
+    nextDeadline: data.nextDeadline,
+    documents: data.documents,
+    monitorProjudi: data.monitorProjudi,
+    uhd: data.uhd,
+    certidao: data.certidao,
+    apenso: data.apenso,
     timeline: (data.timeline || []).sort((a: TimelineEvent, b: TimelineEvent) => new Date(b.date).getTime() - new Date(a.date).getTime()),
-  } as Process;
+  };
+  if (data.createdAt) {
+    process.createdAt = data.createdAt.toDate().toISOString();
+  }
+  return process;
 };
 
 // READ ALL

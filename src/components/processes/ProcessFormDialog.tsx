@@ -51,7 +51,7 @@ import { ClientSearchDialog } from "@/components/clients/ClientSearchDialog";
 import { ClientFormDialog, type ClientFormValues } from "@/components/clients/ClientFormDialog";
 import { addClient } from "@/services/clientService";
 import { Checkbox } from "@/components/ui/checkbox";
-import type { Timestamp } from "firebase/firestore";
+import type { DocumentData } from "firebase/firestore";
 
 export interface TimelineEvent {
   id: string;
@@ -60,7 +60,7 @@ export interface TimelineEvent {
   source: 'Resumo de E-mail PROJUDI' | 'Nota Manual' | 'Prazo' | 'Audiência' | 'Outro';
 }
 
-export interface Process {
+export interface Process extends DocumentData {
   id: string;
   processNumber: string;
   client: string;
@@ -73,7 +73,7 @@ export interface Process {
   certidao?: boolean;
   apenso?: string;
   timeline?: TimelineEvent[];
-  createdAt: Timestamp;
+  createdAt?: string;
 }
 
 const processFormSchema = z.object({

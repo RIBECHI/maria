@@ -25,7 +25,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
-import type { DocumentData, Timestamp } from "firebase/firestore";
+import type { DocumentData } from "firebase/firestore";
 
 export interface Client extends DocumentData {
   id: string;
@@ -36,7 +36,7 @@ export interface Client extends DocumentData {
   lastActivity: string;
   city?: string;
   notes?: string;
-  createdAt: Timestamp;
+  createdAt?: string; // Can be a string (ISO date) or undefined
 }
 
 const clientFormSchema = z.object({

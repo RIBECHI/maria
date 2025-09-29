@@ -1,15 +1,15 @@
 
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy, limit, type DocumentData } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy, limit, type DocumentData, getDoc } from 'firebase/firestore';
 import type { Client, ClientFormValues } from '@/components/clients/ClientFormDialog';
 import { Timestamp } from 'firebase/firestore';
 
 const clientsCollectionRef = collection(db, 'clients');
 
-const fromFirestore = (doc: DocumentData): Client => {
-  const data = doc.data();
-  return {
-    id: doc.id,
+const fromFirestore = (docSnap: DocumentData): Client => {
+  const data = docSnap.data();
+  const client: Client = {
+    id: docSnap.id,
     name: data.name,
     contact: data.contact,
     cpf: data.cpf,
@@ -17,8 +17,11 @@ const fromFirestore = (doc: DocumentData): Client => {
     lastActivity: data.lastActivity,
     city: data.city,
     notes: data.notes,
-    createdAt: data.createdAt,
-  } as Client;
+  };
+  if (data.createdAt) {
+      client.createdAt = data.createdAt.toDate().toISOString();
+  }
+  return client;
 };
 
 
@@ -42,8 +45,8 @@ export async function addClient(clientData: Omit<Client, 'id' | 'createdAt'>): P
         ...clientData,
         createdAt: serverTimestamp(),
     });
-    const createdAt = Timestamp.now(); // Simula o timestamp para retorno imediato
-    return { id: docRef.id, ...clientData, createdAt } as Client;
+    const snapshot = await getDoc(docRef);
+    return fromFirestore(snapshot);
 }
 
 // UPDATE
