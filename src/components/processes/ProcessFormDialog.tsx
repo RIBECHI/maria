@@ -249,7 +249,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleDialogClose()}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle>{processData ? "Editar Processo" : "Adicionar Novo Processo"}</DialogTitle>
+          <DialogTitle className="text-primary">{processData ? "Editar Processo" : "Adicionar Novo Processo"}</DialogTitle>
           <DialogDescription>
             {processData ? "Altere os dados do processo abaixo." : "Preencha os dados para cadastrar um novo processo."}
           </DialogDescription>
@@ -428,7 +428,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
             {/* Seção da Linha do Tempo */}
             <Card className="mt-6 pt-2">
               <CardHeader>
-                <CardTimelineTitle className="text-lg font-headline">Linha do Tempo do Processo</CardTimelineTitle>
+                <CardTimelineTitle className="text-lg font-headline text-foreground">Linha do Tempo do Processo</CardTimelineTitle>
                 <CardTimelineDescription>Adicione e visualize eventos importantes do processo.</CardTimelineDescription>
               </CardHeader>
               <CardContent>
@@ -572,6 +572,8 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
     </>
   );
 }
+    
+
     
 
     
