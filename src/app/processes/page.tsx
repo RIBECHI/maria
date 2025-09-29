@@ -131,7 +131,8 @@ export default function ProcessesPage() {
   const filteredProcesses = processes.filter(proc =>
     (proc.processNumber && proc.processNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (proc.client && proc.client.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (proc.type && proc.type.toLowerCase().includes(searchTerm.toLowerCase()))
+    (proc.type && proc.type.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (proc.apenso && proc.apenso.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
 
@@ -147,7 +148,7 @@ export default function ProcessesPage() {
       <div className="mb-6 flex items-center gap-2">
         <Search className="h-5 w-5 text-muted-foreground" />
         <Input
-          placeholder="Buscar processos por Nº, cliente ou tipo..."
+          placeholder="Buscar processos por Nº, apenso, cliente ou tipo..."
           className="max-w-sm"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -163,6 +164,7 @@ export default function ProcessesPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Nº Processo</TableHead>
+                <TableHead>Apenso</TableHead>
                 <TableHead>Cliente</TableHead>
                 <TableHead>Tipo</TableHead>
                 <TableHead>Status</TableHead>
@@ -178,6 +180,7 @@ export default function ProcessesPage() {
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
                     <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-40" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-28 rounded-full" /></TableCell>
@@ -192,6 +195,7 @@ export default function ProcessesPage() {
                 filteredProcesses.map((process) => (
                   <TableRow key={process.id} className="hover:bg-muted/50">
                     <TableCell className="font-medium" onClick={() => handleViewDetails(process)}>{process.processNumber}</TableCell>
+                    <TableCell onClick={() => handleViewDetails(process)}>{process.apenso}</TableCell>
                     <TableCell onClick={() => handleViewDetails(process)}>{process.client}</TableCell>
                     <TableCell onClick={() => handleViewDetails(process)}>{process.type}</TableCell>
                     <TableCell onClick={() => handleViewDetails(process)}>
@@ -231,7 +235,7 @@ export default function ProcessesPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center h-24">
+                  <TableCell colSpan={10} className="text-center h-24">
                     Nenhum processo encontrado.
                   </TableCell>
                 </TableRow>
@@ -267,7 +271,5 @@ export default function ProcessesPage() {
     </div>
   );
 }
-
-    
 
     

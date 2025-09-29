@@ -68,6 +68,7 @@ export interface Process {
   monitorProjudi?: boolean;
   uhd?: number;
   certidao?: boolean;
+  apenso?: string;
   timeline?: TimelineEvent[];
 }
 
@@ -80,6 +81,7 @@ const processFormSchema = z.object({
   monitorProjudi: z.boolean().optional(),
   uhd: z.coerce.number().min(1, "UHD deve ser no mínimo 1").max(10, "UHD deve ser no máximo 10").optional(),
   certidao: z.boolean().optional(),
+  apenso: z.string().optional(),
 });
 
 export type ProcessFormValues = z.infer<typeof processFormSchema>;
@@ -119,6 +121,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
       monitorProjudi: false,
       uhd: undefined,
       certidao: false,
+      apenso: "",
     },
   });
 
@@ -143,6 +146,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
               monitorProjudi: processData.monitorProjudi || false,
               uhd: processData.uhd || undefined,
               certidao: processData.certidao || false,
+              apenso: processData.apenso || "",
             });
             setCurrentTimeline(processData.timeline || []);
         } else {
@@ -155,6 +159,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
               monitorProjudi: false,
               uhd: undefined,
               certidao: false,
+              apenso: "",
             });
             setCurrentTimeline([]);
         }
@@ -233,19 +238,34 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
         <ScrollArea className="pr-6 -mr-6 max-h-[calc(80vh-150px)]">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 py-4 pr-1">
-            <FormField
-              control={form.control}
-              name="processNumber"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Número do Processo</FormLabel>
-                  <FormControl>
-                    <Input placeholder="0000000-00.0000.0.00.0000" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="processNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Número do Processo</FormLabel>
+                      <FormControl>
+                        <Input placeholder="0000000-00.0000.0.00.0000" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="apenso"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Apenso (Opcional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nº do processo externo" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+            </div>
              <FormField
                 control={form.control}
                 name="client"
@@ -518,11 +538,6 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
     </>
   );
 }
-
-
-
-    
-
     
 
     

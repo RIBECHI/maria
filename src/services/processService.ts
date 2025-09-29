@@ -19,6 +19,7 @@ const fromFirestore = (doc: DocumentData): Process => {
     monitorProjudi: data.monitorProjudi || false,
     uhd: data.uhd,
     certidao: data.certidao || false,
+    apenso: data.apenso,
     timeline: data.timeline || [], // Timeline é um array no documento principal
     // createdAt e updatedAt podem ser adicionados se necessário
   } as Process;
@@ -63,7 +64,5 @@ export async function deleteProcess(processId: string): Promise<void> {
   const processDocRef = doc(db, 'processes', processId);
   await deleteDoc(processDocRef);
 }
-
-    
 
     
