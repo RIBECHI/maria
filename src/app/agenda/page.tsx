@@ -184,7 +184,7 @@ export default function AgendaPage() {
                 {eventsForSelectedDate.map(event => {
                   const eventTypeDetails = getEventTypeDetails(event.type);
                   return (
-                    <ListItem key={event.id} className="mb-3 p-3 border rounded-md shadow-sm hover:bg-muted/50 group">
+                    <ListItem key={event.id} onClick={() => handleOpenFormDialog(event)} className="mb-3 p-3 border rounded-md shadow-sm hover:bg-muted/50 group cursor-pointer">
                       <div className="flex items-start space-x-3">
                         <span className={`p-2 rounded-full ${eventTypeDetails.color}`}>
                           {eventTypeDetails.icon}
@@ -199,10 +199,10 @@ export default function AgendaPage() {
                           {event.process && <p className="text-sm text-muted-foreground">Processo: {event.process}</p>}
                         </div>
                         <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button variant="ghost" size="icon" className="hover:text-accent" onClick={() => handleOpenFormDialog(event)}>
+                            <Button variant="ghost" size="icon" className="hover:text-accent" onClick={(e) => { e.stopPropagation(); handleOpenFormDialog(event); }}>
                                 <Edit3 className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="hover:text-destructive" onClick={() => handleDeleteConfirmation(event)}>
+                            <Button variant="ghost" size="icon" className="hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleDeleteConfirmation(event); }}>
                                 <Trash2 className="h-4 w-4" />
                             </Button>
                         </div>
@@ -234,7 +234,7 @@ export default function AgendaPage() {
               {upcomingEvents.map(event => {
                 const eventTypeDetails = getEventTypeDetails(event.type);
                 return (
-                  <ListItem key={event.id} className="mb-3 p-3 border rounded-md shadow-sm hover:bg-muted/50 group">
+                  <ListItem key={event.id} onClick={() => handleOpenFormDialog(event)} className="mb-3 p-3 border rounded-md shadow-sm hover:bg-muted/50 group cursor-pointer">
                     <div className="flex items-start space-x-3">
                       <span className={`p-2 rounded-full ${eventTypeDetails.color}`}>
                         {eventTypeDetails.icon}
@@ -250,10 +250,10 @@ export default function AgendaPage() {
                         {event.process && <p className="text-sm text-muted-foreground">Processo: {event.process}</p>}
                       </div>
                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button variant="ghost" size="icon" className="hover:text-accent" onClick={() => handleOpenFormDialog(event)}>
+                            <Button variant="ghost" size="icon" className="hover:text-accent" onClick={(e) => { e.stopPropagation(); handleOpenFormDialog(event); }}>
                                 <Edit3 className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="hover:text-destructive" onClick={() => handleDeleteConfirmation(event)}>
+                            <Button variant="ghost" size="icon" className="hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleDeleteConfirmation(event); }}>
                                 <Trash2 className="h-4 w-4" />
                             </Button>
                         </div>
