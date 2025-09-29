@@ -1,12 +1,14 @@
 
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
   "projectId": "lexmanager",
   "appId": "1:487471917143:web:82033f194252d4ada95b12",
   "apiKey": "AIzaSyAgRM15QQg0Kf0BMFhP7V-GmN5aPF_Z3zk",
   "authDomain": "lexmanager.firebaseapp.com",
+  "storageBucket": "lexmanager.appspot.com",
   "measurementId": "",
   "messagingSenderId": "487471917143"
 };
@@ -14,5 +16,6 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const db = getFirestore(app);
+const storage = getStorage(app);
 
-export { app, db };
+export { app, db, storage };

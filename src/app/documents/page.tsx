@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { UploadCloud, Eye, Download, Edit, Trash2, Search } from "lucide-react";
+import { UploadCloud, Download, Edit, Trash2, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -20,7 +20,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { DocumentFormDialog, type DocumentFormValues, type Document } from "@/components/documents/DocumentFormDialog";
-import { getDocuments, addDocument, updateDocument, deleteDocument } from "@/services/documentService";
+import { getDocuments, addDocument, updateDocument, deleteDocument, downloadFile } from "@/services/documentService";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function DocumentsPage() {
@@ -64,14 +64,22 @@ export default function DocumentsPage() {
     setIsFormDialogOpen(false);
   };
 
-  const handleSubmitDocumentForm = async (data: DocumentFormValues) => {
+  const handleSubmitDocumentForm = async (data: DocumentFormValues, file?: File) => {
     try {
       if (editingDocument) {
+        // A lógica de atualização de arquivo não é suportada nesta versão, apenas metadados
+        if (file) {
+            toast({ title: "Aviso", description: "A substituição de arquivos não é suportada. Apenas os metadados foram atualizados." });
+        }
         const updatedDoc = await updateDocument(editingDocument.id, data);
         setDocuments(documents.map(d => (d.id === editingDocument.id ? { ...d, ...updatedDoc } : d)));
         toast({ title: "Documento atualizado!", description: `O documento ${data.name} foi atualizado.` });
       } else {
-        const newDocument = await addDocument(data);
+        if (!file) {
+            toast({ title: "Arquivo Faltando", description: "Por favor, selecione um arquivo para carregar.", variant: "destructive"});
+            return;
+        }
+        const newDocument = await addDocument(data, file);
         setDocuments(prevDocs => [newDocument, ...prevDocs]);
         toast({ title: "Documento adicionado!", description: `O documento ${newDocument.name} foi adicionado.` });
       }
@@ -90,7 +98,7 @@ export default function DocumentsPage() {
   const confirmDeleteDocument = async () => {
     if (documentToDelete) {
       try {
-        await deleteDocument(documentToDelete.id);
+        await deleteDocument(documentToDelete);
         setDocuments(documents.filter(d => d.id !== documentToDelete.id));
         toast({ title: "Documento excluído!", description: `O documento ${documentToDelete.name} foi excluído.`});
       } catch (error) {
@@ -103,14 +111,14 @@ export default function DocumentsPage() {
     }
   };
 
-  const handleViewDocument = (doc: Document) => {
-    console.log("Visualizar documento:", doc);
-    toast({ title: "Ação: Visualizar", description: `Visualizando detalhes de: ${doc.name}` });
-  };
-
-  const handleDownloadDocument = (doc: Document) => {
-    console.log("Download documento:", doc);
-    toast({ title: "Ação: Download", description: `Iniciando download de: ${doc.name}` });
+  const handleDownloadDocument = async (doc: Document) => {
+    toast({ title: "Download iniciado", description: `Baixando ${doc.name}...` });
+    try {
+        await downloadFile(doc.filePath, doc.name);
+    } catch(error) {
+        console.error("Download failed", error);
+        toast({ title: "Falha no Download", description: "Não foi possível baixar o arquivo.", variant: "destructive" });
+    }
   };
 
   const filteredDocuments = documents.filter(doc =>
@@ -174,9 +182,6 @@ export default function DocumentsPage() {
                     </TableCell>
                     <TableCell>{doc.uploadDate}</TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" className="hover:text-accent" onClick={() => handleViewDocument(doc)}>
-                        <Eye className="h-4 w-4" />
-                      </Button>
                       <Button variant="ghost" size="icon" className="hover:text-accent" onClick={() => handleDownloadDocument(doc)}>
                         <Download className="h-4 w-4" />
                       </Button>
@@ -214,7 +219,7 @@ export default function DocumentsPage() {
             <AlertDialogHeader>
               <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
               <AlertDialogDescription>
-                Tem certeza que deseja excluir o documento "{documentToDelete.name}"? Esta ação não poderá ser desfeita.
+                Tem certeza que deseja excluir o documento "{documentToDelete.name}"? Esta ação não poderá ser desfeita. O arquivo será permanentemente removido.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
