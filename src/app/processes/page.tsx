@@ -20,38 +20,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ProcessFormDialog, type ProcessFormValues, type Process, type TimelineEvent } from "@/components/processes/ProcessFormDialog";
-
-const initialProcesses: Process[] = [
-  { 
-    id: "PROC001",
-    processNumber: "5012345-67.2024.8.09.0051", 
-    client: "Empresa Alpha Ltda.", 
-    type: "Cível", 
-    status: "Em Andamento", 
-    nextDeadline: "2024-08-15", 
-    documents: 5, 
-    monitorProjudi: true,
-    timeline: [
-      { id: "TL1", date: "2024-07-20", description: "Publicação de despacho referente à perícia.", source: "Resumo de E-mail PROJUDI"},
-      { id: "TL2", date: "2024-07-15", description: "Petição protocolada.", source: "Nota Manual"},
-    ]
-  },
-  { id: "PROC002", processNumber: "0056789-12.2023.8.09.0001", client: "João Silva", type: "Trabalhista", status: "Concluído", nextDeadline: "-", documents: 3, monitorProjudi: false, timeline: [] },
-  { 
-    id: "PROC003", 
-    processNumber: "5554321-98.2022.8.09.0024",
-    client: "Maria Oliveira", 
-    type: "Tributário", 
-    status: "Suspenso", 
-    nextDeadline: "2024-09-01", 
-    documents: 8, 
-    monitorProjudi: true,
-    timeline: [
-       { id: "TL3", date: "2024-06-10", description: "Suspensão do processo deferida.", source: "Resumo de E-mail PROJUDI"},
-    ]
-  },
-  { id: "PROC004", processNumber: "1000123-45.2024.8.09.0175", client: "Construtora Beta S.A.", type: "Administrativo", status: "Em Andamento", nextDeadline: "2024-07-30", documents: 2, monitorProjudi: false, timeline: [] },
-];
+import { getProcesses, addProcess, updateProcess, deleteProcess } from "@/services/processService";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const getStatusBadgeVariant = (status: string) => {
   switch (status) {
@@ -63,12 +33,35 @@ const getStatusBadgeVariant = (status: string) => {
 }
 
 export default function ProcessesPage() {
-  const [processes, setProcesses] = React.useState<Process[]>(initialProcesses);
+  const [processes, setProcesses] = React.useState<Process[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
   const [isFormDialogOpen, setIsFormDialogOpen] = React.useState(false);
   const [editingProcess, setEditingProcess] = React.useState<Process | undefined>(undefined);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const [processToDelete, setProcessToDelete] = React.useState<Process | null>(null);
+  const [searchTerm, setSearchTerm] = React.useState("");
   const { toast } = useToast();
+
+  const fetchProcesses = React.useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const processesFromDb = await getProcesses();
+      setProcesses(processesFromDb);
+    } catch (error) {
+      console.error("Error fetching processes:", error);
+      toast({
+        title: "Erro ao buscar processos",
+        description: "Não foi possível carregar a lista de processos. Tente novamente mais tarde.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  React.useEffect(() => {
+    fetchProcesses();
+  }, [fetchProcesses]);
 
   const handleOpenFormDialog = (proc?: Process) => {
     setEditingProcess(proc);
@@ -80,30 +73,29 @@ export default function ProcessesPage() {
     setIsFormDialogOpen(false);
   };
 
-  const handleSubmitProcessForm = (data: ProcessFormValues & { timeline?: TimelineEvent[] }) => {
-    if (editingProcess) {
-      setProcesses(processes.map(p => 
-        p.id === editingProcess.id ? { 
-            ...editingProcess, 
-            ...data, 
-            documents: editingProcess.documents, // Manter contagem de documentos existente
-            monitorProjudi: data.monitorProjudi,
-            timeline: data.timeline || editingProcess.timeline // Atualizar timeline
-        } : p
-      ));
-      toast({ title: "Processo atualizado!", description: `O processo ${data.client} - ${data.type} foi atualizado.` });
-    } else {
-      const newProcess: Process = {
-        id: `PROC${String(processes.length + 1).padStart(3, '0')}`,
-        ...data,
-        documents: 0, 
-        monitorProjudi: data.monitorProjudi,
-        timeline: data.timeline || [] // Inicializar timeline
-      };
-      setProcesses([...processes, newProcess]);
-      toast({ title: "Processo adicionado!", description: `Novo processo para ${newProcess.client} foi adicionado.` });
+  const handleSubmitProcessForm = async (data: ProcessFormValues & { timeline?: TimelineEvent[] }) => {
+    try {
+      if (editingProcess) {
+        const updatedData = { ...data, timeline: data.timeline || editingProcess.timeline };
+        const updatedProcess = await updateProcess(editingProcess.id, updatedData);
+        setProcesses(processes.map(p => (p.id === editingProcess.id ? updatedProcess : p)));
+        toast({ title: "Processo atualizado!", description: `O processo ${data.client} - ${data.type} foi atualizado.` });
+      } else {
+        const newProcessData = {
+          ...data,
+          documents: 0,
+          timeline: data.timeline || []
+        };
+        const newProcess = await addProcess(newProcessData);
+        setProcesses(prev => [...prev, newProcess]);
+        toast({ title: "Processo adicionado!", description: `Novo processo para ${newProcess.client} foi adicionado.` });
+      }
+      handleCloseFormDialog();
+      fetchProcesses(); // Re-fetch to ensure data is consistent, especially with sub-collections
+    } catch (error) {
+      console.error("Failed to save process:", error);
+      toast({ title: "Erro ao salvar", description: "Não foi possível salvar o processo.", variant: "destructive" });
     }
-    handleCloseFormDialog();
   };
 
   const handleDeleteConfirmation = (proc: Process) => {
@@ -111,13 +103,20 @@ export default function ProcessesPage() {
     setIsDeleteDialogOpen(true);
   };
 
-  const confirmDeleteProcess = () => {
+  const confirmDeleteProcess = async () => {
     if (processToDelete) {
-      setProcesses(processes.filter(p => p.id !== processToDelete.id));
-      toast({ title: "Processo excluído!", description: `O processo ${processToDelete.id} foi excluído.`});
-      setProcessToDelete(null);
+      try {
+        await deleteProcess(processToDelete.id);
+        setProcesses(processes.filter(p => p.id !== processToDelete.id));
+        toast({ title: "Processo excluído!", description: `O processo ${processToDelete.id} foi excluído.`});
+      } catch (error) {
+        console.error("Failed to delete process:", error);
+        toast({ title: "Erro ao excluir", description: "Não foi possível excluir o processo.", variant: "destructive" });
+      } finally {
+        setProcessToDelete(null);
+        setIsDeleteDialogOpen(false);
+      }
     }
-    setIsDeleteDialogOpen(false);
   };
   
   const handleOpenFolder = (proc: Process) => {
@@ -126,11 +125,14 @@ export default function ProcessesPage() {
   };
   
   const handleViewDetails = (proc: Process) => {
-    // Por enquanto, vamos abrir o dialog de edição que agora contém a linha do tempo.
-    // No futuro, poderia ser um dialog de visualização dedicado.
     handleOpenFormDialog(proc);
-    // toast({ title: "Visualizar Detalhes", description: `Mostrando detalhes/timeline do processo ${proc.id}` });
   };
+
+  const filteredProcesses = processes.filter(proc =>
+    (proc.processNumber && proc.processNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (proc.client && proc.client.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (proc.type && proc.type.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
 
 
   return (
@@ -147,6 +149,8 @@ export default function ProcessesPage() {
         <Input
           placeholder="Buscar processos por Nº, cliente ou tipo..."
           className="max-w-sm"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
         />
       </div>
 
@@ -169,39 +173,60 @@ export default function ProcessesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {processes.map((process) => (
-                <TableRow key={process.id}>
-                  <TableCell className="font-medium">{process.processNumber}</TableCell>
-                  <TableCell>{process.client}</TableCell>
-                  <TableCell>{process.type}</TableCell>
-                  <TableCell>
-                    <Badge variant={getStatusBadgeVariant(process.status) as any}>{process.status}</Badge>
-                  </TableCell>
-                  <TableCell>{process.nextDeadline}</TableCell>
-                  <TableCell className="text-center">{process.documents}</TableCell>
-                  <TableCell className="text-center">
-                    {process.monitorProjudi ? (
-                      <CheckCircle className="h-5 w-5 text-green-600 mx-auto" />
-                    ) : (
-                      <XCircle className="h-5 w-5 text-red-500 mx-auto" />
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" className="hover:text-accent" onClick={() => handleViewDetails(process)} title="Ver Detalhes/Timeline">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="hover:text-accent" onClick={() => handleOpenFormDialog(process)} title="Editar Processo">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="hover:text-accent" onClick={() => handleOpenFolder(process)} title="Abrir Pasta (Simulado)">
-                      <FolderOpen className="h-4 w-4" />
-                    </Button>
-                     <Button variant="ghost" size="icon" className="hover:text-destructive" onClick={() => handleDeleteConfirmation(process)} title="Excluir Processo">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-6 w-28 rounded-full" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell className="text-center"><Skeleton className="h-4 w-8 mx-auto" /></TableCell>
+                    <TableCell className="text-center"><Skeleton className="h-5 w-5 rounded-full mx-auto" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-8 w-24" /></TableCell>
+                  </TableRow>
+                ))
+              ) : filteredProcesses.length > 0 ? (
+                filteredProcesses.map((process) => (
+                  <TableRow key={process.id} className="hover:bg-muted/50">
+                    <TableCell className="font-medium" onClick={() => handleViewDetails(process)}>{process.processNumber}</TableCell>
+                    <TableCell onClick={() => handleViewDetails(process)}>{process.client}</TableCell>
+                    <TableCell onClick={() => handleViewDetails(process)}>{process.type}</TableCell>
+                    <TableCell onClick={() => handleViewDetails(process)}>
+                      <Badge variant={getStatusBadgeVariant(process.status) as any}>{process.status}</Badge>
+                    </TableCell>
+                    <TableCell onClick={() => handleViewDetails(process)}>{process.nextDeadline}</TableCell>
+                    <TableCell className="text-center" onClick={() => handleViewDetails(process)}>{process.documents}</TableCell>
+                    <TableCell className="text-center" onClick={() => handleViewDetails(process)}>
+                      {process.monitorProjudi ? (
+                        <CheckCircle className="h-5 w-5 text-green-600 mx-auto" />
+                      ) : (
+                        <XCircle className="h-5 w-5 text-red-500 mx-auto" />
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" className="hover:text-accent" onClick={() => handleViewDetails(process)} title="Ver Detalhes/Timeline">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="hover:text-accent" onClick={() => handleOpenFormDialog(process)} title="Editar Processo">
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="hover:text-accent" onClick={() => handleOpenFolder(process)} title="Abrir Pasta (Simulado)">
+                        <FolderOpen className="h-4 w-4" />
+                      </Button>
+                       <Button variant="ghost" size="icon" className="hover:text-destructive" onClick={() => handleDeleteConfirmation(process)} title="Excluir Processo">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center h-24">
+                    Nenhum processo encontrado.
                   </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </CardContent>
@@ -233,7 +258,5 @@ export default function ProcessesPage() {
     </div>
   );
 }
-
-
 
     
