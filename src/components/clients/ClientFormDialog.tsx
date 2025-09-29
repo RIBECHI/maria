@@ -36,6 +36,7 @@ export interface Client extends DocumentData {
   lastActivity: string;
   city?: string;
   notes?: string;
+  createdAt: Timestamp;
 }
 
 const clientFormSchema = z.object({

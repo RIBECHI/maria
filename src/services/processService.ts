@@ -1,34 +1,37 @@
 
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, type DocumentData } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, type DocumentData, query, orderBy, limit } from 'firebase/firestore';
 import type { Process, ProcessFormValues, TimelineEvent } from '@/components/processes/ProcessFormDialog';
 
 const processesCollectionRef = collection(db, 'processes');
 
 // Helper para converter dados do Firestore
-const fromFirestore = (doc: DocumentData): Process => {
-  const data = doc.data();
+const fromFirestore = (docSnap: DocumentData): Process => {
+  const data = docSnap.data();
   return {
-    id: doc.id,
-    processNumber: data.processNumber,
-    client: data.client,
-    type: data.type,
-    status: data.status,
-    nextDeadline: data.nextDeadline,
-    documents: data.documents || 0,
-    monitorProjudi: data.monitorProjudi || false,
-    uhd: data.uhd,
-    certidao: data.certidao || false,
-    apenso: data.apenso,
+    id: docSnap.id,
+    ...data,
     timeline: (data.timeline || []).sort((a: TimelineEvent, b: TimelineEvent) => new Date(b.date).getTime() - new Date(a.date).getTime()),
   } as Process;
 };
 
-// READ
+// READ ALL
 export async function getProcesses(): Promise<Process[]> {
-  const querySnapshot = await getDocs(processesCollectionRef);
+  const q = query(processesCollectionRef, orderBy("createdAt", "desc"));
+  const querySnapshot = await getDocs(q);
   return querySnapshot.docs.map(fromFirestore);
 }
+
+// READ RECENT
+export async function getRecentProcesses(count?: number): Promise<Process[]> {
+    const q = count 
+        ? query(processesCollectionRef, orderBy("createdAt", "desc"), limit(count))
+        : query(processesCollectionRef, orderBy("createdAt", "desc"));
+
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(fromFirestore);
+}
+
 
 // CREATE
 export async function addProcess(processData: Omit<Process, 'id'>): Promise<Process> {
@@ -36,7 +39,8 @@ export async function addProcess(processData: Omit<Process, 'id'>): Promise<Proc
     ...processData,
     createdAt: serverTimestamp(),
   });
-  return { id: docRef.id, ...processData } as Process;
+  const snapshot = await getDoc(docRef);
+  return fromFirestore(snapshot);
 }
 
 // UPDATE
@@ -47,15 +51,8 @@ export async function updateProcess(processId: string, processData: ProcessFormV
     updatedAt: serverTimestamp(),
   });
 
-  // Re-fetch or build the updated object to return
-  const updatedDocData: Process = {
-    id: processId,
-    ...processData,
-    documents: 0, // Should probably fetch existing doc to keep this
-    // For simplicity, returning what was passed, but fetching is safer
-  };
-
-  return fromFirestore({ id: processId, data: () => updatedDocData });
+  const snapshot = await getDoc(processDocRef);
+  return fromFirestore(snapshot);
 }
 
 // DELETE
@@ -63,7 +60,3 @@ export async function deleteProcess(processId: string): Promise<void> {
   const processDocRef = doc(db, 'processes', processId);
   await deleteDoc(processDocRef);
 }
-
-    
-
-    

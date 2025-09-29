@@ -51,6 +51,7 @@ import { ClientSearchDialog } from "@/components/clients/ClientSearchDialog";
 import { ClientFormDialog, type ClientFormValues } from "@/components/clients/ClientFormDialog";
 import { addClient } from "@/services/clientService";
 import { Checkbox } from "@/components/ui/checkbox";
+import type { Timestamp } from "firebase/firestore";
 
 export interface TimelineEvent {
   id: string;
@@ -72,6 +73,7 @@ export interface Process {
   certidao?: boolean;
   apenso?: string;
   timeline?: TimelineEvent[];
+  createdAt: Timestamp;
 }
 
 const processFormSchema = z.object({
@@ -572,10 +574,3 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
     </>
   );
 }
-    
-
-    
-
-    
-
-    
