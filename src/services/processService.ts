@@ -5,6 +5,18 @@ import type { Process, ProcessFormValues, TimelineEvent } from '@/components/pro
 
 const processesCollectionRef = collection(db, 'processes');
 
+// Helper para remover chaves indefinidas de um objeto
+const removeUndefinedKeys = (obj: Record<string, any>) => {
+  const newObj: Record<string, any> = {};
+  Object.keys(obj).forEach(key => {
+    if (obj[key] !== undefined) {
+      newObj[key] = obj[key];
+    }
+  });
+  return newObj;
+};
+
+
 // Helper para converter dados do Firestore
 const fromFirestore = (docSnap: DocumentData): Process => {
   const data = docSnap.data();
@@ -35,8 +47,9 @@ export async function getRecentProcesses(count?: number): Promise<Process[]> {
 
 // CREATE
 export async function addProcess(processData: Omit<Process, 'id' | 'createdAt'>): Promise<Process> {
+  const cleanData = removeUndefinedKeys(processData);
   const docRef = await addDoc(processesCollectionRef, {
-    ...processData,
+    ...cleanData,
     createdAt: serverTimestamp(),
   });
   const snapshot = await getDoc(docRef);
@@ -46,8 +59,9 @@ export async function addProcess(processData: Omit<Process, 'id' | 'createdAt'>)
 // UPDATE
 export async function updateProcess(processId: string, processData: ProcessFormValues & { timeline?: TimelineEvent[] }): Promise<Process> {
   const processDocRef = doc(db, 'processes', processId);
+  const cleanData = removeUndefinedKeys(processData);
   await updateDoc(processDocRef, {
-    ...processData,
+    ...cleanData,
     updatedAt: serverTimestamp(),
   });
 
