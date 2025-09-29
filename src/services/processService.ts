@@ -20,8 +20,7 @@ const fromFirestore = (doc: DocumentData): Process => {
     uhd: data.uhd,
     certidao: data.certidao || false,
     apenso: data.apenso,
-    timeline: data.timeline || [], // Timeline é um array no documento principal
-    // createdAt e updatedAt podem ser adicionados se necessário
+    timeline: (data.timeline || []).sort((a: TimelineEvent, b: TimelineEvent) => new Date(b.date).getTime() - new Date(a.date).getTime()),
   } as Process;
 };
 
@@ -56,7 +55,7 @@ export async function updateProcess(processId: string, processData: ProcessFormV
     // For simplicity, returning what was passed, but fetching is safer
   };
 
-  return updatedDocData;
+  return fromFirestore({ id: processId, data: () => updatedDocData });
 }
 
 // DELETE
@@ -64,5 +63,7 @@ export async function deleteProcess(processId: string): Promise<void> {
   const processDocRef = doc(db, 'processes', processId);
   await deleteDoc(processDocRef);
 }
+
+    
 
     
