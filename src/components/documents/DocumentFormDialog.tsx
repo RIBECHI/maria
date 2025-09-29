@@ -26,13 +26,15 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Search } from "lucide-react";
 import { ProcessSearchDialog } from "@/components/processes/ProcessSearchDialog";
+import type { DocumentData } from "firebase/firestore";
 
-export interface Document {
+export interface Document extends DocumentData {
   id: string;
   name: string;
   process: string; // ID do processo
   tags: string[];
   uploadDate: string;
+  createdAt?: string;
 }
 
 const documentFormSchema = z.object({
@@ -46,7 +48,7 @@ export type DocumentFormValues = z.infer<typeof documentFormSchema>;
 interface DocumentFormDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: DocumentFormValues) => void;
+  onSubmit: (data: DocumentFormValues) => Promise<void>;
   documentData?: Document;
 }
 
@@ -83,8 +85,7 @@ export function DocumentFormDialog({ isOpen, onClose, onSubmit, documentData }: 
 
   const handleFormSubmit: SubmitHandler<DocumentFormValues> = async (data) => {
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 700));
-    onSubmit(data);
+    await onSubmit(data);
     setIsLoading(false);
   };
 
