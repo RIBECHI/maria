@@ -13,7 +13,9 @@ import {
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Save } from "lucide-react";
+import { Save, Loader2 } from "lucide-react";
+import { getNotepadContent, saveNotepadContent } from "@/services/notepadService";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface NotepadSheetProps {
   isOpen: boolean;
@@ -23,34 +25,47 @@ interface NotepadSheetProps {
 export function NotepadSheet({ isOpen, onOpenChange }: NotepadSheetProps) {
   const { toast } = useToast();
   const [notepadContent, setNotepadContent] = React.useState("");
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [isSaving, setIsSaving] = React.useState(false);
 
-  // Efeito para carregar o conteúdo salvo no localStorage ao montar o componente
   React.useEffect(() => {
-    // Acessa o localStorage apenas no lado do cliente
-    try {
-      const savedContent = localStorage.getItem("notepadContent");
-      if (savedContent) {
-        setNotepadContent(savedContent);
-      }
-    } catch (error) {
-      console.warn("Could not access localStorage for notepad.");
+    if (isOpen) {
+      const fetchContent = async () => {
+        setIsLoading(true);
+        try {
+          const content = await getNotepadContent();
+          setNotepadContent(content);
+        } catch (error) {
+          console.error("Failed to load notepad content:", error);
+          toast({
+            title: "Erro ao Carregar Notas",
+            description: "Não foi possível buscar as anotações do banco de dados.",
+            variant: "destructive",
+          });
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      fetchContent();
     }
-  }, []);
+  }, [isOpen, toast]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    setIsSaving(true);
     try {
-      // Salva o conteúdo no localStorage para persistência na sessão do navegador
-      localStorage.setItem("notepadContent", notepadContent);
+      await saveNotepadContent(notepadContent);
       toast({
         title: "Anotações Salvas!",
-        description: "Suas anotações foram salvas localmente no seu navegador.",
+        description: "Suas anotações foram salvas no banco de dados.",
       });
     } catch (error) {
        toast({
         title: "Erro ao Salvar",
-        description: "Não foi possível salvar as anotações.",
+        description: "Não foi possível salvar as anotações na nuvem.",
         variant: "destructive",
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -60,21 +75,35 @@ export function NotepadSheet({ isOpen, onOpenChange }: NotepadSheetProps) {
         <SheetHeader>
           <SheetTitle>Bloco de Notas</SheetTitle>
           <SheetDescription>
-            Use este espaço para rascunhos e anotações rápidas. Suas notas são salvas localmente.
+            Use este espaço para rascunhos e anotações rápidas. Suas notas são salvas na nuvem.
           </SheetDescription>
         </SheetHeader>
         <div className="flex-1 py-4">
-          <Textarea
-            placeholder="Digite suas anotações aqui..."
-            className="h-full resize-none"
-            value={notepadContent}
-            onChange={(e) => setNotepadContent(e.target.value)}
-          />
+          {isLoading ? (
+            <Skeleton className="h-full w-full" />
+          ) : (
+            <Textarea
+              placeholder="Digite suas anotações aqui..."
+              className="h-full resize-none"
+              value={notepadContent}
+              onChange={(e) => setNotepadContent(e.target.value)}
+              disabled={isSaving}
+            />
+          )}
         </div>
         <SheetFooter>
-          <Button onClick={handleSave} className="ml-auto">
-            <Save className="mr-2 h-4 w-4" />
-            Salvar Anotações
+          <Button onClick={handleSave} disabled={isLoading || isSaving} className="ml-auto">
+            {isSaving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Salvando...
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" />
+                Salvar Anotações
+              </>
+            )}
           </Button>
         </SheetFooter>
       </SheetContent>
