@@ -32,10 +32,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2, Search } from "lucide-react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { ClientSearchDialog } from "@/components/clients/ClientSearchDialog";
+import type { DocumentData } from 'firebase/firestore';
 
-export interface CalendarEvent {
+
+export interface CalendarEvent extends DocumentData {
   id: string;
   date: string; // YYYY-MM-DD
   type: 'prazo' | 'audiencia' | 'consulta';
@@ -157,12 +159,12 @@ export function EventFormDialog({ isOpen, onClose, onSubmit, eventData }: EventF
 
   const handleFormSubmit: SubmitHandler<EventFormValues> = async (data) => {
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 700));
+    // await new Promise(resolve => setTimeout(resolve, 700));
     const submittedData = {
       ...data,
       date: format(new Date(data.date + 'T00:00:00'), 'yyyy-MM-dd') 
     };
-    onSubmit(submittedData);
+    await onSubmit(submittedData);
     setIsLoading(false);
   };
   
@@ -339,5 +341,3 @@ export function EventFormDialog({ isOpen, onClose, onSubmit, eventData }: EventF
     </>
   );
 }
-
-
