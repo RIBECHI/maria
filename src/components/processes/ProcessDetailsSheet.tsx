@@ -182,10 +182,10 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
                         <strong>Próximo Prazo:</strong>
                         <span>{processData.nextDeadline !== '-' ? format(parseISO(processData.nextDeadline), 'dd/MM/yyyy') : 'N/A'}</span>
                     </div>
-                    {processData.monitorProjudi && (
+                    {processData.expressoGoias && (
                         <div className="col-span-2 flex items-center gap-2 text-green-600 font-medium">
                             <CheckCircle className="h-4 w-4" />
-                            <span>Monitoramento PROJUDI ativo</span>
+                            <span>Pedido de pagamento no Expresso Goiás</span>
                         </div>
                     )}
                 </div>
@@ -311,5 +311,7 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
     </>
   );
 }
+
+    
 
     

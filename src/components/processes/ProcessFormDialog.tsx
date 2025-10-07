@@ -31,7 +31,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, PlusCircle, Trash2, Search, UserPlus, X } from "lucide-react";
 import { format, parseISO } from "date-fns";
@@ -70,7 +69,7 @@ export interface Process extends DocumentData {
   status: 'Em Andamento' | 'Concluído' | 'Suspenso';
   nextDeadline: string; // YYYY-MM-DD or '-'
   documents: number;
-  monitorProjudi?: boolean;
+  expressoGoias?: boolean;
   uhd?: number;
   certidao?: boolean;
   apensos?: string[];
@@ -84,7 +83,7 @@ const processFormSchema = z.object({
   type: z.string().min(3, { message: "O tipo do processo deve ter pelo menos 3 caracteres." }),
   status: z.enum(['Em Andamento', 'Concluído', 'Suspenso'], { required_error: "Status é obrigatório."}),
   nextDeadline: z.string().refine((val) => val === '-' || !isNaN(Date.parse(val)), { message: "Data inválida ou '-'." }),
-  monitorProjudi: z.boolean().optional(),
+  expressoGoias: z.boolean().optional(),
   uhd: z.coerce.number().min(1, "UHD deve ser no mínimo 1").max(10, "UHD deve ser no máximo 10").optional(),
   certidao: z.boolean().optional(),
   apensos: z.array(z.string()).optional(),
@@ -126,7 +125,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
       type: "",
       status: "Em Andamento",
       nextDeadline: format(new Date(), 'yyyy-MM-dd'),
-      monitorProjudi: false,
+      expressoGoias: false,
       uhd: undefined,
       certidao: false,
       apensos: [],
@@ -153,7 +152,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
               type: processData.type,
               status: processData.status,
               nextDeadline: processData.nextDeadline === '-' ? '' : format(parseISO(processData.nextDeadline + 'T00:00:00'), 'yyyy-MM-dd'),
-              monitorProjudi: processData.monitorProjudi || false,
+              expressoGoias: processData.expressoGoias || false,
               uhd: processData.uhd || undefined,
               certidao: processData.certidao || false,
               apensos: processData.apensos || [],
@@ -166,7 +165,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
               type: "",
               status: "Em Andamento",
               nextDeadline: format(new Date(), 'yyyy-MM-dd'),
-              monitorProjudi: false,
+              expressoGoias: false,
               uhd: undefined,
               certidao: false,
               apensos: [],
@@ -438,25 +437,22 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
                 />
              </div>
              <FormField
-              control={form.control}
-              name="monitorProjudi"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm mt-4">
-                  <div className="space-y-0.5">
-                    <FormLabel>Monitorar no PROJUDI?</FormLabel>
-                    <DialogDescription className="text-xs">
-                      Marque para indicar que este processo deve ser monitorado para atualizações no PROJUDI-GO.
-                    </DialogDescription>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
+                control={form.control}
+                name="expressoGoias"
+                render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm mt-4">
+                    <div className="space-y-0.5">
+                        <FormLabel>Pedido pagamento no Expresso Goiás</FormLabel>
+                    </div>
+                    <FormControl>
+                        <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        />
+                    </FormControl>
+                    </FormItem>
+                )}
+                />
             
             {/* Seção da Linha do Tempo */}
             <Card className="mt-6 pt-2">
@@ -605,3 +601,5 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
     </>
   );
 }
+
+    

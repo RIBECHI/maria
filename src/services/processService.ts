@@ -28,7 +28,7 @@ const fromFirestore = (docSnap: DocumentData): Process => {
     status: data.status,
     nextDeadline: data.nextDeadline,
     documents: data.documents,
-    monitorProjudi: data.monitorProjudi,
+    expressoGoias: data.expressoGoias,
     uhd: data.uhd,
     certidao: data.certidao,
     apensos: data.apensos || [],
@@ -87,3 +87,5 @@ export async function deleteProcess(processId: string): Promise<void> {
   const processDocRef = doc(db, 'processes', processId);
   await deleteDoc(processDocRef);
 }
+
+    

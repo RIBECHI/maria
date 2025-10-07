@@ -243,7 +243,7 @@ export default function ProcessesPage() {
                 <TableHead>Próximo Prazo</TableHead>
                 <TableHead className="text-center">UHD</TableHead>
                 <TableHead className="text-center">Certidão</TableHead>
-                <TableHead className="text-center">PROJUDI</TableHead>
+                <TableHead className="text-center">Expresso Goiás</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -287,7 +287,7 @@ export default function ProcessesPage() {
                       )}
                     </TableCell>
                     <TableCell className="text-center">
-                      {process.monitorProjudi ? (
+                      {process.expressoGoias ? (
                         <CheckCircle className="h-5 w-5 text-green-600 mx-auto" />
                       ) : (
                         <XCircle className="h-5 w-5 text-red-500 mx-auto" />
@@ -355,5 +355,7 @@ export default function ProcessesPage() {
     </div>
   );
 }
+
+    
 
     
