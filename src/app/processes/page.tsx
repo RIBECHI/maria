@@ -86,9 +86,8 @@ export default function ProcessesPage() {
           documents: 0,
           timeline: data.timeline || []
         };
-        const newProcess = await addProcess(newProcessData);
-        setProcesses(prev => [...prev, newProcess]);
-        toast({ title: "Processo adicionado!", description: `Novo processo para ${newProcess.client} foi adicionado.` });
+        await addProcess(newProcessData);
+        toast({ title: "Processo adicionado!", description: `Novo processo para ${data.client} foi adicionado.` });
       }
       handleCloseFormDialog();
       fetchProcesses(); // Re-fetch to ensure data is consistent, especially with sub-collections
@@ -271,5 +270,3 @@ export default function ProcessesPage() {
     </div>
   );
 }
-
-    
