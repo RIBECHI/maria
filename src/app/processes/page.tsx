@@ -22,6 +22,15 @@ import {
 import { ProcessFormDialog, type ProcessFormValues, type Process, type TimelineEvent } from "@/components/processes/ProcessFormDialog";
 import { getProcesses, addProcess, updateProcess, deleteProcess } from "@/services/processService";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { parseISO } from "date-fns";
+
 
 const getStatusBadgeVariant = (status: string) => {
   switch (status) {
@@ -40,6 +49,7 @@ export default function ProcessesPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const [processToDelete, setProcessToDelete] = React.useState<Process | null>(null);
   const [searchTerm, setSearchTerm] = React.useState("");
+  const [sortOrder, setSortOrder] = React.useState<"createdAt" | "clientName" | "updatedAt">("createdAt");
   const { toast } = useToast();
 
   const fetchProcesses = React.useCallback(async () => {
@@ -127,12 +137,33 @@ export default function ProcessesPage() {
     handleOpenFormDialog(proc);
   };
 
-  const filteredProcesses = processes.filter(proc =>
-    (proc.processNumber && proc.processNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (proc.client && proc.client.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (proc.type && proc.type.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (proc.apenso && proc.apenso.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const sortedAndFilteredProcesses = React.useMemo(() => {
+    const filtered = processes.filter(proc =>
+      (proc.processNumber && proc.processNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (proc.client && proc.client.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (proc.type && proc.type.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (proc.apenso && proc.apenso.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+
+    switch (sortOrder) {
+      case 'clientName':
+        return filtered.sort((a, b) => a.client.localeCompare(b.client));
+      case 'updatedAt':
+        return filtered.sort((a, b) => {
+          const lastUpdateA = a.timeline && a.timeline.length > 0 ? parseISO(a.timeline[0].date).getTime() : 0;
+          const lastUpdateB = b.timeline && b.timeline.length > 0 ? parseISO(b.timeline[0].date).getTime() : 0;
+          return lastUpdateB - lastUpdateA;
+        });
+      case 'createdAt':
+      default:
+        // A busca inicial já ordena por createdAt, mas reordenamos para garantir consistência após filtros/edições
+        return filtered.sort((a, b) => {
+            const dateA = a.createdAt ? parseISO(a.createdAt).getTime() : 0;
+            const dateB = b.createdAt ? parseISO(b.createdAt).getTime() : 0;
+            return dateB - dateA;
+        });
+    }
+  }, [processes, searchTerm, sortOrder]);
 
 
   return (
@@ -144,14 +175,25 @@ export default function ProcessesPage() {
         </Button>
       </div>
 
-      <div className="mb-6 flex items-center gap-2">
-        <Search className="h-5 w-5 text-muted-foreground" />
-        <Input
-          placeholder="Buscar processos por Nº, apenso, cliente ou tipo..."
-          className="max-w-sm"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+      <div className="mb-6 flex items-center gap-4">
+        <div className="flex items-center gap-2 flex-1 max-w-sm">
+          <Search className="h-5 w-5 text-muted-foreground" />
+          <Input
+            placeholder="Buscar processos por Nº, apenso, cliente ou tipo..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+         <Select onValueChange={(value: "createdAt" | "clientName" | "updatedAt") => setSortOrder(value)} defaultValue={sortOrder}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Ordenar por..." />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="createdAt">Data de Criação</SelectItem>
+            <SelectItem value="clientName">Nome do Cliente</SelectItem>
+            <SelectItem value="updatedAt">Última Atualização</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <Card className="shadow-lg">
@@ -190,8 +232,8 @@ export default function ProcessesPage() {
                     <TableCell className="text-right"><Skeleton className="h-8 w-24" /></TableCell>
                   </TableRow>
                 ))
-              ) : filteredProcesses.length > 0 ? (
-                filteredProcesses.map((process) => (
+              ) : sortedAndFilteredProcesses.length > 0 ? (
+                sortedAndFilteredProcesses.map((process) => (
                   <TableRow key={process.id} className="hover:bg-muted/50">
                     <TableCell className="font-medium" onClick={() => handleViewDetails(process)}>{process.processNumber}</TableCell>
                     <TableCell onClick={() => handleViewDetails(process)}>{process.apenso}</TableCell>
@@ -270,3 +312,5 @@ export default function ProcessesPage() {
     </div>
   );
 }
+
+    
