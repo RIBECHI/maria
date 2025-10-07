@@ -18,7 +18,7 @@ const fromFirestore = (docSnap: DocumentData): Client => {
     city: data.city,
     notes: data.notes,
   };
-  if (data.createdAt) {
+  if (data.createdAt && data.createdAt instanceof Timestamp) {
       client.createdAt = data.createdAt.toDate().toISOString();
   }
   return client;
@@ -28,14 +28,14 @@ const fromFirestore = (docSnap: DocumentData): Client => {
 // READ
 export async function getClients(): Promise<Client[]> {
   const q = query(clientsCollectionRef, orderBy("name", "asc"));
-  const querySnapshot = await getDocs(q);
+  const querySnapshot = await getDocs(q, { cache: 'no-store' });
   return querySnapshot.docs.map(fromFirestore);
 }
 
 // READ RECENT
 export async function getRecentClients(count: number = 3): Promise<Client[]> {
   const q = query(clientsCollectionRef, orderBy("createdAt", "desc"), limit(count));
-  const querySnapshot = await getDocs(q);
+  const querySnapshot = await getDocs(q, { cache: 'no-store' });
   return querySnapshot.docs.map(fromFirestore);
 }
 

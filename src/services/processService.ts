@@ -1,6 +1,6 @@
 
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, type DocumentData, query, orderBy, limit, getDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, type DocumentData, query, orderBy, limit, getDoc, Timestamp } from 'firebase/firestore';
 import type { Process, ProcessFormValues, TimelineEvent } from '@/components/processes/ProcessFormDialog';
 
 const processesCollectionRef = collection(db, 'processes');
@@ -34,7 +34,7 @@ const fromFirestore = (docSnap: DocumentData): Process => {
     apenso: data.apenso,
     timeline: (data.timeline || []).sort((a: TimelineEvent, b: TimelineEvent) => new Date(b.date).getTime() - new Date(a.date).getTime()),
   };
-  if (data.createdAt) {
+  if (data.createdAt && data.createdAt instanceof Timestamp) {
     process.createdAt = data.createdAt.toDate().toISOString();
   }
   return process;
@@ -43,7 +43,7 @@ const fromFirestore = (docSnap: DocumentData): Process => {
 // READ ALL
 export async function getProcesses(): Promise<Process[]> {
   const q = query(processesCollectionRef, orderBy("createdAt", "desc"));
-  const querySnapshot = await getDocs(q);
+  const querySnapshot = await getDocs(q, { cache: 'no-store' });
   return querySnapshot.docs.map(fromFirestore);
 }
 
@@ -53,7 +53,7 @@ export async function getRecentProcesses(count?: number): Promise<Process[]> {
         ? query(processesCollectionRef, orderBy("createdAt", "desc"), limit(count))
         : query(processesCollectionRef, orderBy("createdAt", "desc"));
 
-    const querySnapshot = await getDocs(q);
+    const querySnapshot = await getDocs(q, { cache: 'no-store' });
     return querySnapshot.docs.map(fromFirestore);
 }
 
