@@ -73,16 +73,15 @@ export default function ClientsPage() {
         setClients(clients.map(c => (c.id === editingClient.id ? { ...c, ...updatedClient } : c)));
         toast({ title: "Cliente atualizado!", description: `O cliente ${data.name} foi atualizado com sucesso.` });
       } else {
-        const newClient = await addClient({
+        await addClient({
           ...data,
           caseCount: 0,
           lastActivity: new Date().toISOString().split('T')[0],
         });
-        setClients(prevClients => [...prevClients, newClient]);
-        toast({ title: "Cliente adicionado!", description: `O cliente ${newClient.name} foi adicionado com sucesso.` });
+        toast({ title: "Cliente adicionado!", description: `O cliente ${data.name} foi adicionado com sucesso.` });
+        fetchClients(); // Re-fetch para garantir que a lista está atualizada.
       }
       handleCloseFormDialog();
-      fetchClients(); // Re-fetch to ensure data is consistent
     } catch (error) {
         console.error("Failed to save client: ", error);
         toast({ title: "Erro ao salvar", description: "Não foi possível salvar o cliente.", variant: "destructive" });
