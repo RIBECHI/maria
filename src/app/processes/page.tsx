@@ -19,7 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ProcessFormDialog, type ProcessFormValues, type Process, type TimelineEvent } from "@/components/processes/ProcessFormDialog";
+import { ProcessFormDialog, type ProcessFormValues, type TimelineEvent, type Process } from "@/components/processes/ProcessFormDialog";
 import { getProcesses, addProcess, updateProcess, deleteProcess } from "@/services/processService";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -30,6 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { parseISO } from "date-fns";
+import { ProcessDetailsSheet } from "@/components/processes/ProcessDetailsSheet";
 
 
 const getStatusBadgeVariant = (status: string) => {
@@ -50,6 +51,8 @@ export default function ProcessesPage() {
   const [processToDelete, setProcessToDelete] = React.useState<Process | null>(null);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [sortOrder, setSortOrder] = React.useState<"createdAt" | "clientName" | "updatedAt">("createdAt");
+  const [isDetailsSheetOpen, setIsDetailsSheetOpen] = React.useState(false);
+  const [selectedProcessForDetails, setSelectedProcessForDetails] = React.useState<Process | null>(null);
   const { toast } = useToast();
 
   const fetchProcesses = React.useCallback(async () => {
@@ -82,6 +85,16 @@ export default function ProcessesPage() {
     setEditingProcess(undefined);
     setIsFormDialogOpen(false);
   };
+  
+  const handleOpenDetailsSheet = (proc: Process) => {
+    setSelectedProcessForDetails(proc);
+    setIsDetailsSheetOpen(true);
+  };
+
+  const handleCloseDetailsSheet = () => {
+    setSelectedProcessForDetails(null);
+    setIsDetailsSheetOpen(false);
+  };
 
   const handleSubmitProcessForm = async (data: ProcessFormValues & { timeline?: TimelineEvent[] }) => {
     try {
@@ -100,7 +113,7 @@ export default function ProcessesPage() {
         toast({ title: "Processo adicionado!", description: `Novo processo para ${data.client} foi adicionado.` });
       }
       handleCloseFormDialog();
-      fetchProcesses(); // Re-fetch to ensure data is consistent, especially with sub-collections
+      fetchProcesses();
     } catch (error) {
       console.error("Failed to save process:", error);
       toast({ title: "Erro ao salvar", description: "Não foi possível salvar o processo.", variant: "destructive" });
@@ -133,9 +146,28 @@ export default function ProcessesPage() {
     toast({ title: "Ação: Abrir Pasta", description: `Simulando abertura da pasta do processo: ${proc.id}` });
   };
   
-  const handleViewDetails = (proc: Process) => {
-    handleOpenFormDialog(proc);
-  };
+  const handleTimelineUpdate = async (processId: string, newTimeline: TimelineEvent[]) => {
+    const processToUpdate = processes.find(p => p.id === processId);
+    if (processToUpdate) {
+        try {
+            const updatedProcess = await updateProcess(processId, { ...processToUpdate, timeline: newTimeline });
+            
+            // Atualiza o estado local para refletir a mudança imediatamente
+            const updatedProcesses = processes.map(p => p.id === processId ? updatedProcess : p);
+            setProcesses(updatedProcesses);
+            
+            // Atualiza também o processo que está no painel de detalhes
+            if (selectedProcessForDetails && selectedProcessForDetails.id === processId) {
+                setSelectedProcessForDetails(updatedProcess);
+            }
+
+            toast({ title: "Linha do Tempo Atualizada!" });
+        } catch (error) {
+            console.error("Failed to update timeline:", error);
+            toast({ title: "Erro ao atualizar", description: "Não foi possível salvar a atualização da linha do tempo.", variant: "destructive" });
+        }
+    }
+};
 
   const sortedAndFilteredProcesses = React.useMemo(() => {
     const filtered = processes.filter(proc =>
@@ -156,7 +188,6 @@ export default function ProcessesPage() {
         });
       case 'createdAt':
       default:
-        // A busca inicial já ordena por createdAt, mas reordenamos para garantir consistência após filtros/edições
         return filtered.sort((a, b) => {
             const dateA = a.createdAt ? parseISO(a.createdAt).getTime() : 0;
             const dateB = b.createdAt ? parseISO(b.createdAt).getTime() : 0;
@@ -234,32 +265,32 @@ export default function ProcessesPage() {
                 ))
               ) : sortedAndFilteredProcesses.length > 0 ? (
                 sortedAndFilteredProcesses.map((process) => (
-                  <TableRow key={process.id} className="hover:bg-muted/50">
-                    <TableCell className="font-medium" onClick={() => handleViewDetails(process)}>{process.processNumber}</TableCell>
-                    <TableCell onClick={() => handleViewDetails(process)}>{process.apenso}</TableCell>
-                    <TableCell onClick={() => handleViewDetails(process)}>{process.client}</TableCell>
-                    <TableCell onClick={() => handleViewDetails(process)}>{process.type}</TableCell>
-                    <TableCell onClick={() => handleViewDetails(process)}>
+                  <TableRow key={process.id} className="hover:bg-muted/50 cursor-pointer" onClick={() => handleOpenDetailsSheet(process)}>
+                    <TableCell className="font-medium">{process.processNumber}</TableCell>
+                    <TableCell>{process.apenso}</TableCell>
+                    <TableCell>{process.client}</TableCell>
+                    <TableCell>{process.type}</TableCell>
+                    <TableCell>
                       <Badge variant={getStatusBadgeVariant(process.status) as any}>{process.status}</Badge>
                     </TableCell>
-                    <TableCell onClick={() => handleViewDetails(process)}>{process.nextDeadline}</TableCell>
-                    <TableCell className="text-center" onClick={() => handleViewDetails(process)}>{process.uhd}</TableCell>
-                    <TableCell className="text-center" onClick={() => handleViewDetails(process)}>
+                    <TableCell>{process.nextDeadline}</TableCell>
+                    <TableCell className="text-center">{process.uhd}</TableCell>
+                    <TableCell className="text-center">
                       {process.certidao ? (
                         <CheckCircle className="h-5 w-5 text-green-600 mx-auto" />
                       ) : (
                         <XCircle className="h-5 w-5 text-red-500 mx-auto" />
                       )}
                     </TableCell>
-                    <TableCell className="text-center" onClick={() => handleViewDetails(process)}>
+                    <TableCell className="text-center">
                       {process.monitorProjudi ? (
                         <CheckCircle className="h-5 w-5 text-green-600 mx-auto" />
                       ) : (
                         <XCircle className="h-5 w-5 text-red-500 mx-auto" />
                       )}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" className="hover:text-accent" onClick={() => handleViewDetails(process)} title="Ver Detalhes/Timeline">
+                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                      <Button variant="ghost" size="icon" className="hover:text-accent" onClick={() => handleOpenDetailsSheet(process)} title="Ver Detalhes/Timeline">
                         <Eye className="h-4 w-4" />
                       </Button>
                       <Button variant="ghost" size="icon" className="hover:text-accent" onClick={() => handleOpenFormDialog(process)} title="Editar Processo">
@@ -291,6 +322,14 @@ export default function ProcessesPage() {
         onClose={handleCloseFormDialog}
         onSubmit={handleSubmitProcessForm}
         processData={editingProcess}
+      />
+      
+       <ProcessDetailsSheet
+        isOpen={isDetailsSheetOpen}
+        onClose={handleCloseDetailsSheet}
+        processData={selectedProcessForDetails}
+        onTimelineUpdate={handleTimelineUpdate}
+        onOpenEditDialog={handleOpenFormDialog}
       />
 
       {processToDelete && (
