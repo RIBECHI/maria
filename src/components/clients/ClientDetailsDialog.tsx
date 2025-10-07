@@ -12,6 +12,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import type { Client } from "./ClientFormDialog";
+import type { Process } from "@/components/processes/ProcessFormDialog";
 import { List, ListItem } from "@/components/ui/list";
 import { Briefcase } from "lucide-react";
 import Link from "next/link";
@@ -20,18 +21,9 @@ import { Badge } from "@/components/ui/badge";
 interface ClientDetailsDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  clientData?: Client | null;
+  clientData: Client | null;
+  allProcesses: Process[];
 }
-
-// Mock de dados de processos para simular a relação cliente-processo
-// Em um app real, isso viria do estado da aplicação ou de uma API.
-const MOCK_PROCESSES = [
-  { id: "PROC001", client: "Empresa Alpha Ltda.", type: "Cível", status: "Em Andamento" as const },
-  { id: "PROC002", client: "João Silva", type: "Trabalhista", status: "Concluído" as const },
-  { id: "PROC003", client: "Maria Oliveira", type: "Tributário", status: "Suspenso" as const },
-  { id: "PROC004", client: "Construtora Beta S.A.", type: "Administrativo", status: "Em Andamento" as const },
-  { id: "PROC005", client: "Maria Oliveira", type: "Consumidor", status: "Em Andamento" as const },
-];
 
 const getStatusBadgeVariant = (status: string) => {
   switch (status) {
@@ -42,7 +34,7 @@ const getStatusBadgeVariant = (status: string) => {
   }
 }
 
-export function ClientDetailsDialog({ isOpen, onClose, clientData }: ClientDetailsDialogProps) {
+export function ClientDetailsDialog({ isOpen, onClose, clientData, allProcesses }: ClientDetailsDialogProps) {
   if (!clientData) {
     return null;
   }
@@ -51,7 +43,7 @@ export function ClientDetailsDialog({ isOpen, onClose, clientData }: ClientDetai
   const labelClass = "font-semibold text-muted-foreground w-[140px] shrink-0"; 
   const valueClass = "text-foreground break-words";
 
-  const clientProcesses = MOCK_PROCESSES.filter(
+  const clientProcesses = allProcesses.filter(
     (process) => process.client === clientData.name
   );
 
@@ -88,7 +80,7 @@ export function ClientDetailsDialog({ isOpen, onClose, clientData }: ClientDetai
           </div>
           <div className={detailItemClass}>
             <span className={labelClass}>Nº de Casos Ativos:</span>
-            <span className={valueClass}>{clientData.caseCount}</span>
+            <span className={valueClass}>{clientProcesses.length}</span>
           </div>
           <div className={detailItemClass}>
             <span className="font-semibold text-muted-foreground w-[140px] shrink-0">Última Atividade:</span>
@@ -114,8 +106,8 @@ export function ClientDetailsDialog({ isOpen, onClose, clientData }: ClientDetai
                             <Link href="/processes" className="block w-full">
                                 <div className="p-2 rounded-md hover:bg-muted/60 transition-colors cursor-pointer w-full">
                                     <div className="flex justify-between items-center">
-                                        <span className="font-medium">{proc.id} - {proc.type}</span>
-                                        <Badge variant={getStatusBadgeVariant(proc.status)}>{proc.status}</Badge>
+                                        <span className="font-medium">{proc.processNumber} - {proc.type}</span>
+                                        <Badge variant={getStatusBadgeVariant(proc.status) as any}>{proc.status}</Badge>
                                     </div>
                                 </div>
                             </Link>

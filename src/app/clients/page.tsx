@@ -22,9 +22,12 @@ import { ClientDetailsDialog } from "@/components/clients/ClientDetailsDialog";
 import { useToast } from "@/hooks/use-toast";
 import { addClient, deleteClient, getClients, updateClient } from "@/services/clientService";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getProcesses } from "@/services/processService";
+import type { Process } from "@/components/processes/ProcessFormDialog";
 
 export default function ClientsPage() {
   const [clients, setClients] = React.useState<Client[]>([]);
+  const [processes, setProcesses] = React.useState<Process[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isFormDialogOpen, setIsFormDialogOpen] = React.useState(false);
   const [editingClient, setEditingClient] = React.useState<Client | undefined>(undefined);
@@ -35,16 +38,20 @@ export default function ClientsPage() {
   const [searchTerm, setSearchTerm] = React.useState("");
   const { toast } = useToast();
 
-  const fetchClients = React.useCallback(async () => {
+  const fetchData = React.useCallback(async () => {
     setIsLoading(true);
     try {
-      const clientsFromDb = await getClients();
+      const [clientsFromDb, processesFromDb] = await Promise.all([
+        getClients(),
+        getProcesses()
+      ]);
       setClients(clientsFromDb);
+      setProcesses(processesFromDb);
     } catch (error) {
-      console.error("Error fetching clients:", error);
+      console.error("Error fetching data:", error);
       toast({
-        title: "Erro ao buscar clientes",
-        description: "Não foi possível carregar a lista de clientes. Tente novamente mais tarde.",
+        title: "Erro ao buscar dados",
+        description: "Não foi possível carregar a lista de clientes e processos. Tente novamente mais tarde.",
         variant: "destructive",
       });
     } finally {
@@ -53,8 +60,8 @@ export default function ClientsPage() {
   }, [toast]);
 
   React.useEffect(() => {
-    fetchClients();
-  }, [fetchClients]);
+    fetchData();
+  }, [fetchData]);
 
   const handleOpenFormDialog = (client?: Client) => {
     setEditingClient(client);
@@ -79,7 +86,7 @@ export default function ClientsPage() {
           lastActivity: new Date().toISOString().split('T')[0],
         });
         toast({ title: "Cliente adicionado!", description: `O cliente ${data.name} foi adicionado com sucesso.` });
-        fetchClients(); // Re-fetch para garantir que a lista está atualizada.
+        fetchData(); // Re-fetch para garantir que a lista está atualizada.
       }
       handleCloseFormDialog();
     } catch (error) {
@@ -121,7 +128,6 @@ export default function ClientsPage() {
   
   const filteredClients = clients.filter(client =>
     (client.name && client.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (client.id && client.id.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (client.contact && client.contact.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
@@ -138,7 +144,7 @@ export default function ClientsPage() {
       <div className="mb-6 flex items-center gap-2">
         <Search className="h-5 w-5 text-muted-foreground" />
         <Input
-          placeholder="Buscar clientes por nome, ID ou contato..."
+          placeholder="Buscar clientes por nome ou contato..."
           className="max-w-sm"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -153,7 +159,6 @@ export default function ClientsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>ID</TableHead>
                 <TableHead>Nome</TableHead>
                 <TableHead>Contato</TableHead>
                 <TableHead className="text-center">Nº Casos</TableHead>
@@ -165,7 +170,6 @@ export default function ClientsPage() {
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
-                    <TableCell><Skeleton className="h-4 w-12" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-48" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-48" /></TableCell>
                     <TableCell className="text-center"><Skeleton className="h-4 w-8 mx-auto" /></TableCell>
@@ -180,10 +184,9 @@ export default function ClientsPage() {
                     onClick={() => handleOpenDetailsDialog(client)}
                     className="cursor-pointer hover:bg-muted/60"
                   >
-                    <TableCell>{client.id.substring(0, 7)}...</TableCell>
                     <TableCell className="font-medium">{client.name}</TableCell>
                     <TableCell>{client.contact}</TableCell>
-                    <TableCell className="text-center">{client.caseCount}</TableCell>
+                    <TableCell className="text-center">{processes.filter(p => p.client === client.name).length}</TableCell>
                     <TableCell>{client.lastActivity}</TableCell>
                     <TableCell className="text-right">
                       <Button
@@ -209,7 +212,7 @@ export default function ClientsPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center h-24">
+                  <TableCell colSpan={5} className="text-center h-24">
                     Nenhum cliente encontrado.
                   </TableCell>
                 </TableRow>
@@ -230,6 +233,7 @@ export default function ClientsPage() {
         isOpen={isDetailsDialogOpen}
         onClose={handleCloseDetailsDialog}
         clientData={selectedClientForDetails}
+        allProcesses={processes}
       />
 
       {clientToDelete && (
