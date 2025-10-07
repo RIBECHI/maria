@@ -19,7 +19,7 @@ export default function SettingsPage() {
   const [displayName, setDisplayName] = React.useState(userName);
   const [emailNotificationsPrazos, setEmailNotificationsPrazos] = React.useState(true);
   const [emailNotificationsLegal, setEmailNotificationsLegal] = React.useState(true);
-  const [isDarkMode, setIsDarkMode] = React.useState(false);
+  const [isDarkMode, setIsDarkMode] = React.useState(true);
 
   React.useEffect(() => {
     // Sincroniza o estado local se o nome do contexto mudar (ex: ao carregar do localStorage)
@@ -28,12 +28,13 @@ export default function SettingsPage() {
 
   React.useEffect(() => {
     const storedTheme = localStorage.getItem("theme");
-    if (storedTheme === "dark") {
-      setIsDarkMode(true);
-      document.documentElement.classList.add("dark");
-    } else {
+    // Define o modo escuro como padrão se nada estiver salvo no localStorage
+    if (storedTheme === "light") {
       setIsDarkMode(false);
       document.documentElement.classList.remove("dark");
+    } else {
+      setIsDarkMode(true);
+      document.documentElement.classList.add("dark");
     }
   }, []);
 
