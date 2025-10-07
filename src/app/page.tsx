@@ -50,7 +50,7 @@ export default function DashboardPage() {
                     type: 'process' as const,
                     text: `Novo processo para ${p.client}`,
                     createdAt: p.createdAt ? parseISO(p.createdAt) : new Date(0),
-                    icon: <FilePlus2 className="h-5 w-5 text-accent" />
+                    icon: <FilePlus2 className="h-5 w-5 text-muted-foreground" />
                 }));
 
                 const clientActivities = clients.map(c => ({
@@ -58,7 +58,7 @@ export default function DashboardPage() {
                     type: 'client' as const,
                     text: `Cliente ${c.name} adicionado`,
                     createdAt: c.createdAt ? parseISO(c.createdAt) : new Date(0),
-                    icon: <UserPlus className="h-5 w-5 text-accent" />
+                    icon: <UserPlus className="h-5 w-5 text-muted-foreground" />
                 }));
                 
                 const combinedActivities = [...processActivities, ...clientActivities];
@@ -99,7 +99,7 @@ export default function DashboardPage() {
                 <Card className="shadow-lg h-full">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle>Próximos Compromissos</CardTitle>
-                        <CalendarDays className="h-6 w-6 text-accent" />
+                        <CalendarDays className="h-6 w-6 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         {isLoading ? (
@@ -129,7 +129,7 @@ export default function DashboardPage() {
                 <Card className="shadow-lg h-full">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle>Atividade Recente</CardTitle>
-                        <Activity className="h-6 w-6 text-accent" />
+                        <Activity className="h-6 w-6 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         {isLoading ? (
@@ -160,7 +160,7 @@ export default function DashboardPage() {
                 <Card className="shadow-lg h-full md:col-span-2 lg:col-span-1">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle>Status dos Processos</CardTitle>
-                        <Briefcase className="h-6 w-6 text-accent" />
+                        <Briefcase className="h-6 w-6 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         {isLoading ? (
