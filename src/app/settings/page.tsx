@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Moon, Sun, Wrench } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
 import Link from "next/link";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,46 +18,19 @@ export default function SettingsPage() {
   const [displayName, setDisplayName] = React.useState(userName);
   const [emailNotificationsPrazos, setEmailNotificationsPrazos] = React.useState(true);
   const [emailNotificationsLegal, setEmailNotificationsLegal] = React.useState(true);
-  const [isDarkMode, setIsDarkMode] = React.useState(true);
-
+  
   React.useEffect(() => {
-    // Sincroniza o estado local se o nome do contexto mudar (ex: ao carregar do localStorage)
     setDisplayName(userName);
   }, [userName]);
 
-  React.useEffect(() => {
-    const storedTheme = localStorage.getItem("theme");
-    // Define o modo escuro como padrão se nada estiver salvo no localStorage
-    if (storedTheme === "light") {
-      setIsDarkMode(false);
-      document.documentElement.classList.remove("dark");
-    } else {
-      setIsDarkMode(true);
-      document.documentElement.classList.add("dark");
-    }
-  }, []);
-
-  const handleThemeToggle = (checked: boolean) => {
-    setIsDarkMode(checked);
-    if (checked) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
-  };
 
   const handleSaveChanges = () => {
-    // Atualiza o nome de exibição no contexto global
     setUserName(displayName);
     
-    // Simula o salvamento das outras configurações
     console.log("Configurações salvas:", {
       displayName,
       emailNotificationsPrazos,
       emailNotificationsLegal,
-      isDarkMode,
     });
     toast({
       title: "Configurações Salvas!",
@@ -92,18 +64,6 @@ export default function SettingsPage() {
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
                     placeholder="Seu nome ou nome do escritório"
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between space-y-2 border-t pt-4 mt-4">
-                  <div className="flex items-center space-x-2">
-                    {isDarkMode ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
-                    <Label htmlFor="darkModeToggle">Modo Escuro</Label>
-                  </div>
-                  <Switch
-                    id="darkModeToggle"
-                    checked={isDarkMode}
-                    onCheckedChange={handleThemeToggle}
                   />
                 </div>
               </CardContent>

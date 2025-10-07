@@ -34,6 +34,7 @@ import { UserProvider } from '@/contexts/UserContext';
 import UserInfo from '@/components/layout/UserInfo';
 import { NotepadSheet } from '@/components/layout/NotepadSheet';
 import UpcomingEventsSidebar from '@/components/layout/UpcomingEventsSidebar';
+import ThemeToggle from '@/components/layout/ThemeToggle';
 
 const navItems = [
   { href: '/', label: 'Painel', icon: <LayoutDashboard /> },
@@ -91,6 +92,16 @@ function PanelLeftIcon(props: React.SVGProps<SVGSVGElement>) {
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const [isNotepadOpen, setIsNotepadOpen] = React.useState(false);
 
+  React.useEffect(() => {
+    const storedTheme = localStorage.getItem("theme");
+    if (storedTheme === "light") {
+      document.documentElement.classList.remove("dark");
+    } else {
+      document.documentElement.classList.add("dark");
+    }
+  }, []);
+
+
   return (
     <UserProvider>
       <JusticeSymbolWatermark />
@@ -126,6 +137,9 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
           </SidebarContent>
           <SidebarFooter className="p-2 border-t border-sidebar-border">
             <SidebarMenu>
+              <SidebarMenuItem>
+                <ThemeToggle />
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <Link href="/settings" passHref legacyBehavior>
                   <SidebarMenuButton
