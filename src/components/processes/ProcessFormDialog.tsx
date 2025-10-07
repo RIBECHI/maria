@@ -17,6 +17,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription as FormDescriptionUI,
   FormField,
   FormItem,
   FormLabel,
@@ -32,7 +33,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, PlusCircle, Trash2, Search, UserPlus } from "lucide-react";
+import { Loader2, PlusCircle, Trash2, Search, UserPlus, X } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardDescription as CardTimelineDescription, CardHeader, CardTitle as CardTimelineTitle } from "@/components/ui/card";
@@ -52,6 +53,7 @@ import { ClientFormDialog, type ClientFormValues } from "@/components/clients/Cl
 import { addClient } from "@/services/clientService";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { DocumentData } from "firebase/firestore";
+import { Badge } from "@/components/ui/badge";
 
 export interface TimelineEvent {
   id: string;
@@ -71,7 +73,7 @@ export interface Process extends DocumentData {
   monitorProjudi?: boolean;
   uhd?: number;
   certidao?: boolean;
-  apenso?: string;
+  apensos?: string[];
   timeline?: TimelineEvent[];
   createdAt?: string;
 }
@@ -85,7 +87,7 @@ const processFormSchema = z.object({
   monitorProjudi: z.boolean().optional(),
   uhd: z.coerce.number().min(1, "UHD deve ser no mínimo 1").max(10, "UHD deve ser no máximo 10").optional(),
   certidao: z.boolean().optional(),
-  apenso: z.string().optional(),
+  apensos: z.array(z.string()).optional(),
 });
 
 export type ProcessFormValues = z.infer<typeof processFormSchema>;
@@ -113,6 +115,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
   const [isDeleteTimelineAlertOpen, setIsDeleteTimelineAlertOpen] = React.useState(false);
   const [isClientSearchOpen, setIsClientSearchOpen] = React.useState(false);
   const [isNewClientDialogOpen, setIsNewClientDialogOpen] = React.useState(false);
+  const [apensoInput, setApensoInput] = React.useState('');
   const { toast } = useToast();
 
   const form = useForm<ProcessFormValues>({
@@ -126,7 +129,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
       monitorProjudi: false,
       uhd: undefined,
       certidao: false,
-      apenso: "",
+      apensos: [],
     },
   });
 
@@ -138,6 +141,8 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
       eventSource: "Nota Manual",
     },
   });
+  
+  const apensos = form.watch('apensos') || [];
 
   React.useEffect(() => {
      if (isOpen) {
@@ -151,7 +156,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
               monitorProjudi: processData.monitorProjudi || false,
               uhd: processData.uhd || undefined,
               certidao: processData.certidao || false,
-              apenso: processData.apenso || "",
+              apensos: processData.apensos || [],
             });
             setCurrentTimeline((processData.timeline || []).sort((a, b) => parseISO(b.date).getTime() - parseISO(a.date).getTime()));
         } else {
@@ -164,7 +169,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
               monitorProjudi: false,
               uhd: undefined,
               certidao: false,
-              apenso: "",
+              apensos: [],
             });
             setCurrentTimeline([]);
         }
@@ -244,6 +249,21 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
       }
   };
 
+  const handleApensoKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      const newApenso = apensoInput.trim();
+      if (newApenso && !apensos.includes(newApenso)) {
+        form.setValue('apensos', [...apensos, newApenso]);
+      }
+      setApensoInput('');
+    }
+  };
+
+  const removeApenso = (apensoToRemove: string) => {
+    form.setValue('apensos', apensos.filter(apenso => apenso !== apensoToRemove));
+  };
+
 
   return (
     <>
@@ -272,19 +292,31 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="apenso"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Apenso (Opcional)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Nº do processo externo" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <FormItem>
+                  <FormLabel>Apensos (Opcional)</FormLabel>
+                  <FormControl>
+                    <div className="flex flex-col">
+                      <Input 
+                        placeholder="Digite o nº do processo e tecle Enter" 
+                        value={apensoInput}
+                        onChange={e => setApensoInput(e.target.value)}
+                        onKeyDown={handleApensoKeyDown}
+                      />
+                       <FormDescriptionUI>Adicione múltiplos processos externos.</FormDescriptionUI>
+                    </div>
+                  </FormControl>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {apensos.map((apenso) => (
+                      <Badge key={apenso} variant="secondary" className="flex items-center gap-1">
+                        {apenso}
+                        <button type="button" onClick={() => removeApenso(apenso)} className="rounded-full hover:bg-destructive/20">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                   <FormMessage />
+                </FormItem>
             </div>
              <FormField
                 control={form.control}

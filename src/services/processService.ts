@@ -31,7 +31,7 @@ const fromFirestore = (docSnap: DocumentData): Process => {
     monitorProjudi: data.monitorProjudi,
     uhd: data.uhd,
     certidao: data.certidao,
-    apenso: data.apenso,
+    apensos: data.apensos || [],
     timeline: (data.timeline || []).sort((a: TimelineEvent, b: TimelineEvent) => new Date(b.date).getTime() - new Date(a.date).getTime()),
   };
   if (data.createdAt && data.createdAt instanceof Timestamp) {

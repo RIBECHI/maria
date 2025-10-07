@@ -174,7 +174,7 @@ export default function ProcessesPage() {
       (proc.processNumber && proc.processNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (proc.client && proc.client.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (proc.type && proc.type.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (proc.apenso && proc.apenso.toLowerCase().includes(searchTerm.toLowerCase()))
+      (proc.apensos && proc.apensos.some(a => a.toLowerCase().includes(searchTerm.toLowerCase())))
     );
 
     switch (sortOrder) {
@@ -267,7 +267,11 @@ export default function ProcessesPage() {
                 sortedAndFilteredProcesses.map((process) => (
                   <TableRow key={process.id} className="hover:bg-muted/50 cursor-pointer" onClick={() => handleOpenDetailsSheet(process)}>
                     <TableCell className="font-medium">{process.processNumber}</TableCell>
-                    <TableCell>{process.apenso}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {process.apensos?.map(apenso => <Badge key={apenso} variant="secondary">{apenso}</Badge>)}
+                      </div>
+                    </TableCell>
                     <TableCell>{process.client}</TableCell>
                     <TableCell>{process.type}</TableCell>
                     <TableCell>
