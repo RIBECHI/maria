@@ -35,6 +35,9 @@ import { Loader2, Search } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ClientSearchDialog } from "@/components/clients/ClientSearchDialog";
 import type { DocumentData } from 'firebase/firestore';
+import { getProcesses } from "@/services/processService";
+import type { Process } from "@/components/processes/ProcessFormDialog";
+import { useToast } from "@/hooks/use-toast";
 
 
 export interface CalendarEvent extends DocumentData {
@@ -68,22 +71,12 @@ interface EventFormDialogProps {
   eventData?: CalendarEvent;
 }
 
-// Mock de processos com associação de cliente para o diálogo
-const MOCK_LINKABLE_PROCESSES = [
-  { id: "PROC001", description: "Petição Inicial - Alpha", clientName: "Empresa Alpha Ltda." },
-  { id: "PROC00A", description: "Contestação - Alpha", clientName: "Empresa Alpha Ltda." },
-  { id: "PROC002", description: "Audiência - Silva", clientName: "João Silva" },
-  { id: "PROC00B", description: "Recurso - Silva", clientName: "João Silva" },
-  { id: "PROC003", description: "Parecer - Oliveira", clientName: "Maria Oliveira" },
-  { id: "PROC004", description: "Consultoria - Beta", clientName: "Construtora Beta S.A." },
-  // Adicione mais processos mockados conforme necessário
-];
-
-
 export function EventFormDialog({ isOpen, onClose, onSubmit, eventData }: EventFormDialogProps) {
   const [isLoading, setIsLoading] = React.useState(false);
   const [isClientSearchOpen, setIsClientSearchOpen] = React.useState(false);
+  const [allProcesses, setAllProcesses] = React.useState<Process[]>([]);
   const [processOptions, setProcessOptions] = React.useState<{ value: string; label: string }[]>([]);
+  const { toast } = useToast();
 
   const form = useForm<EventFormValues>({
     resolver: zodResolver(eventFormSchema),
@@ -99,22 +92,41 @@ export function EventFormDialog({ isOpen, onClose, onSubmit, eventData }: EventF
 
   const selectedClient = form.watch("client");
 
+  // Busca todos os processos quando o diálogo é aberto
   React.useEffect(() => {
-    if (selectedClient) {
-      const filtered = MOCK_LINKABLE_PROCESSES.filter(p => p.clientName === selectedClient);
-      const options = filtered.map(p => ({ value: p.id, label: `${p.id} - ${p.description}` }));
+    if (isOpen) {
+      async function fetchProcesses() {
+        try {
+          const processesFromDb = await getProcesses();
+          setAllProcesses(processesFromDb);
+        } catch (error) {
+          console.error("Failed to fetch processes:", error);
+          toast({ title: "Erro", description: "Não foi possível carregar a lista de processos.", variant: "destructive" });
+        }
+      }
+      fetchProcesses();
+    }
+  }, [isOpen, toast]);
+
+  // Filtra os processos quando um cliente é selecionado
+  React.useEffect(() => {
+    if (selectedClient && allProcesses.length > 0) {
+      const filtered = allProcesses.filter(p => p.client === selectedClient);
+      const options = filtered.map(p => ({ 
+        value: p.processNumber, 
+        label: `${p.processNumber} - ${p.type}` 
+      }));
       setProcessOptions(options);
 
-      // Resetar o campo processo se o processo atual não for válido para o novo cliente
       const currentProcessValue = form.getValues("process");
       if (currentProcessValue && !options.find(opt => opt.value === currentProcessValue)) {
         form.setValue("process", "");
       }
     } else {
       setProcessOptions([]);
-      form.setValue("process", ""); // Limpa o processo se nenhum cliente estiver selecionado
+      form.setValue("process", "");
     }
-  }, [selectedClient, form]);
+  }, [selectedClient, allProcesses, form]);
 
 
   React.useEffect(() => {
@@ -128,10 +140,12 @@ export function EventFormDialog({ isOpen, onClose, onSubmit, eventData }: EventF
           client: eventData.client || "",
           process: eventData.process || "",
         });
-        // Disparar a lógica de filtro de processo para o cliente inicial, se houver
-        if (eventData.client) {
-             const filtered = MOCK_LINKABLE_PROCESSES.filter(p => p.clientName === eventData.client);
-             const options = filtered.map(p => ({ value: p.id, label: `${p.id} - ${p.description}` }));
+        
+        // A lógica de filtro já será disparada pelo useEffect de 'selectedClient' e 'allProcesses'
+        // Mas podemos forçar uma filtragem inicial caso os dados já estejam disponíveis
+        if (eventData.client && allProcesses.length > 0) {
+             const filtered = allProcesses.filter(p => p.client === eventData.client);
+             const options = filtered.map(p => ({ value: p.processNumber, label: `${p.processNumber} - ${p.type}` }));
              setProcessOptions(options);
         } else {
             setProcessOptions([]);
@@ -149,7 +163,7 @@ export function EventFormDialog({ isOpen, onClose, onSubmit, eventData }: EventF
         setProcessOptions([]);
       }
     }
-  }, [eventData, form, isOpen]);
+  }, [eventData, form, isOpen, allProcesses]);
   
   const parseISOAdjusted = (dateString: string) => {
     if (dateString.length === 10) { 
@@ -160,7 +174,6 @@ export function EventFormDialog({ isOpen, onClose, onSubmit, eventData }: EventF
 
   const handleFormSubmit: SubmitHandler<EventFormValues> = async (data) => {
     setIsLoading(true);
-    // await new Promise(resolve => setTimeout(resolve, 700));
     const submittedData = {
       ...data,
       date: format(new Date(data.date + 'T00:00:00'), 'yyyy-MM-dd') 
@@ -177,7 +190,6 @@ export function EventFormDialog({ isOpen, onClose, onSubmit, eventData }: EventF
 
   const handleClientSelected = (clientName: string) => {
     form.setValue("client", clientName);
-    // O useEffect [selectedClient] cuidará de atualizar as opções de processo
     setIsClientSearchOpen(false);
   };
 
@@ -342,3 +354,5 @@ export function EventFormDialog({ isOpen, onClose, onSubmit, eventData }: EventF
     </>
   );
 }
+
+    
