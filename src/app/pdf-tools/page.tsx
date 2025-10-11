@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { UploadCloud, FileDown, Loader2, Trash2, RotateCcw, ArrowUpDown } from "lucide-react";
+import { UploadCloud, FileDown, Loader2, Trash2, ArrowUpDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import jsPDF from 'jspdf';
 import Pica from 'pica';
@@ -71,65 +71,59 @@ export default function PdfToolsPage() {
       });
       return;
     }
-
+  
     setIsGenerating(true);
     toast({
       title: "Gerando PDF...",
       description: "Aguarde enquanto processamos e otimizamos as imagens.",
     });
-
-    const pica = Pica();
-    const pdf = new jsPDF();
-    
-    // Deleta a primeira página em branco criada por padrão.
-    pdf.deletePage(1);
-
+  
     try {
-      for (let i = 0; i < imageFiles.length; i++) {
-        const imageFile = imageFiles[i];
+      const pica = Pica();
+      // Inicia um novo jsPDF. A primeira página será adicionada no loop.
+      const pdf = new jsPDF();
+      pdf.deletePage(1); // Garante que começamos com um documento vazio.
+  
+      for (const imageFile of imageFiles) {
         const img = new Image();
         img.src = imageFile.previewUrl;
-        
-        await new Promise(resolve => {
-            img.onload = resolve;
-            img.onerror = (err) => {
-                console.error("Failed to load image:", imageFile.file.name, err);
-                resolve(null); 
-            };
-        });
-
-        if (!img.width || !img.height) continue;
-
+  
+        // Usa img.decode() para garantir que a imagem está totalmente carregada e pronta.
+        // É uma abordagem mais moderna e confiável que o onload.
+        await img.decode();
+  
         const offScreenCanvas = document.createElement('canvas');
         
-        const A4_WIDTH = 210;
-        const A4_HEIGHT = 297;
+        const A4_WIDTH_P = 210;
+        const A4_HEIGHT_P = 297;
         
         const isLandscape = img.width > img.height;
         const pageOrientation = isLandscape ? 'l' : 'p';
-        const pageWidth = isLandscape ? A4_HEIGHT : A4_WIDTH;
-        const pageHeight = isLandscape ? A4_WIDTH : A4_HEIGHT;
+        const pageWidth = isLandscape ? A4_HEIGHT_P : A4_WIDTH_P;
+        const pageHeight = isLandscape ? A4_WIDTH_P : A4_HEIGHT_P;
         const aspectRatio = img.width / img.height;
         
-        let pdfWidth = pageWidth - 20;
+        const margin = 20;
+        let pdfWidth = pageWidth - margin;
         let pdfHeight = pdfWidth / aspectRatio;
-
-        if (pdfHeight > pageHeight - 20) {
-            pdfHeight = pageHeight - 20;
-            pdfWidth = pdfHeight * aspectRatio;
+  
+        if (pdfHeight > pageHeight - margin) {
+          pdfHeight = pageHeight - margin;
+          pdfWidth = pdfHeight * aspectRatio;
         }
-
+  
         offScreenCanvas.width = img.width;
         offScreenCanvas.height = img.height;
         
         const resizedCanvas = await pica.resize(img, offScreenCanvas);
         const imgData = resizedCanvas.toDataURL('image/jpeg', quality[0] / 100);
-
+        
+        // Adiciona uma nova página para cada imagem
         pdf.addPage([pageWidth, pageHeight], pageOrientation);
         
         const x_pos = (pageWidth - pdfWidth) / 2;
         const y_pos = (pageHeight - pdfHeight) / 2;
-
+  
         pdf.addImage(imgData, 'JPEG', x_pos, y_pos, pdfWidth, pdfHeight);
       }
       
@@ -137,17 +131,17 @@ export default function PdfToolsPage() {
       const pdfSize = pdfBlob.size / 1024 / 1024; // in MB
       
       pdf.save(`documento-convertido-${Date.now()}.pdf`);
-
+  
       toast({
         title: "PDF Gerado com Sucesso!",
         description: `Seu PDF foi baixado. Tamanho final: ${pdfSize.toFixed(2)} MB`,
       });
-
+  
     } catch (error) {
       console.error(error);
       toast({
         title: "Erro ao gerar PDF",
-        description: "Ocorreu um problema durante a conversão. Tente novamente.",
+        description: "Ocorreu um problema durante a conversão. Verifique o console para mais detalhes.",
         variant: "destructive",
       });
     } finally {
