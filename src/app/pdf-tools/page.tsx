@@ -29,6 +29,11 @@ export default function PdfToolsPage() {
   const [fileName, setFileName] = React.useState("");
   const { toast } = useToast();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [isBrowser, setIsBrowser] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsBrowser(true);
+  }, []);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -291,50 +296,52 @@ export default function PdfToolsPage() {
             ) : (
             <p className="text-muted-foreground mb-4">Adicione imagens para começar a montar seu documento.</p>
             )}
-            <DragDropContext onDragEnd={onDragEnd}>
-              <Droppable droppableId="image-list" direction="horizontal">
-                {(provided) => (
-                  <div
-                    {...provided.droppableProps}
-                    ref={provided.innerRef}
-                    className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4"
-                  >
-                    {imageFiles.map((image, index) => (
-                      <Draggable key={image.id} draggableId={image.id} index={index}>
-                        {(provided) => (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                          >
-                            <Card className="group relative aspect-[3/4] overflow-hidden">
-                                <img
-                                 src={image.previewUrl}
-                                 alt={`preview ${index}`}
-                                 className="h-full w-full object-cover transition-transform"
-                                 style={{ transform: `rotate(${image.rotation}deg)` }}
-                                />
-                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                    <Button variant="default" size="icon" onClick={() => handleRotateImage(image.id)}>
-                                        <RotateCw className="h-4 w-4" />
-                                    </Button>
-                                    <Button variant="destructive" size="icon" onClick={() => handleRemoveImage(image.id)}>
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                                <div className="absolute top-1 left-1 bg-black/50 text-white rounded-full h-6 w-6 flex items-center justify-center text-sm font-bold">
-                                    {index + 1}
-                                </div>
-                            </Card>
-                          </div>
-                        )}
-                      </Draggable>
-                    ))}
-                    {provided.placeholder}
-                  </div>
-                )}
-              </Droppable>
-            </DragDropContext>
+            {isBrowser && (
+              <DragDropContext onDragEnd={onDragEnd}>
+                <Droppable droppableId="image-list" direction="horizontal">
+                  {(provided) => (
+                    <div
+                      {...provided.droppableProps}
+                      ref={provided.innerRef}
+                      className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4"
+                    >
+                      {imageFiles.map((image, index) => (
+                        <Draggable key={image.id} draggableId={image.id} index={index}>
+                          {(provided) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                            >
+                              <Card className="group relative aspect-[3/4] overflow-hidden">
+                                  <img
+                                  src={image.previewUrl}
+                                  alt={`preview ${index}`}
+                                  className="h-full w-full object-cover transition-transform"
+                                  style={{ transform: `rotate(${image.rotation}deg)` }}
+                                  />
+                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                      <Button variant="default" size="icon" onClick={() => handleRotateImage(image.id)}>
+                                          <RotateCw className="h-4 w-4" />
+                                      </Button>
+                                      <Button variant="destructive" size="icon" onClick={() => handleRemoveImage(image.id)}>
+                                          <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                  </div>
+                                  <div className="absolute top-1 left-1 bg-black/50 text-white rounded-full h-6 w-6 flex items-center justify-center text-sm font-bold">
+                                      {index + 1}
+                                  </div>
+                              </Card>
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </DragDropContext>
+            )}
         </div>
     </div>
   );
