@@ -10,7 +10,6 @@ import { Slider } from "@/components/ui/slider";
 import { UploadCloud, FileDown, Loader2, Trash2, ArrowUpDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import jsPDF from 'jspdf';
-import Pica from 'pica';
 import { Progress } from "@/components/ui/progress";
 
 interface ImageFile {
@@ -80,9 +79,10 @@ export default function PdfToolsPage() {
     setProgressMessage("Iniciando geração do PDF...");
   
     try {
-      const pica = Pica();
       const pdf = new jsPDF();
-      pdf.deletePage(1);
+      if (pdf.getNumberOfPages() > 0) {
+        pdf.deletePage(1);
+      }
   
       for (let i = 0; i < imageFiles.length; i++) {
         const imageFile = imageFiles[i];
@@ -93,11 +93,9 @@ export default function PdfToolsPage() {
 
         const img = new Image();
         img.src = imageFile.previewUrl;
-  
+        
         await img.decode();
   
-        const offScreenCanvas = document.createElement('canvas');
-        
         const A4_WIDTH_P = 210;
         const A4_HEIGHT_P = 297;
         
@@ -116,21 +114,15 @@ export default function PdfToolsPage() {
           pdfWidth = pdfHeight * aspectRatio;
         }
   
-        offScreenCanvas.width = img.width;
-        offScreenCanvas.height = img.height;
-        
-        setProgressMessage(`Otimizando imagem ${i + 1}...`);
-        setProgress(progressPercentage - 5);
-        const resizedCanvas = await pica.resize(img, offScreenCanvas);
-        const imgData = resizedCanvas.toDataURL('image/jpeg', quality[0] / 100);
-        
         setProgressMessage(`Adicionando página ${i + 1} ao PDF...`);
         pdf.addPage([pageWidth, pageHeight], pageOrientation);
         
         const x_pos = (pageWidth - pdfWidth) / 2;
         const y_pos = (pageHeight - pdfHeight) / 2;
-  
-        pdf.addImage(imgData, 'JPEG', x_pos, y_pos, pdfWidth, pdfHeight);
+        
+        const imgData = imageFile.previewUrl;
+
+        pdf.addImage(imgData, 'JPEG', x_pos, y_pos, pdfWidth, pdfHeight, undefined, 'SLOW');
         setProgress(progressPercentage);
       }
       
@@ -158,6 +150,7 @@ export default function PdfToolsPage() {
       setProgressMessage("");
     }
   };
+
 
   const onDragEnd = (result: any) => {
     if (!result.destination) return;
@@ -219,7 +212,7 @@ export default function PdfToolsPage() {
           <CardContent className="space-y-6">
              <div className="space-y-3">
                 <Label htmlFor="quality" className="flex justify-between">
-                    <span>Qualidade de Compressão:</span>
+                    <span>Qualidade de Compressão (JPEG):</span>
                     <span className="font-bold text-primary">{quality[0]}%</span>
                 </Label>
                 <Slider
