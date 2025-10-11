@@ -25,6 +25,7 @@ export default function PdfToolsPage() {
   const [isGenerating, setIsGenerating] = React.useState(false);
   const [progress, setProgress] = React.useState(0);
   const [progressMessage, setProgressMessage] = React.useState("");
+  const [fileName, setFileName] = React.useState("");
   const { toast } = useToast();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -92,7 +93,11 @@ export default function PdfToolsPage() {
     setProgressMessage("Iniciando geração do PDF...");
   
     try {
-      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdf = new jsPDF({
+        orientation: 'p',
+        unit: 'mm',
+        format: 'a4'
+      });
       
       for (let i = 0; i < imageFiles.length; i++) {
         const imageFile = imageFiles[i];
@@ -142,14 +147,14 @@ export default function PdfToolsPage() {
       }
       
       setProgressMessage("Finalizando e salvando o PDF...");
-      const pdfBlob = pdf.output('blob');
-      const pdfSize = pdfBlob.size / 1024 / 1024; // in MB
-      
-      pdf.save(`documento-convertido-${Date.now()}.pdf`);
+
+      const finalFileName = fileName.trim() ? `${fileName.trim()}.pdf` : `documento-convertido-${Date.now()}.pdf`;
+
+      pdf.save(finalFileName);
   
       toast({
         title: "PDF Gerado com Sucesso!",
-        description: `Seu PDF foi baixado. Tamanho final: ${pdfSize.toFixed(2)} MB`,
+        description: `Seu PDF "${finalFileName}" foi baixado.`,
       });
   
     } catch (error: any) {
@@ -225,6 +230,16 @@ export default function PdfToolsPage() {
             <CardDescription>Ajuste a qualidade para controlar o tamanho final do arquivo.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
+             <div className="space-y-3">
+                <Label htmlFor="filename">Nome do Arquivo (Opcional)</Label>
+                <Input
+                    id="filename"
+                    value={fileName}
+                    onChange={(e) => setFileName(e.target.value)}
+                    placeholder="Ex: peticao-cliente-xyz"
+                    disabled={isGenerating}
+                />
+             </div>
              <div className="space-y-3">
                 <Label htmlFor="quality" className="flex justify-between">
                     <span>Qualidade de Compressão (JPEG):</span>
