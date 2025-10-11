@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Save, Loader2, PlusCircle, Trash2, XCircle } from "lucide-react";
+import { Save, Loader2, PlusCircle, Trash2, XCircle, CalendarPlus } from "lucide-react";
 import { getNotes, saveNotes, type Note } from "@/services/notepadService";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -31,6 +31,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { EventFormDialog, type CalendarEvent, type EventFormValues } from "@/components/agenda/EventFormDialog";
+import { addEvent } from "@/services/eventService";
+
 
 interface NotepadSheetProps {
   isOpen: boolean;
@@ -45,6 +48,8 @@ export function NotepadSheet({ isOpen, onOpenChange }: NotepadSheetProps) {
   const [isSaving, setIsSaving] = React.useState(false);
   const [noteToDelete, setNoteToDelete] = React.useState<Note | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
+  const [isEventDialogOpen, setIsEventDialogOpen] = React.useState(false);
+  const [eventToCreate, setEventToCreate] = React.useState<Partial<CalendarEvent> | undefined>(undefined);
 
 
   React.useEffect(() => {
@@ -135,6 +140,24 @@ export function NotepadSheet({ isOpen, onOpenChange }: NotepadSheetProps) {
     setNoteToDelete(note);
     setIsDeleteDialogOpen(true);
   };
+  
+  const handleScheduleFromNote = (note: Note) => {
+    setEventToCreate({
+      description: note.content,
+    });
+    setIsEventDialogOpen(true);
+  };
+
+  const handleSubmitEventForm = async (data: EventFormValues) => {
+    try {
+        const newEvent = await addEvent(data);
+        toast({ title: "Evento adicionado!", description: `O evento "${newEvent.description}" foi adicionado à sua agenda.` });
+        setIsEventDialogOpen(false);
+    } catch(error) {
+      console.error("Failed to save event from note:", error);
+      toast({ title: "Erro ao agendar", description: "Não foi possível salvar o evento.", variant: "destructive" });
+    }
+  };
 
 
   return (
@@ -190,16 +213,28 @@ export function NotepadSheet({ isOpen, onOpenChange }: NotepadSheetProps) {
                                 <p className="text-xs text-muted-foreground mt-2">
                                 {note.createdAt ? format(note.createdAt.toDate(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : 'Salvando...'}
                                 </p>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="absolute top-1 right-1 h-7 w-7 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive"
-                                  onClick={() => handleDeleteConfirmation(note)}
-                                  disabled={isSaving}
-                                  aria-label="Excluir nota"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                                <div className="absolute top-1 right-1 flex opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-muted-foreground hover:text-primary"
+                                    onClick={() => handleScheduleFromNote(note)}
+                                    disabled={isSaving}
+                                    aria-label="Agendar nota"
+                                  >
+                                    <CalendarPlus className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                    onClick={() => handleDeleteConfirmation(note)}
+                                    disabled={isSaving}
+                                    aria-label="Excluir nota"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
                             </CardContent>
                             </Card>
                         ))}
@@ -233,6 +268,14 @@ export function NotepadSheet({ isOpen, onOpenChange }: NotepadSheetProps) {
           </AlertDialogContent>
         </AlertDialog>
       )}
+
+      {/* Dialog para agendar evento a partir da nota */}
+      <EventFormDialog
+        isOpen={isEventDialogOpen}
+        onClose={() => setIsEventDialogOpen(false)}
+        onSubmit={handleSubmitEventForm}
+        eventData={eventToCreate}
+      />
     </>
   );
 }
