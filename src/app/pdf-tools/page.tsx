@@ -29,10 +29,10 @@ export default function PdfToolsPage() {
   const [fileName, setFileName] = React.useState("");
   const { toast } = useToast();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const [isBrowser, setIsBrowser] = React.useState(false);
+  const [isClient, setIsClient] = React.useState(false);
 
   React.useEffect(() => {
-    setIsBrowser(true);
+    setIsClient(true);
   }, []);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -105,7 +105,6 @@ export default function PdfToolsPage() {
         format: 'a4'
       });
       
-      // Remove a primeira página em branco criada por padrão
       pdf.deletePage(1);
 
       for (let i = 0; i < imageFiles.length; i++) {
@@ -124,7 +123,7 @@ export default function PdfToolsPage() {
         const A4_HEIGHT = 297;
         const margin = 10;
         
-        const pageOrientation = 'p'; // Forçado para retrato
+        const pageOrientation = 'p'; 
         const pageWidth = A4_WIDTH;
         const pageHeight = A4_HEIGHT;
 
@@ -296,7 +295,7 @@ export default function PdfToolsPage() {
             ) : (
             <p className="text-muted-foreground mb-4">Adicione imagens para começar a montar seu documento.</p>
             )}
-            {isBrowser && (
+            {isClient && (
               <DragDropContext onDragEnd={onDragEnd}>
                 <Droppable droppableId="image-list" direction="horizontal">
                   {(provided) => (
