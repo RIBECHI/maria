@@ -81,13 +81,14 @@ export default function PdfToolsPage() {
     const pica = Pica();
     const pdf = new jsPDF();
     
-    // Remove a primeira página em branco
+    // Remove a primeira página em branco que o jsPDF cria por padrão
     if (pdf.getNumberOfPages() > 0) {
       pdf.deletePage(1);
     }
 
     try {
-      for (const imageFile of imageFiles) {
+      for (let i = 0; i < imageFiles.length; i++) {
+        const imageFile = imageFiles[i];
         const img = new Image();
         img.src = imageFile.previewUrl;
         await new Promise(resolve => img.onload = resolve);
@@ -267,3 +268,5 @@ export default function PdfToolsPage() {
     </div>
   );
 }
+
+    
