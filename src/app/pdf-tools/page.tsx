@@ -93,9 +93,7 @@ export default function PdfToolsPage() {
   
     try {
       const pdf = new jsPDF();
-      if (pdf.internal.pages.length > 1) {
-         pdf.deletePage(1);
-      }
+      pdf.deletePage(1); // Remove the default blank page
       
       for (let i = 0; i < imageFiles.length; i++) {
         const imageFile = imageFiles[i];
@@ -133,10 +131,7 @@ export default function PdfToolsPage() {
         }
   
         setProgressMessage(`Adicionando página ${i + 1} ao PDF...`);
-        if (i > 0) pdf.addPage();
-        const currentPage = pdf.internal.pages[i+1];
-        currentPage.orientation = pageOrientation;
-
+        pdf.addPage([pageWidth, pageHeight], pageOrientation);
 
         const x_pos = (pageWidth - pdfWidth) / 2;
         const y_pos = (pageHeight - pdfHeight) / 2;
