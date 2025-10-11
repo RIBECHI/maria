@@ -91,20 +91,37 @@ export default function PdfToolsPage() {
         const imageFile = imageFiles[i];
         const img = new Image();
         img.src = imageFile.previewUrl;
-        await new Promise(resolve => img.onload = resolve);
         
+        await new Promise(resolve => {
+            img.onload = resolve;
+            img.onerror = (err) => {
+                console.error("Failed to load image:", imageFile.file.name, err);
+                // Resolve to continue the loop even if one image fails.
+                resolve(null); 
+            };
+        });
+
+        if (!img.width || !img.height) continue;
+
         const offScreenCanvas = document.createElement('canvas');
         
-        // Mantém a proporção da imagem
+        // Define as dimensões do A4
         const A4_WIDTH = 210;
         const A4_HEIGHT = 297;
+        
+        // Determina a orientação e calcula as dimensões da imagem no PDF
+        const isLandscape = img.width > img.height;
+        const pageOrientation = isLandscape ? 'l' : 'p';
+        const pageWidth = isLandscape ? A4_HEIGHT : A4_WIDTH;
+        const pageHeight = isLandscape ? A4_WIDTH : A4_HEIGHT;
         const aspectRatio = img.width / img.height;
-        let pdfWidth = A4_WIDTH - 20; // com margens
+        
+        let pdfWidth = pageWidth - 20; // margens de 10mm de cada lado
         let pdfHeight = pdfWidth / aspectRatio;
 
-        if (pdfHeight > A4_HEIGHT - 20) {
-          pdfHeight = A4_HEIGHT - 20;
-          pdfWidth = pdfHeight * aspectRatio;
+        if (pdfHeight > pageHeight - 20) {
+            pdfHeight = pageHeight - 20;
+            pdfWidth = pdfHeight * aspectRatio;
         }
 
         offScreenCanvas.width = img.width;
@@ -113,10 +130,10 @@ export default function PdfToolsPage() {
         const resizedCanvas = await pica.resize(img, offScreenCanvas);
         const imgData = resizedCanvas.toDataURL('image/jpeg', quality[0] / 100);
 
-        pdf.addPage([A4_WIDTH, A4_HEIGHT], img.width > img.height ? 'l' : 'p');
+        pdf.addPage([pageWidth, pageHeight], pageOrientation);
         
-        const x_pos = (A4_WIDTH - pdfWidth) / 2;
-        const y_pos = (A4_HEIGHT - pdfHeight) / 2;
+        const x_pos = (pageWidth - pdfWidth) / 2;
+        const y_pos = (pageHeight - pdfHeight) / 2;
 
         pdf.addImage(imgData, 'JPEG', x_pos, y_pos, pdfWidth, pdfHeight);
       }
@@ -268,5 +285,3 @@ export default function PdfToolsPage() {
     </div>
   );
 }
-
-    
