@@ -4,8 +4,7 @@
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, orderBy, limit, serverTimestamp, getDoc } from 'firebase/firestore';
 import type { CalendarEvent, EventFormValues } from '@/components/agenda/EventFormDialog';
-import { startOfToday } from 'date-fns';
-import { format } from 'date-fns/fp';
+import { startOfToday, format } from 'date-fns';
 
 const eventsCollectionRef = collection(db, 'events');
 
@@ -35,7 +34,7 @@ export async function getEvents(): Promise<CalendarEvent[]> {
 
 // READ for Dashboard/Sidebar
 export async function getEventsForDashboard(count: number): Promise<CalendarEvent[]> {
-  const today = format('yyyy-MM-dd', startOfToday());
+  const today = format(startOfToday(), 'yyyy-MM-dd');
   const q = query(
     eventsCollectionRef, 
     where('date', '>=', today), 
