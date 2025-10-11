@@ -90,6 +90,17 @@ export default function DashboardPage() {
         fetchData();
     }, []);
 
+    const getActivityLink = (item: RecentActivityItem) => {
+        switch (item.type) {
+            case 'process':
+                return '/processes';
+            case 'client':
+                return '/clients';
+            default:
+                return '#';
+        }
+    };
+
     return (
         <div className="container mx-auto p-4 md:p-6 lg:p-8">
             <h1 className="text-4xl font-headline font-extrabold mb-8 text-primary">Painel</h1>
@@ -111,11 +122,13 @@ export default function DashboardPage() {
                         ) : upcomingEvents.length > 0 ? (
                             <List>
                                 {upcomingEvents.map((item) => (
-                                    <ListItem key={item.id} className="flex justify-between items-center">
-                                        <Link href="/agenda" className="hover:underline flex-1 truncate pr-2">
-                                            {item.description}
+                                    <ListItem key={item.id} className="p-0 border-b-0">
+                                        <Link href="/agenda" className="flex justify-between items-center w-full p-2 rounded-md hover:bg-muted/50 transition-colors">
+                                            <span className="flex-1 truncate pr-2">
+                                                {item.description}
+                                            </span>
+                                            <Badge variant="outline">{format(parseISO(item.date), 'dd/MM', { locale: ptBR })}</Badge>
                                         </Link>
-                                        <Badge variant="outline">{format(parseISO(item.date), 'dd/MM', { locale: ptBR })}</Badge>
                                     </ListItem>
                                 ))}
                             </List>
@@ -141,12 +154,14 @@ export default function DashboardPage() {
                         ) : recentActivities.length > 0 ? (
                             <List>
                                 {recentActivities.map((item) => (
-                                    <ListItem key={item.id} className="flex items-center gap-3">
-                                        {item.icon}
-                                        <div className="flex-1 min-w-0">
-                                            <p className="truncate">{item.text}</p>
-                                            <p className="text-xs text-muted-foreground">{item.time}</p>
-                                        </div>
+                                    <ListItem key={item.id} className="p-0 border-b-0">
+                                         <Link href={getActivityLink(item)} className="flex items-center gap-3 w-full p-2 rounded-md hover:bg-muted/50 transition-colors">
+                                            {item.icon}
+                                            <div className="flex-1 min-w-0">
+                                                <p className="truncate">{item.text}</p>
+                                                <p className="text-xs text-muted-foreground">{item.time}</p>
+                                            </div>
+                                        </Link>
                                     </ListItem>
                                 ))}
                             </List>
@@ -170,29 +185,31 @@ export default function DashboardPage() {
                                 <Skeleton className="h-6 w-1/4" />
                             </div>
                         ) : processStats ? (
-                             <List>
-                                <ListItem className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <Hourglass className="h-4 w-4 text-blue-500" />
-                                        <span>Em Andamento</span>
-                                    </div>
-                                    <span className="font-bold text-lg">{processStats.emAndamento}</span>
-                                </ListItem>
-                                 <ListItem className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <CheckSquare className="h-4 w-4 text-green-600" />
-                                        <span>Concluídos</span>
-                                    </div>
-                                    <span className="font-bold text-lg">{processStats.concluido}</span>
-                                </ListItem>
-                                 <ListItem className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <Briefcase className="h-4 w-4 text-yellow-500" />
-                                        <span>Suspensos</span>
-                                    </div>
-                                    <span className="font-bold text-lg">{processStats.suspenso}</span>
-                                </ListItem>
-                            </List>
+                            <Link href="/processes" className="block hover:bg-muted/50 rounded-md transition-colors -m-3 p-3">
+                                 <List>
+                                    <ListItem className="flex items-center justify-between border-b-0 p-0">
+                                        <div className="flex items-center gap-2">
+                                            <Hourglass className="h-4 w-4 text-blue-500" />
+                                            <span>Em Andamento</span>
+                                        </div>
+                                        <span className="font-bold text-lg">{processStats.emAndamento}</span>
+                                    </ListItem>
+                                     <ListItem className="flex items-center justify-between border-b-0 p-0">
+                                        <div className="flex items-center gap-2">
+                                            <CheckSquare className="h-4 w-4 text-green-600" />
+                                            <span>Concluídos</span>
+                                        </div>
+                                        <span className="font-bold text-lg">{processStats.concluido}</span>
+                                    </ListItem>
+                                     <ListItem className="flex items-center justify-between border-b-0 p-0">
+                                        <div className="flex items-center gap-2">
+                                            <Briefcase className="h-4 w-4 text-yellow-500" />
+                                            <span>Suspensos</span>
+                                        </div>
+                                        <span className="font-bold text-lg">{processStats.suspenso}</span>
+                                    </ListItem>
+                                </List>
+                            </Link>
                         ) : (
                             <p className="text-sm text-muted-foreground pt-2">Não foi possível carregar as estatísticas.</p>
                         )}
