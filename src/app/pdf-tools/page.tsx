@@ -89,7 +89,7 @@ export default function PdfToolsPage() {
         const progressPercentage = ((i + 1) / imageFiles.length) * 100;
         
         setProgressMessage(`Processando imagem ${i + 1} de ${imageFiles.length}...`);
-        setProgress(progressPercentage - 5);
+        setProgress(progressPercentage - 10);
 
         const img = new Image();
         img.src = imageFile.previewUrl;
@@ -107,12 +107,12 @@ export default function PdfToolsPage() {
         const pageHeight = isLandscape ? A4_WIDTH_P : A4_HEIGHT_P;
         const aspectRatio = img.width / img.height;
         
-        const margin = 20;
-        let pdfWidth = pageWidth - margin;
+        const margin = 10;
+        let pdfWidth = pageWidth - margin * 2;
         let pdfHeight = pdfWidth / aspectRatio;
   
-        if (pdfHeight > pageHeight - margin) {
-          pdfHeight = pageHeight - margin;
+        if (pdfHeight > pageHeight - margin * 2) {
+          pdfHeight = pageHeight - margin * 2;
           pdfWidth = pdfHeight * aspectRatio;
         }
   
@@ -120,6 +120,7 @@ export default function PdfToolsPage() {
         offScreenCanvas.height = img.height;
         
         setProgressMessage(`Otimizando imagem ${i + 1}...`);
+        setProgress(progressPercentage - 5);
         const resizedCanvas = await pica.resize(img, offScreenCanvas);
         const imgData = resizedCanvas.toDataURL('image/jpeg', quality[0] / 100);
         
@@ -288,3 +289,5 @@ export default function PdfToolsPage() {
     </div>
   );
 }
+
+    
