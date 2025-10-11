@@ -12,6 +12,7 @@ import {
   Settings,
   CalendarDays,
   Notebook,
+  FileCog,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -43,6 +44,7 @@ const navItems = [
   { href: '/documents', label: 'Documentos', icon: <FileText /> },
   { href: '/agenda', label: 'Agenda', icon: <CalendarDays /> },
   { href: '/legal-reminder', label: 'Lembrete Legal', icon: <Lightbulb /> },
+  { href: '/pdf-tools', label: 'Ferramentas PDF', icon: <FileCog /> },
 ];
 
 function JusticeSymbolWatermark() {
