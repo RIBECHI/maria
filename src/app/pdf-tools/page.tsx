@@ -81,10 +81,8 @@ export default function PdfToolsPage() {
     const pica = Pica();
     const pdf = new jsPDF();
     
-    // Remove a primeira página em branco que o jsPDF cria por padrão
-    if (pdf.getNumberOfPages() > 0) {
-      pdf.deletePage(1);
-    }
+    // Deleta a primeira página em branco criada por padrão.
+    pdf.deletePage(1);
 
     try {
       for (let i = 0; i < imageFiles.length; i++) {
@@ -96,7 +94,6 @@ export default function PdfToolsPage() {
             img.onload = resolve;
             img.onerror = (err) => {
                 console.error("Failed to load image:", imageFile.file.name, err);
-                // Resolve to continue the loop even if one image fails.
                 resolve(null); 
             };
         });
@@ -105,18 +102,16 @@ export default function PdfToolsPage() {
 
         const offScreenCanvas = document.createElement('canvas');
         
-        // Define as dimensões do A4
         const A4_WIDTH = 210;
         const A4_HEIGHT = 297;
         
-        // Determina a orientação e calcula as dimensões da imagem no PDF
         const isLandscape = img.width > img.height;
         const pageOrientation = isLandscape ? 'l' : 'p';
         const pageWidth = isLandscape ? A4_HEIGHT : A4_WIDTH;
         const pageHeight = isLandscape ? A4_WIDTH : A4_HEIGHT;
         const aspectRatio = img.width / img.height;
         
-        let pdfWidth = pageWidth - 20; // margens de 10mm de cada lado
+        let pdfWidth = pageWidth - 20;
         let pdfHeight = pdfWidth / aspectRatio;
 
         if (pdfHeight > pageHeight - 20) {
@@ -285,3 +280,5 @@ export default function PdfToolsPage() {
     </div>
   );
 }
+
+    
