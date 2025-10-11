@@ -11,6 +11,7 @@ import { UploadCloud, FileDown, Loader2, Trash2, ArrowUpDown } from "lucide-reac
 import { useToast } from "@/hooks/use-toast";
 import jsPDF from 'jspdf';
 import Pica from 'pica';
+import { Progress } from "@/components/ui/progress";
 
 interface ImageFile {
   id: string;
@@ -22,6 +23,8 @@ export default function PdfToolsPage() {
   const [imageFiles, setImageFiles] = React.useState<ImageFile[]>([]);
   const [quality, setQuality] = React.useState([80]);
   const [isGenerating, setIsGenerating] = React.useState(false);
+  const [progress, setProgress] = React.useState(0);
+  const [progressMessage, setProgressMessage] = React.useState("");
   const { toast } = useToast();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -73,23 +76,24 @@ export default function PdfToolsPage() {
     }
   
     setIsGenerating(true);
-    toast({
-      title: "Gerando PDF...",
-      description: "Aguarde enquanto processamos e otimizamos as imagens.",
-    });
+    setProgress(0);
+    setProgressMessage("Iniciando geração do PDF...");
   
     try {
       const pica = Pica();
-      // Inicia um novo jsPDF. A primeira página será adicionada no loop.
       const pdf = new jsPDF();
-      pdf.deletePage(1); // Garante que começamos com um documento vazio.
+      pdf.deletePage(1);
   
-      for (const imageFile of imageFiles) {
+      for (let i = 0; i < imageFiles.length; i++) {
+        const imageFile = imageFiles[i];
+        const progressPercentage = ((i + 1) / imageFiles.length) * 100;
+        
+        setProgressMessage(`Processando imagem ${i + 1} de ${imageFiles.length}...`);
+        setProgress(progressPercentage - 5);
+
         const img = new Image();
         img.src = imageFile.previewUrl;
   
-        // Usa img.decode() para garantir que a imagem está totalmente carregada e pronta.
-        // É uma abordagem mais moderna e confiável que o onload.
         await img.decode();
   
         const offScreenCanvas = document.createElement('canvas');
@@ -115,18 +119,21 @@ export default function PdfToolsPage() {
         offScreenCanvas.width = img.width;
         offScreenCanvas.height = img.height;
         
+        setProgressMessage(`Otimizando imagem ${i + 1}...`);
         const resizedCanvas = await pica.resize(img, offScreenCanvas);
         const imgData = resizedCanvas.toDataURL('image/jpeg', quality[0] / 100);
         
-        // Adiciona uma nova página para cada imagem
+        setProgressMessage(`Adicionando página ${i + 1} ao PDF...`);
         pdf.addPage([pageWidth, pageHeight], pageOrientation);
         
         const x_pos = (pageWidth - pdfWidth) / 2;
         const y_pos = (pageHeight - pdfHeight) / 2;
   
         pdf.addImage(imgData, 'JPEG', x_pos, y_pos, pdfWidth, pdfHeight);
+        setProgress(progressPercentage);
       }
       
+      setProgressMessage("Finalizando e salvando o PDF...");
       const pdfBlob = pdf.output('blob');
       const pdfSize = pdfBlob.size / 1024 / 1024; // in MB
       
@@ -137,15 +144,17 @@ export default function PdfToolsPage() {
         description: `Seu PDF foi baixado. Tamanho final: ${pdfSize.toFixed(2)} MB`,
       });
   
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       toast({
         title: "Erro ao gerar PDF",
-        description: "Ocorreu um problema durante a conversão. Verifique o console para mais detalhes.",
+        description: `Ocorreu um problema: ${error.message}. Verifique o console para mais detalhes.`,
         variant: "destructive",
       });
     } finally {
       setIsGenerating(false);
+      setProgress(0);
+      setProgressMessage("");
     }
   };
 
@@ -226,7 +235,7 @@ export default function PdfToolsPage() {
                 </p>
              </div>
           </CardContent>
-          <CardFooter>
+          <CardFooter className="flex-col items-stretch gap-4">
             <Button onClick={handleGeneratePdf} disabled={isGenerating || imageFiles.length === 0} className="w-full" size="lg">
               {isGenerating ? (
                 <>
@@ -240,6 +249,12 @@ export default function PdfToolsPage() {
                 </>
               )}
             </Button>
+            {isGenerating && (
+                <div className="w-full space-y-2">
+                    <Progress value={progress} className="w-full" />
+                    <p className="text-xs text-center text-muted-foreground">{progressMessage}</p>
+                </div>
+            )}
           </CardFooter>
         </Card>
       </div>
@@ -273,7 +288,3 @@ export default function PdfToolsPage() {
     </div>
   );
 }
-
-    
-
-    
