@@ -2,17 +2,12 @@
 "use client";
 
 import * as React from "react";
-import pica from 'pica';
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { UploadCloud, Image as ImageIcon, Trash2, Save, Loader2 } from "lucide-react";
-
-const MAX_WIDTH = 2480; // A4 width in pixels at 300 DPI
-const MAX_HEIGHT = 3508; // A4 height in pixels at 300 DPI
 
 export default function PdfTemplatePage() {
   const [headerImage, setHeaderImage] = React.useState<string | null>(null);
@@ -27,61 +22,22 @@ export default function PdfTemplatePage() {
     }
   }, []);
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && file.type.startsWith('image/')) {
       setIsProcessing(true);
-      toast({ title: "Processando imagem...", description: "Otimizando e redimensionando sua imagem para o modelo." });
-      try {
-        const resizedDataUrl = await resizeImage(file);
-        setHeaderImage(resizedDataUrl);
-        toast({ title: "Imagem carregada", description: "Pré-visualização atualizada. Clique em salvar para confirmar." });
-      } catch (error) {
-        console.error("Error resizing image:", error);
-        toast({ title: "Erro ao processar imagem", description: "Não foi possível carregar o arquivo.", variant: "destructive" });
-      } finally {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setHeaderImage(reader.result as string);
         setIsProcessing(false);
-      }
+        toast({ title: "Imagem carregada", description: "Pré-visualização atualizada. Clique em salvar para confirmar." });
+      };
+      reader.onerror = () => {
+        setIsProcessing(false);
+        toast({ title: "Erro ao carregar imagem", description: "Não foi possível ler o arquivo.", variant: "destructive" });
+      };
+      reader.readAsDataURL(file);
     }
-  };
-
-  const resizeImage = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-        const picaInstance = pica();
-        const img = new Image();
-        img.src = URL.createObjectURL(file);
-        img.onload = () => {
-            const aspectRatio = img.width / img.height;
-            let targetWidth = MAX_WIDTH;
-            let targetHeight = targetWidth / aspectRatio;
-
-            if (targetHeight > MAX_HEIGHT) {
-                targetHeight = MAX_HEIGHT;
-                targetWidth = targetHeight * aspectRatio;
-            }
-
-            const canvas = document.createElement('canvas');
-            canvas.width = targetWidth;
-            canvas.height = targetHeight;
-
-            picaInstance.resize(img, canvas, {
-                unsharpAmount: 80,
-                unsharpRadius: 0.6,
-                unsharpThreshold: 2,
-            })
-            .then(result => picaInstance.toBlob(result, 'image/png', 0.9))
-            .then(blob => {
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                    resolve(reader.result as string);
-                };
-                reader.onerror = reject;
-                reader.readAsDataURL(blob);
-            })
-            .catch(reject);
-        };
-        img.onerror = reject;
-    });
   };
 
   const handleSaveTemplate = () => {
@@ -132,7 +88,7 @@ export default function PdfTemplatePage() {
             {isProcessing && (
                  <div className="flex items-center justify-center p-8 text-muted-foreground">
                     <Loader2 className="h-6 w-6 animate-spin mr-2" />
-                    <span>Otimizando imagem...</span>
+                    <span>Carregando imagem...</span>
                  </div>
             )}
            
