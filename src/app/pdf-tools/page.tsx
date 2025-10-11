@@ -89,19 +89,34 @@ export default function PdfToolsPage() {
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
       
-      // Carrega o modelo de cabeçalho do localStorage
       const headerTemplate = localStorage.getItem('pdfHeaderTemplate');
+      const footerTemplate = localStorage.getItem('pdfFooterTemplate');
+      
       let headerImageHeight = 0;
+      let footerImageHeight = 0;
       
       if (headerTemplate) {
-        setProgressMessage("Aplicando modelo de cabeçalho...");
+        setProgressMessage("Carregando modelo de cabeçalho...");
         const img = new Image();
         img.src = headerTemplate;
-        await new Promise<void>((resolve) => {
+        await new Promise<void>((resolve, reject) => {
             img.onload = () => resolve();
+            img.onerror = () => reject(new Error("Falha ao carregar imagem do cabeçalho."));
         });
         const aspectRatio = img.width / img.height;
         headerImageHeight = pageWidth / aspectRatio;
+      }
+
+      if (footerTemplate) {
+        setProgressMessage("Carregando modelo de rodapé...");
+        const img = new Image();
+        img.src = footerTemplate;
+        await new Promise<void>((resolve, reject) => {
+            img.onload = () => resolve();
+            img.onerror = () => reject(new Error("Falha ao carregar imagem do rodapé."));
+        });
+        const aspectRatio = img.width / img.height;
+        footerImageHeight = pageWidth / aspectRatio;
       }
       
       const imageMargin = 10;
@@ -116,7 +131,6 @@ export default function PdfToolsPage() {
             pdf.addPage('a4', 'p');
         }
         
-        // Adiciona a imagem do cabeçalho do modelo em cada página
         if (headerTemplate && headerImageHeight > 0) {
             pdf.addImage(headerTemplate, 'PNG', 0, 0, pageWidth, headerImageHeight);
         }
@@ -137,7 +151,7 @@ export default function PdfToolsPage() {
 
         const aspectRatio = imgWidth / imgHeight;
         
-        const availableHeight = pageHeight - (headerImageHeight + imageMargin * 2);
+        const availableHeight = pageHeight - headerImageHeight - footerImageHeight - (imageMargin * 2);
         const availableWidth = pageWidth - imageMargin * 2;
 
         let pdfWidth = availableWidth;
@@ -151,12 +165,17 @@ export default function PdfToolsPage() {
         setProgressMessage(`Adicionando página ${i + 1} ao PDF...`);
         
         const x_pos = (pageWidth - pdfWidth) / 2;
-        // Posição Y ajustada para ficar abaixo do cabeçalho
         const y_pos = headerImageHeight + imageMargin;
         
         const imgData = imageFile.previewUrl;
 
         pdf.addImage(imgData, 'JPEG', x_pos, y_pos, pdfWidth, pdfHeight, undefined, 'SLOW', imageFile.rotation);
+
+        if (footerTemplate && footerImageHeight > 0) {
+            const footerY = pageHeight - footerImageHeight;
+            pdf.addImage(footerTemplate, 'PNG', 0, footerY, pageWidth, footerImageHeight);
+        }
+
         setProgress(progressPercentage);
       }
       
