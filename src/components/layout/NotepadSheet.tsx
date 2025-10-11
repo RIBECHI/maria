@@ -164,7 +164,7 @@ export function NotepadSheet({ isOpen, onOpenChange }: NotepadSheetProps) {
   return (
     <>
       <Sheet open={isOpen} onOpenChange={onOpenChange}>
-        <SheetContent className="w-full sm:max-w-lg flex flex-col">
+        <SheetContent side="left" className="w-full sm:max-w-lg flex flex-col">
           <SheetHeader>
             <SheetTitle>Bloco de Notas</SheetTitle>
             <SheetDescription>
