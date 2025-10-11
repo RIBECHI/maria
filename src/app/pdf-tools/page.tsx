@@ -7,11 +7,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { UploadCloud, FileDown, Loader2, ArrowUpDown, RotateCw, Trash2 } from "lucide-react";
+import { UploadCloud, FileDown, Loader2, ArrowUpDown, RotateCw, Trash2, ArrowLeft, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import jsPDF from 'jspdf';
 import { Progress } from "@/components/ui/progress";
-import { DragDropContext, Droppable, Draggable, type DropResult } from "react-beautiful-dnd";
 
 
 export interface ImageFile {
@@ -102,15 +101,12 @@ export default function PdfToolsPage() {
         if (i > 0) {
           pdf.addPage();
         }
-
-        const A4_WIDTH = 210;
-        const A4_HEIGHT = 297;
-        const margin = 10;
         
         const pageOrientation = 'p'; 
-        const pageWidth = A4_WIDTH;
-        const pageHeight = A4_HEIGHT;
-
+        const pageWidth = 210;
+        const pageHeight = 297;
+        const margin = 10;
+        
         const imgWidth = img.width;
         const imgHeight = img.height;
         const aspectRatio = imgWidth / imgHeight;
@@ -159,14 +155,6 @@ export default function PdfToolsPage() {
     }
   };
 
-  const onDragEnd = (result: DropResult) => {
-    if (!result.destination) return;
-    const items = Array.from(imageFiles);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
-    setImageFiles(items);
-  };
-
   const handleRemoveImage = (id: string) => {
       setImageFiles(prev => prev.filter(image => image.id !== id));
   };
@@ -179,6 +167,22 @@ export default function PdfToolsPage() {
                   : image
           )
       );
+  };
+  
+  const handleMoveImage = (index: number, direction: 'left' | 'right') => {
+    if (direction === 'left' && index > 0) {
+      const newImageFiles = [...imageFiles];
+      const temp = newImageFiles[index];
+      newImageFiles[index] = newImageFiles[index - 1];
+      newImageFiles[index - 1] = temp;
+      setImageFiles(newImageFiles);
+    } else if (direction === 'right' && index < imageFiles.length - 1) {
+      const newImageFiles = [...imageFiles];
+      const temp = newImageFiles[index];
+      newImageFiles[index] = newImageFiles[index + 1];
+      newImageFiles[index + 1] = temp;
+      setImageFiles(newImageFiles);
+    }
   };
 
   return (
@@ -286,54 +290,43 @@ export default function PdfToolsPage() {
                 Ordem das Páginas ({imageFiles.length})
             </h2>
             {imageFiles.length > 0 ? (
-                <p className="text-muted-foreground mb-4">Arraste as imagens para reordenar as páginas do seu PDF.</p>
+                <p className="text-muted-foreground mb-4">Clique nas setas para reordenar as páginas do seu PDF.</p>
             ) : (
                 <p className="text-muted-foreground mb-4">Adicione imagens para começar a montar seu documento.</p>
             )}
-            <DragDropContext onDragEnd={onDragEnd}>
-              <Droppable droppableId="image-list" direction="horizontal">
-                {(provided) => (
-                  <div
-                    {...provided.droppableProps}
-                    ref={provided.innerRef}
-                    className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4"
-                  >
-                    {imageFiles.map((image, index) => (
-                      <Draggable key={image.id} draggableId={image.id} index={index}>
-                        {(provided) => (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                          >
-                            <Card className="group relative aspect-[3/4] overflow-hidden">
-                              <img
-                                src={image.previewUrl}
-                                alt={`preview ${index}`}
-                                className="h-full w-full object-cover transition-transform"
-                                style={{ transform: `rotate(${image.rotation}deg)` }}
-                              />
-                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                <Button variant="default" size="icon" onClick={() => handleRotateImage(image.id)}>
-                                  <RotateCw className="h-4 w-4" />
+             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                {imageFiles.map((image, index) => (
+                    <Card key={image.id} className="group relative aspect-[3/4] overflow-hidden">
+                        <img
+                        src={image.previewUrl}
+                        alt={`preview ${index}`}
+                        className="h-full w-full object-cover transition-transform"
+                        style={{ transform: `rotate(${image.rotation}deg)` }}
+                        />
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-2">
+                            <div className="flex gap-2">
+                                <Button variant="secondary" size="icon" onClick={() => handleRotateImage(image.id)} title="Rotacionar 90°">
+                                    <RotateCw className="h-4 w-4" />
                                 </Button>
-                                <Button variant="destructive" size="icon" onClick={() => handleRemoveImage(image.id)}>
-                                  <Trash2 className="h-4 w-4" />
+                                <Button variant="destructive" size="icon" onClick={() => handleRemoveImage(image.id)} title="Remover Imagem">
+                                    <Trash2 className="h-4 w-4" />
                                 </Button>
-                              </div>
-                              <div className="absolute top-1 left-1 bg-black/50 text-white rounded-full h-6 w-6 flex items-center justify-center text-sm font-bold">
-                                {index + 1}
-                              </div>
-                            </Card>
-                          </div>
-                        )}
-                      </Draggable>
-                    ))}
-                    {provided.placeholder}
-                  </div>
-                )}
-              </Droppable>
-            </DragDropContext>
+                            </div>
+                             <div className="flex gap-2 mt-2">
+                                <Button variant="secondary" size="icon" onClick={() => handleMoveImage(index, 'left')} disabled={index === 0} title="Mover para Esquerda">
+                                    <ArrowLeft className="h-4 w-4" />
+                                </Button>
+                                <Button variant="secondary" size="icon" onClick={() => handleMoveImage(index, 'right')} disabled={index === imageFiles.length - 1} title="Mover para Direita">
+                                    <ArrowRight className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </div>
+                        <div className="absolute top-1 left-1 bg-black/70 text-white rounded-full h-6 w-6 flex items-center justify-center text-sm font-bold">
+                        {index + 1}
+                        </div>
+                    </Card>
+                ))}
+            </div>
         </div>
     </div>
   );
