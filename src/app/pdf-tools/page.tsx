@@ -7,11 +7,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { UploadCloud, FileDown, Loader2, ArrowUpDown, RotateCw, Trash2, ArrowLeft, ArrowRight } from "lucide-react";
+import { UploadCloud, FileDown, Loader2, ArrowUpDown, RotateCw, Trash2, ArrowLeft, ArrowRight, Image as ImageIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import jsPDF from 'jspdf';
 import { Progress } from "@/components/ui/progress";
-import { Textarea } from "@/components/ui/textarea";
 
 
 export interface ImageFile {
@@ -28,9 +27,10 @@ export default function PdfToolsPage() {
   const [progress, setProgress] = React.useState(0);
   const [progressMessage, setProgressMessage] = React.useState("");
   const [fileName, setFileName] = React.useState("");
-  const [headerText, setHeaderText] = React.useState("");
+  const [headerImage, setHeaderImage] = React.useState<{ file: File; previewUrl: string } | null>(null);
   const { toast } = useToast();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const headerImageInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -44,6 +44,18 @@ export default function PdfToolsPage() {
           rotation: 0,
         }));
       setImageFiles(prev => [...prev, ...newImageFiles]);
+    }
+  };
+
+  const handleHeaderImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+        setHeaderImage({
+            file,
+            previewUrl: URL.createObjectURL(file),
+        });
+    } else {
+        setHeaderImage(null);
     }
   };
 
@@ -90,8 +102,22 @@ export default function PdfToolsPage() {
       
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const headerMargin = 10;
-      const imageMargin = 15; // Deixa mais espaço para a imagem não sobrepor o cabeçalho
+      
+      let headerImageHeight = 0;
+      let headerImgData: string | null = null;
+      if (headerImage) {
+        setProgressMessage("Processando imagem do cabeçalho...");
+        const img = new Image();
+        img.src = headerImage.previewUrl;
+        await new Promise<void>((resolve) => {
+            img.onload = () => resolve();
+        });
+        const aspectRatio = img.width / img.height;
+        headerImageHeight = pageWidth / aspectRatio;
+        headerImgData = headerImage.previewUrl;
+      }
+      
+      const imageMargin = headerImage ? 5 : 15; // Menor margem se não houver cabeçalho
 
       for (let i = 0; i < imageFiles.length; i++) {
         const imageFile = imageFiles[i];
@@ -103,12 +129,9 @@ export default function PdfToolsPage() {
             pdf.addPage('a4', 'p');
         }
         
-        // Adiciona o cabeçalho em cada página
-        if (headerText.trim()) {
-            pdf.setFontSize(10);
-            pdf.setFont("helvetica", "normal");
-            pdf.setTextColor(100); // Cor cinza
-            pdf.text(headerText, pageWidth / 2, headerMargin, { align: 'center' });
+        // Adiciona a imagem do cabeçalho em cada página
+        if (headerImgData && headerImageHeight > 0) {
+            pdf.addImage(headerImgData, 'JPEG', 0, 0, pageWidth, headerImageHeight);
         }
         
         const img = new Image();
@@ -127,11 +150,14 @@ export default function PdfToolsPage() {
 
         const aspectRatio = imgWidth / imgHeight;
         
-        let pdfWidth = pageWidth - imageMargin * 2;
+        const availableHeight = pageHeight - (headerImageHeight + imageMargin * 2);
+        const availableWidth = pageWidth - imageMargin * 2;
+
+        let pdfWidth = availableWidth;
         let pdfHeight = pdfWidth / aspectRatio;
   
-        if (pdfHeight > pageHeight - imageMargin * 2) {
-          pdfHeight = pageHeight - imageMargin * 2;
+        if (pdfHeight > availableHeight) {
+          pdfHeight = availableHeight;
           pdfWidth = pdfHeight * aspectRatio;
         }
   
@@ -139,7 +165,7 @@ export default function PdfToolsPage() {
         
         const x_pos = (pageWidth - pdfWidth) / 2;
         // Posição Y ajustada para ficar abaixo do cabeçalho
-        const y_pos = (pageHeight - pdfHeight) / 2 > imageMargin ? (pageHeight - pdfHeight) / 2 : imageMargin;
+        const y_pos = headerImageHeight + imageMargin;
         
         const imgData = imageFile.previewUrl;
 
@@ -259,17 +285,39 @@ export default function PdfToolsPage() {
                 />
              </div>
              <div className="space-y-3">
-                <Label htmlFor="headerText">Texto do Cabeçalho (Opcional)</Label>
-                <Textarea
-                    id="headerText"
-                    value={headerText}
-                    onChange={(e) => setHeaderText(e.target.value)}
-                    placeholder="Ex: Processo Nº 123456 | Cliente: João da Silva"
+                <Label htmlFor="headerImage">Imagem de Cabeçalho (Opcional)</Label>
+                <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => headerImageInputRef.current?.click()}
                     disabled={isGenerating}
-                    rows={2}
+                >
+                    <ImageIcon className="mr-2 h-4 w-4" />
+                    {headerImage ? "Trocar imagem" : "Selecionar imagem"}
+                </Button>
+                <Input
+                    ref={headerImageInputRef}
+                    id="headerImage"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleHeaderImageChange}
                 />
+                 {headerImage && (
+                    <div className="relative mt-2 border rounded-md p-2">
+                        <img src={headerImage.previewUrl} alt="Preview do cabeçalho" className="w-full h-auto rounded-md" />
+                         <Button
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-2 right-2 h-6 w-6"
+                            onClick={() => setHeaderImage(null)}
+                        >
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    </div>
+                )}
                  <p className="text-xs text-muted-foreground">
-                    Este texto aparecerá no topo de cada página.
+                    Esta imagem (ex: papel timbrado) aparecerá no topo de cada página.
                 </p>
              </div>
              <div className="space-y-3">
@@ -362,3 +410,5 @@ export default function PdfToolsPage() {
     </div>
   );
 }
+
+    
