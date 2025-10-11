@@ -92,8 +92,8 @@ export default function PdfToolsPage() {
     setProgressMessage("Iniciando geração do PDF...");
   
     try {
-      const pdf = new jsPDF();
-      if (pdf.getNumberOfPages() > 0) {
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      if (pdf.getNumberOfPages() > 1) {
         pdf.deletePage(1);
       }
       
@@ -117,7 +117,7 @@ export default function PdfToolsPage() {
         const imgWidth = isRotationLandscape ? img.height : img.width;
         const imgHeight = isRotationLandscape ? img.width : img.height;
 
-        const pageOrientation = 'p'; // Forçar sempre modo retrato
+        const pageOrientation = 'p';
         const pageWidth = A4_WIDTH;
         const pageHeight = A4_HEIGHT;
         const aspectRatio = imgWidth / imgHeight;
@@ -131,7 +131,9 @@ export default function PdfToolsPage() {
         }
   
         setProgressMessage(`Adicionando página ${i + 1} ao PDF...`);
-        pdf.addPage([pageWidth, pageHeight], pageOrientation);
+        if (i > 0) {
+            pdf.addPage([pageWidth, pageHeight], pageOrientation);
+        }
 
         const x_pos = (pageWidth - pdfWidth) / 2;
         const y_pos = (pageHeight - pdfHeight) / 2;
