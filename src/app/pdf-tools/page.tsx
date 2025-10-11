@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { UploadCloud, FileDown, Loader2, Trash2, ArrowUpDown } from "lucide-react";
+import { UploadCloud, FileDown, Loader2, Trash2, ArrowUpDown, RotateCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import jsPDF from 'jspdf';
 import { Progress } from "@/components/ui/progress";
@@ -16,6 +16,7 @@ interface ImageFile {
   id: string;
   file: File;
   previewUrl: string;
+  rotation: number;
 }
 
 export default function PdfToolsPage() {
@@ -36,6 +37,7 @@ export default function PdfToolsPage() {
           id: `${file.name}-${Date.now()}`,
           file,
           previewUrl: URL.createObjectURL(file),
+          rotation: 0,
         }));
       setImageFiles(prev => [...prev, ...newImageFiles]);
     }
@@ -55,6 +57,7 @@ export default function PdfToolsPage() {
           id: `${file.name}-${Date.now()}`,
           file,
           previewUrl: URL.createObjectURL(file),
+          rotation: 0,
         }));
       setImageFiles(prev => [...prev, ...newImageFiles]);
     }
@@ -62,6 +65,16 @@ export default function PdfToolsPage() {
 
   const handleRemoveImage = (id: string) => {
     setImageFiles(prev => prev.filter(image => image.id !== id));
+  };
+
+  const handleRotateImage = (id: string) => {
+    setImageFiles(prev =>
+      prev.map(image =>
+        image.id === id
+          ? { ...image, rotation: (image.rotation + 90) % 360 }
+          : image
+      )
+    );
   };
   
   const handleGeneratePdf = async () => {
@@ -80,10 +93,10 @@ export default function PdfToolsPage() {
   
     try {
       const pdf = new jsPDF();
-      if (pdf.getNumberOfPages() > 0) {
-        pdf.deletePage(1);
+      if (pdf.internal.pages.length > 1) {
+         pdf.deletePage(1);
       }
-  
+      
       for (let i = 0; i < imageFiles.length; i++) {
         const imageFile = imageFiles[i];
         const progressPercentage = ((i + 1) / imageFiles.length) * 100;
@@ -96,16 +109,21 @@ export default function PdfToolsPage() {
         
         await img.decode();
   
-        const A4_WIDTH_P = 210;
-        const A4_HEIGHT_P = 297;
-        
-        const isLandscape = img.width > img.height;
-        const pageOrientation = isLandscape ? 'l' : 'p';
-        const pageWidth = isLandscape ? A4_HEIGHT_P : A4_WIDTH_P;
-        const pageHeight = isLandscape ? A4_WIDTH_P : A4_HEIGHT_P;
-        const aspectRatio = img.width / img.height;
-        
+        const A4_WIDTH = 210;
+        const A4_HEIGHT = 297;
         const margin = 10;
+        
+        const isRotationLandscape = imageFile.rotation === 90 || imageFile.rotation === 270;
+        const imgWidth = isRotationLandscape ? img.height : img.width;
+        const imgHeight = isRotationLandscape ? img.width : img.height;
+
+        const isImageLandscape = imgWidth > imgHeight;
+        
+        const pageOrientation = isImageLandscape ? 'l' : 'p';
+        const pageWidth = isImageLandscape ? A4_HEIGHT : A4_WIDTH;
+        const pageHeight = isImageLandscape ? A4_WIDTH : A4_HEIGHT;
+        const aspectRatio = imgWidth / imgHeight;
+        
         let pdfWidth = pageWidth - margin * 2;
         let pdfHeight = pdfWidth / aspectRatio;
   
@@ -115,14 +133,17 @@ export default function PdfToolsPage() {
         }
   
         setProgressMessage(`Adicionando página ${i + 1} ao PDF...`);
-        pdf.addPage([pageWidth, pageHeight], pageOrientation);
-        
+        if (i > 0) pdf.addPage();
+        const currentPage = pdf.internal.pages[i+1];
+        currentPage.orientation = pageOrientation;
+
+
         const x_pos = (pageWidth - pdfWidth) / 2;
         const y_pos = (pageHeight - pdfHeight) / 2;
         
         const imgData = imageFile.previewUrl;
 
-        pdf.addImage(imgData, 'JPEG', x_pos, y_pos, pdfWidth, pdfHeight, undefined, 'SLOW');
+        pdf.addImage(imgData, 'JPEG', x_pos, y_pos, pdfWidth, pdfHeight, undefined, 'SLOW', imageFile.rotation);
         setProgress(progressPercentage);
       }
       
@@ -266,8 +287,16 @@ export default function PdfToolsPage() {
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                 {imageFiles.map((image, index) => (
                     <Card key={image.id} className="group relative aspect-[3/4] overflow-hidden">
-                        <img src={image.previewUrl} alt={`preview ${index}`} className="h-full w-full object-cover" />
+                        <img
+                         src={image.previewUrl}
+                         alt={`preview ${index}`}
+                         className="h-full w-full object-cover transition-transform"
+                         style={{ transform: `rotate(${image.rotation}deg)` }}
+                        />
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                            <Button variant="default" size="icon" onClick={() => handleRotateImage(image.id)}>
+                                <RotateCw className="h-4 w-4" />
+                            </Button>
                             <Button variant="destructive" size="icon" onClick={() => handleRemoveImage(image.id)}>
                                 <Trash2 className="h-4 w-4" />
                             </Button>
@@ -282,5 +311,3 @@ export default function PdfToolsPage() {
     </div>
   );
 }
-
-    
