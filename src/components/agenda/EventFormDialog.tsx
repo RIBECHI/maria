@@ -68,7 +68,7 @@ interface EventFormDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: EventFormValues) => void;
-  eventData?: CalendarEvent;
+  eventData?: Partial<CalendarEvent>;
 }
 
 export function EventFormDialog({ isOpen, onClose, onSubmit, eventData }: EventFormDialogProps) {
@@ -127,22 +127,26 @@ export function EventFormDialog({ isOpen, onClose, onSubmit, eventData }: EventF
       form.setValue("process", "");
     }
   }, [selectedClient, allProcesses, form]);
-
+  
+  const parseISOAdjusted = (dateString: string | undefined) => {
+    if (dateString && dateString.length === 10) { 
+        return new Date(dateString + 'T00:00:00'); 
+    }
+    return dateString ? new Date(dateString) : new Date();
+  };
 
   React.useEffect(() => {
     if (isOpen) { 
       if (eventData) {
         form.reset({
           date: format(parseISOAdjusted(eventData.date), 'yyyy-MM-dd'), 
-          type: eventData.type,
-          description: eventData.description,
+          type: eventData.type || 'prazo',
+          description: eventData.description || "",
           time: eventData.time || "",
           client: eventData.client || "",
           process: eventData.process || "",
         });
         
-        // A lógica de filtro já será disparada pelo useEffect de 'selectedClient' e 'allProcesses'
-        // Mas podemos forçar uma filtragem inicial caso os dados já estejam disponíveis
         if (eventData.client && allProcesses.length > 0) {
              const filtered = allProcesses.filter(p => p.client === eventData.client);
              const options = filtered.map(p => ({ value: p.processNumber, label: `${p.processNumber} - ${p.type}` }));
@@ -165,13 +169,6 @@ export function EventFormDialog({ isOpen, onClose, onSubmit, eventData }: EventF
     }
   }, [eventData, form, isOpen, allProcesses]);
   
-  const parseISOAdjusted = (dateString: string) => {
-    if (dateString.length === 10) { 
-        return new Date(dateString + 'T00:00:00'); 
-    }
-    return new Date(dateString); 
-  };
-
   const handleFormSubmit: SubmitHandler<EventFormValues> = async (data) => {
     setIsLoading(true);
     const submittedData = {
@@ -198,9 +195,9 @@ export function EventFormDialog({ isOpen, onClose, onSubmit, eventData }: EventF
       <Dialog open={isOpen} onOpenChange={(open) => !open && handleDialogClose()}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{eventData ? "Editar Evento" : "Adicionar Novo Evento"}</DialogTitle>
+            <DialogTitle>{eventData?.id ? "Editar Evento" : "Adicionar Novo Evento"}</DialogTitle>
             <DialogDescription>
-              {eventData ? "Altere os dados do evento abaixo." : "Preencha os dados para cadastrar um novo evento."}
+              {eventData?.id ? "Altere os dados do evento abaixo." : "Preencha os dados para cadastrar um novo evento."}
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
@@ -337,7 +334,7 @@ export function EventFormDialog({ isOpen, onClose, onSubmit, eventData }: EventF
                       Salvando...
                     </>
                   ) : (
-                    eventData ? "Salvar Alterações" : "Adicionar Evento"
+                    eventData?.id ? "Salvar Alterações" : "Adicionar Evento"
                   )}
                 </Button>
               </DialogFooter>
@@ -354,5 +351,3 @@ export function EventFormDialog({ isOpen, onClose, onSubmit, eventData }: EventF
     </>
   );
 }
-
-    

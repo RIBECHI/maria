@@ -144,6 +144,7 @@ export function NotepadSheet({ isOpen, onOpenChange }: NotepadSheetProps) {
   const handleScheduleFromNote = (note: Note) => {
     setEventToCreate({
       description: note.content,
+      date: new Date().toISOString(), // Preenche a data atual para evitar o erro
     });
     setIsEventDialogOpen(true);
   };
