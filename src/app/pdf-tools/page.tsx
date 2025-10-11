@@ -7,15 +7,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { UploadCloud, FileDown, Loader2, ArrowUpDown } from "lucide-react";
+import { UploadCloud, FileDown, Loader2, ArrowUpDown, RotateCw, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import jsPDF from 'jspdf';
 import { Progress } from "@/components/ui/progress";
-import dynamic from 'next/dynamic';
+import { DragDropContext, Droppable, Draggable, type DropResult } from "react-beautiful-dnd";
 
-const ImageDropzone = dynamic(() => import('@/components/pdf/ImageDropzone').then(mod => mod.ImageDropzone), {
-  ssr: false,
-});
 
 export interface ImageFile {
   id: string;
@@ -90,8 +87,6 @@ export default function PdfToolsPage() {
         format: 'a4'
       });
       
-      pdf.deletePage(1);
-
       for (let i = 0; i < imageFiles.length; i++) {
         const imageFile = imageFiles[i];
         const progressPercentage = ((i + 1) / imageFiles.length) * 100;
@@ -102,8 +97,12 @@ export default function PdfToolsPage() {
         const img = new Image();
         img.src = imageFile.previewUrl;
         
-        await img.decode();
+        await new Promise(resolve => img.onload = resolve);
   
+        if (i > 0) {
+          pdf.addPage();
+        }
+
         const A4_WIDTH = 210;
         const A4_HEIGHT = 297;
         const margin = 10;
@@ -126,8 +125,6 @@ export default function PdfToolsPage() {
   
         setProgressMessage(`Adicionando página ${i + 1} ao PDF...`);
         
-        pdf.addPage([pageWidth, pageHeight], pageOrientation);
-
         const x_pos = (pageWidth - pdfWidth) / 2;
         const y_pos = (pageHeight - pdfHeight) / 2;
         
@@ -160,6 +157,28 @@ export default function PdfToolsPage() {
       setProgress(0);
       setProgressMessage("");
     }
+  };
+
+  const onDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+    const items = Array.from(imageFiles);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+    setImageFiles(items);
+  };
+
+  const handleRemoveImage = (id: string) => {
+      setImageFiles(prev => prev.filter(image => image.id !== id));
+  };
+
+  const handleRotateImage = (id: string) => {
+      setImageFiles(prev =>
+          prev.map(image =>
+              image.id === id
+                  ? { ...image, rotation: (image.rotation + 90) % 360 }
+                  : image
+          )
+      );
   };
 
   return (
@@ -271,10 +290,50 @@ export default function PdfToolsPage() {
             ) : (
                 <p className="text-muted-foreground mb-4">Adicione imagens para começar a montar seu documento.</p>
             )}
-            <ImageDropzone 
-                imageFiles={imageFiles}
-                setImageFiles={setImageFiles}
-            />
+            <DragDropContext onDragEnd={onDragEnd}>
+              <Droppable droppableId="image-list" direction="horizontal">
+                {(provided) => (
+                  <div
+                    {...provided.droppableProps}
+                    ref={provided.innerRef}
+                    className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4"
+                  >
+                    {imageFiles.map((image, index) => (
+                      <Draggable key={image.id} draggableId={image.id} index={index}>
+                        {(provided) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            {...provided.dragHandleProps}
+                          >
+                            <Card className="group relative aspect-[3/4] overflow-hidden">
+                              <img
+                                src={image.previewUrl}
+                                alt={`preview ${index}`}
+                                className="h-full w-full object-cover transition-transform"
+                                style={{ transform: `rotate(${image.rotation}deg)` }}
+                              />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                <Button variant="default" size="icon" onClick={() => handleRotateImage(image.id)}>
+                                  <RotateCw className="h-4 w-4" />
+                                </Button>
+                                <Button variant="destructive" size="icon" onClick={() => handleRemoveImage(image.id)}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                              <div className="absolute top-1 left-1 bg-black/50 text-white rounded-full h-6 w-6 flex items-center justify-center text-sm font-bold">
+                                {index + 1}
+                              </div>
+                            </Card>
+                          </div>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            </DragDropContext>
         </div>
     </div>
   );
