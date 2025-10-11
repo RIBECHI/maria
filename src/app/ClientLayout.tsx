@@ -2,7 +2,7 @@
 "use client";
 
 import Link from 'next/link';
-import * as React from 'react';
+import { useState, useEffect } from 'react';
 import {
   LayoutDashboard,
   Users,
@@ -36,6 +36,7 @@ import UserInfo from '@/components/layout/UserInfo';
 import { NotepadSheet } from '@/components/layout/NotepadSheet';
 import UpcomingEventsSidebar from '@/components/layout/UpcomingEventsSidebar';
 import ThemeToggle from '@/components/layout/ThemeToggle';
+import type React from 'react';
 
 const navItems = [
   { href: '/', label: 'Painel', icon: <LayoutDashboard /> },
@@ -92,9 +93,9 @@ function PanelLeftIcon(props: React.SVGProps<SVGSVGElement>) {
 }
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
-  const [isNotepadOpen, setIsNotepadOpen] = React.useState(false);
+  const [isNotepadOpen, setIsNotepadOpen] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const storedTheme = localStorage.getItem("theme");
     if (storedTheme === "light") {
       document.documentElement.classList.remove("dark");
