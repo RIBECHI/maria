@@ -93,7 +93,9 @@ export default function PdfToolsPage() {
   
     try {
       const pdf = new jsPDF();
-      pdf.deletePage(1); // Remove the default blank page
+      if (pdf.getNumberOfPages() > 0) {
+        pdf.deletePage(1);
+      }
       
       for (let i = 0; i < imageFiles.length; i++) {
         const imageFile = imageFiles[i];
@@ -115,11 +117,9 @@ export default function PdfToolsPage() {
         const imgWidth = isRotationLandscape ? img.height : img.width;
         const imgHeight = isRotationLandscape ? img.width : img.height;
 
-        const isImageLandscape = imgWidth > imgHeight;
-        
-        const pageOrientation = isImageLandscape ? 'l' : 'p';
-        const pageWidth = isImageLandscape ? A4_HEIGHT : A4_WIDTH;
-        const pageHeight = isImageLandscape ? A4_WIDTH : A4_HEIGHT;
+        const pageOrientation = 'p'; // Forçar sempre modo retrato
+        const pageWidth = A4_WIDTH;
+        const pageHeight = A4_HEIGHT;
         const aspectRatio = imgWidth / imgHeight;
         
         let pdfWidth = pageWidth - margin * 2;
