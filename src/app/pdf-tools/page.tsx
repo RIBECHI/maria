@@ -160,7 +160,6 @@ export default function PdfToolsPage() {
   // Como o `react-beautiful-dnd` não é uma dependência, vamos simular o drag and drop com estado.
   // Esta parte é mais complexa e `react-beautiful-dnd` seria ideal.
   // Por agora, vamos focar na funcionalidade principal. O reordenamento manual será um desafio sem a lib.
-  // A funcionalidade de arrastar e soltar não será implementada completamente sem uma biblioteca de DnD.
 
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
@@ -274,5 +273,7 @@ export default function PdfToolsPage() {
     </div>
   );
 }
+
+    
 
     
