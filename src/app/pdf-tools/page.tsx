@@ -20,6 +20,22 @@ export interface ImageFile {
   rotation: number;
 }
 
+const logoSvgString = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<path d="M390.6,512H121.4C54.5,512,0,457.5,0,390.6V238.9c0-59.9,38.3-113.4,94-131.7C107.7,48.5,162.3,0,226.7,0h58.6c64.4,0,119,48.5,132.7,107.2c55.7,18.3,94,71.8,94,131.7v151.7C512,457.5,457.5,512,390.6,512z" style="fill: #B98C60;"></path>
+<path d="M336,176c0,8.8-7.2,16-16,16H192c-8.8,0-16-7.2-16-16V96c0-8.8,7.2-16,16-16h128c8.8,0,16,7.2,16,16V176z" style="fill: #B98C60;"></path>
+<path d="M344,456H168c-44.2,0-80-35.8-80-80V200c0-44.2,35.8-80,80-80h176c44.2,0,80,35.8,80,80v176C424,420.2,388.2,456,344,456z" style="fill: #D3D3D3;"></path>
+<path d="M352,464H160c-48.5,0-88-39.5-88-88V200c0-48.5,39.5-88,88-88h192c48.5,0,88,39.5,88,88v176C440,424.5,400.5,464,352,464z M160,136c-35.3,0-64,28.7-64,64v176c0,35.3,28.7,64,64,64h192c35.3,0,64-28.7,64-64V200c0-35.3-28.7-64-64-64H160z" style="fill: #231F20;"></path>
+<path d="M256,312c-23.6,0-44.3-14.5-52.1-35.4c-3.1-8.4,2.4-17.4,10.8-20.5c8.4-3.1,17.4,2.4,20.5,10.8c2.6,7.1,9.4,12.1,17.2,12.1c7.8,0,14.6-5,17.2-12.1c3.1-8.4,12.1-13.9,20.5-10.8c8.4,3.1,13.9,12.1,10.8,20.5C300.3,297.5,279.6,312,256,312z" style="fill: #231F20;"></path>
+<path d="M328,424H184c-13.3,0-24-10.7-24-24v-48c0-4.4,3.6-8,8-8h176c4.4,0,8,3.6,8,8v48C352,413.3,341.3,424,328,424z" style="fill: #4D4D4D;"></path>
+<circle cx="152" cy="120" r="32" style="fill: #231F20;"></circle>
+<circle cx="360" cy="120" r="32" style="fill: #231F20;"></circle>
+<path d="M168,80l-32-48c-4.3-6.4,0-15,6.8-15h42.3c3.5,0,6.7,2.2,7.9,5.5l9.9,27.1L168,80z" style="fill: #4D4D4D;"></path>
+<path d="M344,80l32-48c4.3-6.4,0-15-6.8-15h-42.3c-3.5,0-6.7,2.2-7.9,5.5l-9.9,27.1L344,80z" style="fill: #4D4D4D;"></path>
+</svg>`;
+
+const svgDataUri = `data:image/svg+xml;base64,${btoa(logoSvgString)}`;
+
+
 export default function PdfToolsPage() {
   const [imageFiles, setImageFiles] = React.useState<ImageFile[]>([]);
   const [quality, setQuality] = React.useState([80]);
@@ -86,29 +102,47 @@ export default function PdfToolsPage() {
         format: 'a4'
       });
       
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+
+      // Folha de Rosto
+      setProgressMessage("Criando a folha de rosto...");
+      const logoWidth = 50;
+      const logoHeight = 50;
+      const logoX = (pageWidth - logoWidth) / 2;
+      const logoY = 40;
+      pdf.addImage(svgDataUri, 'SVG', logoX, logoY, logoWidth, logoHeight);
+
+      if (fileName.trim()) {
+          pdf.setFontSize(22);
+          pdf.setFont("helvetica", "bold");
+          pdf.text(fileName.trim(), pageWidth / 2, logoY + logoHeight + 20, { align: 'center' });
+      }
+      setProgress(5);
+
+
       for (let i = 0; i < imageFiles.length; i++) {
         const imageFile = imageFiles[i];
-        const progressPercentage = ((i + 1) / imageFiles.length) * 100;
+        const progressPercentage = 5 + (((i + 1) / imageFiles.length) * 95);
         
         setProgressMessage(`Processando imagem ${i + 1} de ${imageFiles.length}...`);
-        setProgress(progressPercentage - 10);
-
+        
         const img = new Image();
         img.src = imageFile.previewUrl;
         
         await new Promise(resolve => img.onload = resolve);
-  
-        if (i > 0) {
-          pdf.addPage();
-        }
         
-        const pageOrientation = 'p'; 
-        const pageWidth = 210;
-        const pageHeight = 297;
+        pdf.addPage('a4', 'p');
+        
         const margin = 10;
         
-        const imgWidth = img.width;
-        const imgHeight = img.height;
+        let imgWidth = img.width;
+        let imgHeight = img.height;
+
+        if (imageFile.rotation === 90 || imageFile.rotation === 270) {
+            [imgWidth, imgHeight] = [imgHeight, imgWidth]; // Swap dimensions for rotation
+        }
+
         const aspectRatio = imgWidth / imgHeight;
         
         let pdfWidth = pageWidth - margin * 2;
@@ -119,7 +153,7 @@ export default function PdfToolsPage() {
           pdfWidth = pdfHeight * aspectRatio;
         }
   
-        setProgressMessage(`Adicionando página ${i + 1} ao PDF...`);
+        setProgressMessage(`Adicionando página ${i + 2} ao PDF...`);
         
         const x_pos = (pageWidth - pdfWidth) / 2;
         const y_pos = (pageHeight - pdfHeight) / 2;
@@ -331,3 +365,5 @@ export default function PdfToolsPage() {
     </div>
   );
 }
+
+    
