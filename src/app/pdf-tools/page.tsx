@@ -93,9 +93,6 @@ export default function PdfToolsPage() {
   
     try {
       const pdf = new jsPDF('p', 'mm', 'a4');
-      if (pdf.getNumberOfPages() > 1) {
-        pdf.deletePage(1);
-      }
       
       for (let i = 0; i < imageFiles.length; i++) {
         const imageFile = imageFiles[i];
@@ -113,13 +110,12 @@ export default function PdfToolsPage() {
         const A4_HEIGHT = 297;
         const margin = 10;
         
-        const isRotationLandscape = imageFile.rotation === 90 || imageFile.rotation === 270;
-        const imgWidth = isRotationLandscape ? img.height : img.width;
-        const imgHeight = isRotationLandscape ? img.width : img.height;
-
         const pageOrientation = 'p';
         const pageWidth = A4_WIDTH;
         const pageHeight = A4_HEIGHT;
+
+        const imgWidth = img.width;
+        const imgHeight = img.height;
         const aspectRatio = imgWidth / imgHeight;
         
         let pdfWidth = pageWidth - margin * 2;
@@ -131,6 +127,7 @@ export default function PdfToolsPage() {
         }
   
         setProgressMessage(`Adicionando página ${i + 1} ao PDF...`);
+        
         if (i > 0) {
             pdf.addPage([pageWidth, pageHeight], pageOrientation);
         }
