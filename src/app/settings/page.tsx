@@ -40,10 +40,15 @@ export default function SettingsPage() {
 
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
-      <h1 className="text-4xl font-headline font-extrabold text-primary mb-8">Configurações</h1>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-4xl font-headline font-extrabold text-primary">Configurações</h1>
+        <Button onClick={handleSaveChanges} size="lg">
+          Salvar Alterações
+        </Button>
+      </div>
 
       <Tabs defaultValue="general">
-        <TabsList className="mb-4">
+        <TabsList className="mb-6">
           <TabsTrigger value="general">Geral</TabsTrigger>
           <TabsTrigger value="tools">
             <Link href="/settings/tools">Ferramentas</Link>
@@ -106,12 +111,6 @@ export default function SettingsPage() {
           </div>
         </TabsContent>
       </Tabs>
-      
-      <div className="mt-8 flex justify-end">
-        <Button onClick={handleSaveChanges} size="lg">
-          Salvar Alterações
-        </Button>
-      </div>
     </div>
   );
 }

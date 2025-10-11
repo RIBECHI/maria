@@ -5,9 +5,13 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Users } from "lucide-react";
+import { Loader2, Users, FileSignature, Image as ImageIcon, Trash2 } from "lucide-react";
 import { getProcesses } from "@/services/processService";
 import { addClient, getClients } from "@/services/clientService";
+import { Input } from "@/components/ui/input";
+import Link from 'next/link';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 
 export default function ToolsPage() {
   const { toast } = useToast();
@@ -77,34 +81,69 @@ export default function ToolsPage() {
 
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
-      <h1 className="text-4xl font-headline font-extrabold text-primary mb-8">Ferramentas</h1>
-      
-      <Card className="max-w-2xl">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users />
-            Sincronizador de Clientes
-          </CardTitle>
-          <CardDescription>
-            Esta ferramenta verifica todos os seus processos e cria uma ficha de cliente para qualquer cliente que exista em um processo mas não esteja na sua lista principal de clientes.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button onClick={handleSyncClients} disabled={isSyncing}>
-            {isSyncing ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Sincronizando...
-              </>
-            ) : (
-              "Sincronizar Clientes Agora"
-            )}
-          </Button>
-          <p className="text-xs text-muted-foreground mt-2">
-            Esta operação pode levar alguns segundos dependendo do número de processos.
-          </p>
-        </CardContent>
-      </Card>
+       <div className="flex items-center justify-between mb-8">
+            <h1 className="text-4xl font-headline font-extrabold text-primary">Configurações</h1>
+            <div></div>
+        </div>
+
+      <Tabs defaultValue="general">
+        <TabsList className="mb-6">
+          <TabsTrigger value="general">
+             <Link href="/settings">Geral</Link>
+          </TabsTrigger>
+          <TabsTrigger value="tools">Ferramentas</TabsTrigger>
+        </TabsList>
+        <TabsContent value="tools">
+            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+                <Card className="shadow-lg">
+                    <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Users />
+                        Sincronizador de Clientes
+                    </CardTitle>
+                    <CardDescription>
+                        Cria uma ficha para clientes que existem em processos mas não na sua lista principal.
+                    </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                    <Button onClick={handleSyncClients} disabled={isSyncing}>
+                        {isSyncing ? (
+                        <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Sincronizando...
+                        </>
+                        ) : (
+                        "Sincronizar Clientes Agora"
+                        )}
+                    </Button>
+                    <p className="text-xs text-muted-foreground mt-2">
+                        Pode levar alguns segundos dependendo do número de processos.
+                    </p>
+                    </CardContent>
+                </Card>
+
+                <Card className="shadow-lg">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <FileSignature />
+                            Modelo de PDF
+                        </CardTitle>
+                        <CardDescription>
+                           Defina um cabeçalho padrão (papel timbrado) para todos os documentos PDF gerados.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Link href="/settings/tools/pdf-template" passHref>
+                             <Button>
+                                <ImageIcon className="mr-2 h-4 w-4" />
+                                Editar Modelo de Cabeçalho
+                            </Button>
+                        </Link>
+                    </CardContent>
+                </Card>
+            </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

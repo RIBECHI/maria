@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { UploadCloud, FileDown, Loader2, ArrowUpDown, RotateCw, Trash2, ArrowLeft, ArrowRight, Image as ImageIcon } from "lucide-react";
+import { UploadCloud, FileDown, Loader2, ArrowUpDown, RotateCw, Trash2, ArrowLeft, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import jsPDF from 'jspdf';
 import { Progress } from "@/components/ui/progress";
@@ -27,10 +27,8 @@ export default function PdfToolsPage() {
   const [progress, setProgress] = React.useState(0);
   const [progressMessage, setProgressMessage] = React.useState("");
   const [fileName, setFileName] = React.useState("");
-  const [headerImage, setHeaderImage] = React.useState<{ file: File; previewUrl: string } | null>(null);
   const { toast } = useToast();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const headerImageInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -44,18 +42,6 @@ export default function PdfToolsPage() {
           rotation: 0,
         }));
       setImageFiles(prev => [...prev, ...newImageFiles]);
-    }
-  };
-
-  const handleHeaderImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-        setHeaderImage({
-            file,
-            previewUrl: URL.createObjectURL(file),
-        });
-    } else {
-        setHeaderImage(null);
     }
   };
 
@@ -103,21 +89,22 @@ export default function PdfToolsPage() {
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
       
+      // Carrega o modelo de cabeçalho do localStorage
+      const headerTemplate = localStorage.getItem('pdfHeaderTemplate');
       let headerImageHeight = 0;
-      let headerImgData: string | null = null;
-      if (headerImage) {
-        setProgressMessage("Processando imagem do cabeçalho...");
+      
+      if (headerTemplate) {
+        setProgressMessage("Aplicando modelo de cabeçalho...");
         const img = new Image();
-        img.src = headerImage.previewUrl;
+        img.src = headerTemplate;
         await new Promise<void>((resolve) => {
             img.onload = () => resolve();
         });
         const aspectRatio = img.width / img.height;
         headerImageHeight = pageWidth / aspectRatio;
-        headerImgData = headerImage.previewUrl;
       }
       
-      const imageMargin = headerImage ? 5 : 15; // Menor margem se não houver cabeçalho
+      const imageMargin = 10;
 
       for (let i = 0; i < imageFiles.length; i++) {
         const imageFile = imageFiles[i];
@@ -129,9 +116,9 @@ export default function PdfToolsPage() {
             pdf.addPage('a4', 'p');
         }
         
-        // Adiciona a imagem do cabeçalho em cada página
-        if (headerImgData && headerImageHeight > 0) {
-            pdf.addImage(headerImgData, 'JPEG', 0, 0, pageWidth, headerImageHeight);
+        // Adiciona a imagem do cabeçalho do modelo em cada página
+        if (headerTemplate && headerImageHeight > 0) {
+            pdf.addImage(headerTemplate, 'PNG', 0, 0, pageWidth, headerImageHeight);
         }
         
         const img = new Image();
@@ -284,42 +271,7 @@ export default function PdfToolsPage() {
                     disabled={isGenerating}
                 />
              </div>
-             <div className="space-y-3">
-                <Label htmlFor="headerImage">Imagem de Cabeçalho (Opcional)</Label>
-                <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                    onClick={() => headerImageInputRef.current?.click()}
-                    disabled={isGenerating}
-                >
-                    <ImageIcon className="mr-2 h-4 w-4" />
-                    {headerImage ? "Trocar imagem" : "Selecionar imagem"}
-                </Button>
-                <Input
-                    ref={headerImageInputRef}
-                    id="headerImage"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleHeaderImageChange}
-                />
-                 {headerImage && (
-                    <div className="relative mt-2 border rounded-md p-2">
-                        <img src={headerImage.previewUrl} alt="Preview do cabeçalho" className="w-full h-auto rounded-md" />
-                         <Button
-                            variant="destructive"
-                            size="icon"
-                            className="absolute top-2 right-2 h-6 w-6"
-                            onClick={() => setHeaderImage(null)}
-                        >
-                            <Trash2 className="h-4 w-4" />
-                        </Button>
-                    </div>
-                )}
-                 <p className="text-xs text-muted-foreground">
-                    Esta imagem (ex: papel timbrado) aparecerá no topo de cada página.
-                </p>
-             </div>
+             
              <div className="space-y-3">
                 <Label htmlFor="quality" className="flex justify-between">
                     <span>Qualidade de Compressão (JPEG):</span>
@@ -410,5 +362,3 @@ export default function PdfToolsPage() {
     </div>
   );
 }
-
-    
