@@ -106,6 +106,7 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
 
   const handleAddTimelineEvent: SubmitHandler<TimelineEventFormValues> = async (data) => {
     setIsSaving(true);
+    
     const newEvent: TimelineEvent = {
       id: `TL-${Date.now()}`,
       date: format(parseISO(data.eventDate + 'T00:00:00'), 'yyyy-MM-dd'),
@@ -113,40 +114,44 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
       source: data.eventSource,
     };
     
-    if (['prazo', 'audiencia'].includes(data.eventSource.toLowerCase())) {
-        try {
-            await addEvent({
-                date: newEvent.date,
-                type: data.eventSource.toLowerCase() as 'prazo' | 'audiencia',
-                description: `[Processo: ${processData.processNumber}] ${data.eventDescription}`,
-                client: processData.client,
-                process: processData.processNumber,
-            });
-            toast({
-                title: "Evento adicionado à Agenda!",
-                description: "O compromisso agora também aparece na sua agenda principal.",
-            });
-        } catch (error) {
-            console.error("Failed to add event to main agenda:", error);
-            toast({
-                title: "Erro de Sincronização",
-                description: "O evento foi salvo na linha do tempo, mas não foi possível adicioná-lo à agenda principal.",
-                variant: "destructive",
-            });
-        }
+    try {
+      if (['prazo', 'audiencia'].includes(data.eventSource.toLowerCase())) {
+          await addEvent({
+              date: newEvent.date,
+              type: data.eventSource.toLowerCase() as 'prazo' | 'audiencia',
+              description: `[Processo: ${processData.processNumber}] ${data.eventDescription}`,
+              client: processData.client,
+              process: processData.processNumber,
+          });
+          toast({
+              title: "Evento adicionado à Agenda!",
+              description: "O compromisso agora também aparece na sua agenda principal.",
+          });
+      }
+  
+      // This will only run if the above await succeeds or is skipped
+      const newTimeline = [newEvent, ...currentTimeline].sort((a, b) => parseISO(b.date).getTime() - parseISO(a.date).getTime());
+      
+      await onTimelineUpdate(processData.id, newTimeline);
+  
+      setCurrentTimeline(newTimeline); 
+      timelineForm.reset({
+        eventDate: format(new Date(), 'yyyy-MM-dd'),
+        eventDescription: "",
+        eventSource: "Nota Manual",
+      });
+      toast({ title: "Linha do tempo atualizada!" });
+  
+    } catch (error) {
+      console.error("Failed to add timeline event or sync with agenda:", error);
+      toast({
+          title: "Erro ao Salvar Evento",
+          description: "Não foi possível adicionar o evento à linha do tempo ou à agenda.",
+          variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
     }
-
-    const newTimeline = [newEvent, ...currentTimeline].sort((a, b) => parseISO(b.date).getTime() - parseISO(a.date).getTime());
-    
-    await onTimelineUpdate(processData.id, newTimeline);
-
-    setCurrentTimeline(newTimeline); 
-    timelineForm.reset({
-      eventDate: format(new Date(), 'yyyy-MM-dd'),
-      eventDescription: "",
-      eventSource: "Nota Manual",
-    });
-    setIsSaving(false);
   };
 
   const handleDeleteTimelineEvent = (eventId: string) => {
@@ -204,7 +209,7 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
                      <div className="flex items-center gap-2 text-foreground">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                         <strong>Próximo Prazo:</strong>
-                        <span>{processData.nextDeadline !== '-' ? format(parseISO(processData.nextDeadline), 'dd/MM/yyyy') : 'N/A'}</span>
+                        <span>{processData.nextDeadline && processData.nextDeadline !== '-' ? format(parseISO(processData.nextDeadline), 'dd/MM/yyyy') : 'N/A'}</span>
                     </div>
                     {processData.expressoGoias && (
                         <div className="col-span-2 flex items-center gap-2 text-green-600 font-medium">
