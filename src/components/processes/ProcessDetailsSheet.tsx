@@ -113,8 +113,7 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
       source: data.eventSource,
     };
     
-    // Integrar com a Agenda Principal se for Prazo ou Audiência
-    if (['Prazo', 'Audiência'].includes(data.eventSource)) {
+    if (['prazo', 'audiencia'].includes(data.eventSource.toLowerCase())) {
         try {
             await addEvent({
                 date: newEvent.date,
@@ -141,7 +140,7 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
     
     await onTimelineUpdate(processData.id, newTimeline);
 
-    setCurrentTimeline(newTimeline); // A fonte da verdade agora é o componente pai
+    setCurrentTimeline(newTimeline); 
     timelineForm.reset({
       eventDate: format(new Date(), 'yyyy-MM-dd'),
       eventDescription: "",
