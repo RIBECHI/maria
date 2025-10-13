@@ -25,8 +25,9 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2 } from "lucide-react";
+import { Loader2, Copy } from "lucide-react";
 import type { DocumentTemplate, TemplateFormValues } from "@/services/templateService";
+import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
   name: z.string().min(3, { message: "O nome do modelo deve ter pelo menos 3 caracteres." }),
@@ -52,6 +53,7 @@ const availableVariables = [
 
 export function TemplateFormDialog({ isOpen, onClose, onSubmit, templateData }: TemplateFormDialogProps) {
   const [isLoading, setIsLoading] = React.useState(false);
+  const { toast } = useToast();
 
   const form = useForm<TemplateFormValues>({
     resolver: zodResolver(formSchema),
@@ -81,6 +83,14 @@ export function TemplateFormDialog({ isOpen, onClose, onSubmit, templateData }: 
     if (!isLoading) {
       onClose();
     }
+  };
+  
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Variável Copiada!",
+      description: `"${text}" foi copiado para a área de transferência.`,
+    });
   };
 
   return (
@@ -126,10 +136,22 @@ export function TemplateFormDialog({ isOpen, onClose, onSubmit, templateData }: 
 
             <div>
                 <h4 className="text-sm font-medium mb-2">Variáveis Disponíveis</h4>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground p-3 border rounded-md bg-muted/30">
+                <div className="space-y-2 p-3 border rounded-md bg-muted/30">
                     {availableVariables.map(v => (
-                        <div key={v.variable}>
-                            <code className="font-semibold text-foreground">{v.variable}</code> - {v.description}
+                        <div key={v.variable} className="flex items-center justify-between p-1.5 rounded-md hover:bg-muted">
+                           <div className="flex items-baseline gap-2">
+                             <code className="font-semibold text-foreground text-sm">{v.variable}</code>
+                             <span className="text-xs text-muted-foreground">- {v.description}</span>
+                           </div>
+                           <Button
+                             type="button"
+                             variant="ghost"
+                             size="icon"
+                             className="h-7 w-7 text-muted-foreground hover:text-primary"
+                             onClick={() => copyToClipboard(v.variable)}
+                           >
+                             <Copy className="h-4 w-4" />
+                           </Button>
                         </div>
                     ))}
                 </div>
