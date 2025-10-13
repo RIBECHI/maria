@@ -114,11 +114,11 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
     };
     
     // Integrar com a Agenda Principal se for Prazo ou Audiência
-    if (data.eventSource === 'Prazo' || data.eventSource === 'Audiência') {
+    if (['Prazo', 'Audiência'].includes(data.eventSource)) {
         try {
             await addEvent({
                 date: newEvent.date,
-                type: data.eventSource === 'Prazo' ? 'prazo' : 'audiencia',
+                type: data.eventSource.toLowerCase() as 'prazo' | 'audiencia',
                 description: `[Processo: ${processData.processNumber}] ${data.eventDescription}`,
                 client: processData.client,
                 process: processData.processNumber,
