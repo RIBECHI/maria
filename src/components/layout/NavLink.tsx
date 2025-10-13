@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type React from 'react'; // Import React for React.ReactNode
 import { SidebarMenuButton } from '@/components/ui/sidebar';
+import { useSidebar } from '@/components/ui/sidebar';
 
 type NavLinkProps = {
   href: string;
@@ -14,7 +15,15 @@ type NavLinkProps = {
 
 export default function NavLink({ href, label, icon }: NavLinkProps) {
   const pathname = usePathname();
+  const { isMobile, setOpenMobile } = useSidebar();
   const isActive = href === '/' ? pathname === href : pathname.startsWith(href);
+
+  const handleClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
+
 
   return (
     <Link href={href} passHref legacyBehavior>
@@ -27,6 +36,7 @@ export default function NavLink({ href, label, icon }: NavLinkProps) {
         as="a"
         isActive={isActive}
         tooltip={{ children: label, side: 'right', align: 'center' }}
+        onClick={handleClick}
       >
         {icon} {/* Render the icon JSX element directly */}
         <span>{label}</span>
