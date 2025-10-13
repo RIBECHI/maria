@@ -4,7 +4,7 @@
 import * as React from "react";
 import { PlusCircle, Edit, Trash2, Search, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import {
@@ -134,9 +134,9 @@ export default function ClientsPage() {
 
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-4xl font-headline font-extrabold text-primary">Gestão de Clientes</h1>
-        <Button onClick={() => handleOpenFormDialog()}>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
+        <h1 className="text-3xl md:text-4xl font-headline font-extrabold text-primary">Gestão de Clientes</h1>
+        <Button onClick={() => handleOpenFormDialog()} className="w-full md:w-auto">
           <PlusCircle className="mr-2 h-5 w-5" /> Adicionar Cliente
         </Button>
       </div>
@@ -151,7 +151,8 @@ export default function ClientsPage() {
         />
       </div>
 
-      <Card className="shadow-lg">
+      {/* Tabela para Desktop */}
+      <Card className="shadow-lg hidden md:block">
         <CardHeader>
           <CardTitle>Lista de Clientes</CardTitle>
         </CardHeader>
@@ -221,6 +222,61 @@ export default function ClientsPage() {
           </Table>
         </CardContent>
       </Card>
+      
+      {/* Lista de Cartões para Mobile */}
+      <div className="md:hidden space-y-4">
+        {isLoading ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i} className="shadow-lg"><CardContent className="p-4"><Skeleton className="h-24 w-full" /></CardContent></Card>
+          ))
+        ) : filteredClients.length > 0 ? (
+          filteredClients.map((client) => (
+             <Card
+              key={client.id}
+              onClick={() => handleOpenDetailsDialog(client)}
+              className="shadow-md active:bg-muted/50"
+            >
+              <CardContent className="p-4">
+                <div className="flex justify-between items-start">
+                  <div className="space-y-1">
+                    <p className="font-bold text-primary">{client.name}</p>
+                    <p className="text-sm text-muted-foreground">{client.contact}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Casos: {processes.filter(p => p.client === client.name).length}
+                    </p>
+                  </div>
+                   <div className="flex flex-col items-end -mr-2 -mt-2">
+                     <Button
+                        variant="ghost"
+                        size="icon"
+                        className="hover:text-accent"
+                        onClick={(e) => { e.stopPropagation(); handleOpenFormDialog(client); }}
+                        aria-label="Editar cliente"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="hover:text-destructive"
+                        onClick={(e) => { e.stopPropagation(); handleDeleteConfirmation(client); }}
+                        aria-label="Excluir cliente"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                   </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+           <Card className="text-center py-10">
+              <CardContent>
+                <p className="text-muted-foreground">Nenhum cliente encontrado.</p>
+              </CardContent>
+            </Card>
+        )}
+      </div>
 
       <ClientFormDialog
         isOpen={isFormDialogOpen}
@@ -255,3 +311,5 @@ export default function ClientsPage() {
     </div>
   );
 }
+
+    
