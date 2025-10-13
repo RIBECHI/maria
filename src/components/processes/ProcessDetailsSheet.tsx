@@ -47,6 +47,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
   } from "@/components/ui/alert-dialog";
+import { addEvent } from "@/services/eventService";
   
 
 const getStatusBadgeVariant = (status: string) => {
@@ -112,6 +113,30 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
       source: data.eventSource,
     };
     
+    // Integrar com a Agenda Principal se for Prazo ou Audiência
+    if (data.eventSource === 'Prazo' || data.eventSource === 'Audiência') {
+        try {
+            await addEvent({
+                date: newEvent.date,
+                type: data.eventSource === 'Prazo' ? 'prazo' : 'audiencia',
+                description: `[Processo: ${processData.processNumber}] ${data.eventDescription}`,
+                client: processData.client,
+                process: processData.processNumber,
+            });
+            toast({
+                title: "Evento adicionado à Agenda!",
+                description: "O compromisso agora também aparece na sua agenda principal.",
+            });
+        } catch (error) {
+            console.error("Failed to add event to main agenda:", error);
+            toast({
+                title: "Erro de Sincronização",
+                description: "O evento foi salvo na linha do tempo, mas não foi possível adicioná-lo à agenda principal.",
+                variant: "destructive",
+            });
+        }
+    }
+
     const newTimeline = [newEvent, ...currentTimeline].sort((a, b) => parseISO(b.date).getTime() - parseISO(a.date).getTime());
     
     await onTimelineUpdate(processData.id, newTimeline);
@@ -311,7 +336,3 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
     </>
   );
 }
-
-    
-
-    
