@@ -13,6 +13,7 @@ import {
   CalendarDays,
   Notebook,
   FileCog,
+  FileSignature,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -45,6 +46,7 @@ const navItems = [
   { href: '/documents', label: 'Documentos', icon: <FileText /> },
   { href: '/agenda', label: 'Agenda', icon: <CalendarDays /> },
   { href: '/legal-reminder', label: 'Lembrete Legal', icon: <Lightbulb /> },
+  { href: '/document-generator', label: 'Gerador de Documentos', icon: <FileSignature /> },
   { href: '/pdf-tools', label: 'Ferramentas PDF', icon: <FileCog /> },
 ];
 
