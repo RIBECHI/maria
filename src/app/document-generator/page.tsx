@@ -180,12 +180,12 @@ export default function DocumentGeneratorPage() {
         <Card className="lg:col-span-2 shadow-lg">
             <CardHeader>
                 <CardTitle>2. Resultado</CardTitle>
-                <CardDescription>O documento gerado aparecerá aqui. Você pode copiar ou baixar em PDF.</CardDescription>
+                <CardDescription>O documento gerado aparecerá aqui. Você pode editar, copiar ou baixar em PDF.</CardDescription>
             </CardHeader>
             <CardContent>
                 <Textarea
-                    readOnly
                     value={generatedContent}
+                    onChange={(e) => setGeneratedContent(e.target.value)}
                     placeholder="O conteúdo do seu documento gerado será exibido aqui..."
                     className="min-h-[400px] text-sm bg-muted/30"
                 />
