@@ -43,7 +43,7 @@ const fromFirestore = (docSnap: DocumentData): Process => {
 // READ ALL
 export async function getProcesses(): Promise<Process[]> {
   const q = query(processesCollectionRef, orderBy("createdAt", "desc"));
-  const querySnapshot = await getDocs(q, { cache: 'no-store' });
+  const querySnapshot = await getDocs(q);
   return querySnapshot.docs.map(fromFirestore);
 }
 
@@ -53,7 +53,7 @@ export async function getRecentProcesses(count?: number): Promise<Process[]> {
         ? query(processesCollectionRef, orderBy("createdAt", "desc"), limit(count))
         : query(processesCollectionRef, orderBy("createdAt", "desc"));
 
-    const querySnapshot = await getDocs(q, { cache: 'no-store' });
+    const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(fromFirestore);
 }
 
