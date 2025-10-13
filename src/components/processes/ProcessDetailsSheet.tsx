@@ -129,7 +129,6 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
           });
       }
   
-      // This will only run if the above await succeeds or is skipped
       const newTimeline = [newEvent, ...currentTimeline].sort((a, b) => parseISO(b.date).getTime() - parseISO(a.date).getTime());
       
       await onTimelineUpdate(processData.id, newTimeline);
@@ -167,7 +166,7 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
       setIsSaving(true);
       const newTimeline = currentTimeline.filter(e => e.id !== timelineEventToDelete.id);
       await onTimelineUpdate(processData.id, newTimeline);
-      setCurrentTimeline(newTimeline); // Atualiza o estado local
+      setCurrentTimeline(newTimeline);
       setIsSaving(false);
     }
     setTimelineEventToDelete(null);
@@ -182,7 +181,7 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
   return (
     <>
       <Sheet open={isOpen} onOpenChange={onClose}>
-        <SheetContent className="w-full sm:max-w-xl flex flex-col">
+        <SheetContent side="left" className="w-full sm:max-w-xl flex flex-col">
           <SheetHeader className="pr-10">
             <SheetTitle className="text-primary truncate">{processData.processNumber}</SheetTitle>
             <SheetDescription>
