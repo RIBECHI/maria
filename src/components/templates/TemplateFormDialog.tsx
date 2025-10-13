@@ -94,7 +94,7 @@ export function TemplateFormDialog({ isOpen, onClose, onSubmit, templateData }: 
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && handleDialogClose()}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if(!open) handleDialogClose(); }}>
       <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>{templateData ? "Editar Modelo" : "Criar Novo Modelo"}</DialogTitle>
