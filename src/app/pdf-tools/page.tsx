@@ -11,6 +11,7 @@ import { UploadCloud, FileDown, Loader2, ArrowUpDown, RotateCw, Trash2, ArrowLef
 import { useToast } from "@/hooks/use-toast";
 import jsPDF from 'jspdf';
 import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
 
 
 export interface ImageFile {
@@ -27,8 +28,18 @@ export default function PdfToolsPage() {
   const [progress, setProgress] = React.useState(0);
   const [progressMessage, setProgressMessage] = React.useState("");
   const [fileName, setFileName] = React.useState("");
+  const [includeLetterhead, setIncludeLetterhead] = React.useState(true);
+  const [hasTemplate, setHasTemplate] = React.useState(false);
+
   const { toast } = useToast();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    // Verifica no cliente se existe algum template salvo no localStorage
+    const header = localStorage.getItem('pdfHeaderTemplate');
+    const footer = localStorage.getItem('pdfFooterTemplate');
+    setHasTemplate(!!header || !!footer);
+  }, []);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -89,8 +100,8 @@ export default function PdfToolsPage() {
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
       
-      const headerTemplate = localStorage.getItem('pdfHeaderTemplate');
-      const footerTemplate = localStorage.getItem('pdfFooterTemplate');
+      const headerTemplate = includeLetterhead ? localStorage.getItem('pdfHeaderTemplate') : null;
+      const footerTemplate = includeLetterhead ? localStorage.getItem('pdfFooterTemplate') : null;
       
       let headerImageHeight = 0;
       let footerImageHeight = 0;
@@ -309,6 +320,21 @@ export default function PdfToolsPage() {
                     Menor qualidade resulta em um arquivo menor. 80% é um bom ponto de partida.
                 </p>
              </div>
+
+             <div className="flex items-center space-x-2 pt-4 border-t">
+                <Checkbox
+                    id="include-letterhead"
+                    checked={includeLetterhead}
+                    onCheckedChange={(checked) => setIncludeLetterhead(!!checked)}
+                    disabled={isGenerating || !hasTemplate}
+                />
+                <Label
+                    htmlFor="include-letterhead"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                    Incluir cabeçalho e rodapé (papel timbrado)
+                </Label>
+             </div>
           </CardContent>
           <CardFooter className="flex-col items-stretch gap-4">
             <Button onClick={handleGeneratePdf} disabled={isGenerating || imageFiles.length === 0} className="w-full" size="lg">
@@ -381,3 +407,5 @@ export default function PdfToolsPage() {
     </div>
   );
 }
+
+    
