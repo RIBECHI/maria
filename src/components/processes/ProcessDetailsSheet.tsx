@@ -115,13 +115,21 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
     };
     
     try {
-      if (['prazo', 'audiencia'].includes(data.eventSource.toLowerCase())) {
+      const sourceLowerCase = data.eventSource.toLowerCase();
+      let eventType: 'prazo' | 'audiencia' | 'consulta' | null = null;
+      
+      if (sourceLowerCase === 'prazo') eventType = 'prazo';
+      else if (sourceLowerCase === 'audiência') eventType = 'audiencia';
+      else if (sourceLowerCase === 'nota manual' || sourceLowerCase === 'outro') eventType = 'consulta';
+
+
+      if (eventType) {
           await addEvent({
               date: newEvent.date,
-              type: data.eventSource.toLowerCase() as 'prazo' | 'audiencia',
+              type: eventType,
               description: `[Processo: ${processData.processNumber}] ${data.eventDescription}`,
               client: processData.client,
-              process: processData.id, // Corrigido para usar o ID do processo
+              process: processData.id,
           });
           toast({
               title: "Evento adicionado à Agenda!",
