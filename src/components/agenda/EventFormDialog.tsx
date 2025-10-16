@@ -113,7 +113,7 @@ export function EventFormDialog({ isOpen, onClose, onSubmit, eventData }: EventF
     if (selectedClient && allProcesses.length > 0) {
       const filtered = allProcesses.filter(p => p.client === selectedClient);
       const options = filtered.map(p => ({ 
-        value: p.processNumber, 
+        value: p.id, // Usar o ID do processo como valor
         label: `${p.processNumber} - ${p.type}` 
       }));
       setProcessOptions(options);
@@ -144,12 +144,12 @@ export function EventFormDialog({ isOpen, onClose, onSubmit, eventData }: EventF
           description: eventData.description || "",
           time: eventData.time || "",
           client: eventData.client || "",
-          process: eventData.process || "",
+          process: eventData.process || "", // O valor já deve ser o ID
         });
         
         if (eventData.client && allProcesses.length > 0) {
              const filtered = allProcesses.filter(p => p.client === eventData.client);
-             const options = filtered.map(p => ({ value: p.processNumber, label: `${p.processNumber} - ${p.type}` }));
+             const options = filtered.map(p => ({ value: p.id, label: `${p.processNumber} - ${p.type}` }));
              setProcessOptions(options);
         } else {
             setProcessOptions([]);
@@ -351,3 +351,5 @@ export function EventFormDialog({ isOpen, onClose, onSubmit, eventData }: EventF
     </>
   );
 }
+
+    

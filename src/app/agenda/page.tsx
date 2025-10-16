@@ -24,6 +24,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { getEvents, addEvent, updateEvent, deleteEvent } from "@/services/eventService";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getProcesses } from '@/services/processService';
+import type { Process } from '@/components/processes/ProcessFormDialog';
 
 const getEventTypeDetails = (type: CalendarEvent['type']) => {
   switch (type) {
@@ -42,6 +44,7 @@ const getEventTypeDetails = (type: CalendarEvent['type']) => {
 export default function AgendaPage() {
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(new Date());
   const [events, setEvents] = React.useState<CalendarEvent[]>([]);
+  const [processes, setProcesses] = React.useState<Process[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isFormDialogOpen, setIsFormDialogOpen] = React.useState(false);
   const [editingEvent, setEditingEvent] = React.useState<CalendarEvent | undefined>(undefined);
@@ -49,15 +52,19 @@ export default function AgendaPage() {
   const [eventToDelete, setEventToDelete] = React.useState<CalendarEvent | null>(null);
   const { toast } = useToast();
   
-  const fetchEvents = React.useCallback(async () => {
+  const fetchData = React.useCallback(async () => {
     setIsLoading(true);
     try {
-      const eventsFromDb = await getEvents();
+      const [eventsFromDb, processesFromDb] = await Promise.all([
+        getEvents(),
+        getProcesses()
+      ]);
       setEvents(eventsFromDb);
+      setProcesses(processesFromDb);
     } catch (error) {
-      console.error("Error fetching events:", error);
+      console.error("Error fetching data:", error);
       toast({
-        title: "Erro ao buscar eventos",
+        title: "Erro ao buscar dados",
         description: "Não foi possível carregar a agenda. Tente novamente mais tarde.",
         variant: "destructive",
       });
@@ -67,8 +74,8 @@ export default function AgendaPage() {
   }, [toast]);
 
   React.useEffect(() => {
-    fetchEvents();
-  }, [fetchEvents]);
+    fetchData();
+  }, [fetchData]);
 
 
   const handleOpenFormDialog = (event?: CalendarEvent) => {
@@ -84,17 +91,14 @@ export default function AgendaPage() {
   const handleSubmitEventForm = async (data: EventFormValues) => {
     try {
       if (editingEvent) {
-        const updatedEvent = await updateEvent(editingEvent.id, data);
-        setEvents(events.map(e => e.id === editingEvent.id ? updatedEvent : e));
+        await updateEvent(editingEvent.id, data);
         toast({ title: "Evento atualizado!", description: `O evento "${data.description}" foi atualizado.` });
       } else {
-        const newEvent = await addEvent(data);
-        setEvents([...events, newEvent].sort((a,b) => parseISO(a.date).getTime() - parseISO(b.date).getTime()));
-        toast({ title: "Evento adicionado!", description: `O evento "${newEvent.description}" foi adicionado.` });
+        await addEvent(data);
+        toast({ title: "Evento adicionado!", description: `O evento foi adicionado.` });
       }
       handleCloseFormDialog();
-      // Opcional: Re-fetch para garantir consistência total, embora a atualização local seja geralmente suficiente
-      // fetchEvents(); 
+      fetchData(); // Re-fetch para garantir consistência
     } catch(error) {
       console.error("Failed to save event:", error);
       toast({ title: "Erro ao salvar", description: "Não foi possível salvar o evento.", variant: "destructive" });
@@ -120,6 +124,11 @@ export default function AgendaPage() {
         setIsDeleteDialogOpen(false);
       }
     }
+  };
+
+  const getProcessNumberById = (processId: string) => {
+    const process = processes.find(p => p.id === processId);
+    return process?.processNumber || processId; // Retorna o ID se não encontrar
   };
 
   const eventsForSelectedDate = selectedDate
@@ -196,7 +205,7 @@ export default function AgendaPage() {
                           </div>
                           <p className="font-medium">{event.description}</p>
                           {event.client && <p className="text-sm text-muted-foreground">Cliente: {event.client}</p>}
-                          {event.process && <p className="text-sm text-muted-foreground">Processo: {event.process}</p>}
+                          {event.process && <p className="text-sm text-muted-foreground">Processo: {getProcessNumberById(event.process)}</p>}
                         </div>
                         <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                             <Button variant="ghost" size="icon" className="hover:text-accent" onClick={(e) => { e.stopPropagation(); handleOpenFormDialog(event); }}>
@@ -247,7 +256,7 @@ export default function AgendaPage() {
                         </div>
                         <p className="font-medium">{event.description}</p>
                         {event.client && <p className="text-sm text-muted-foreground">Cliente: {event.client}</p>}
-                        {event.process && <p className="text-sm text-muted-foreground">Processo: {event.process}</p>}
+                        {event.process && <p className="text-sm text-muted-foreground">Processo: {getProcessNumberById(event.process)}</p>}
                       </div>
                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                             <Button variant="ghost" size="icon" className="hover:text-accent" onClick={(e) => { e.stopPropagation(); handleOpenFormDialog(event); }}>
@@ -294,3 +303,5 @@ export default function AgendaPage() {
     </div>
   );
 }
+
+    

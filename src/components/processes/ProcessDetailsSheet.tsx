@@ -121,7 +121,7 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
               type: data.eventSource.toLowerCase() as 'prazo' | 'audiencia',
               description: `[Processo: ${processData.processNumber}] ${data.eventDescription}`,
               client: processData.client,
-              process: processData.processNumber,
+              process: processData.id, // Corrigido para usar o ID do processo
           });
           toast({
               title: "Evento adicionado à Agenda!",
@@ -180,8 +180,8 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
 
   return (
     <>
-      <Sheet open={isOpen} onOpenChange={onClose}>
-        <SheetContent side="left" className="w-full sm:max-w-xl flex flex-col">
+      <Sheet open={isOpen} onOpenChange={onClose} side="left">
+        <SheetContent className="w-full sm:max-w-xl flex flex-col">
           <SheetHeader className="pr-10">
             <SheetTitle className="text-primary truncate">{processData.processNumber}</SheetTitle>
             <SheetDescription>
@@ -339,3 +339,5 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
     </>
   );
 }
+
+    
