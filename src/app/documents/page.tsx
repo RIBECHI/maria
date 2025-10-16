@@ -20,7 +20,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { DocumentFormDialog, type DocumentFormValues, type Document } from "@/components/documents/DocumentFormDialog";
-import { getDocuments, addDocument, updateDocument, deleteDocument, downloadFile } from "@/services/documentService";
+import { getDocuments, addDocument, updateDocument, deleteDocument, getDownloadUrl } from "@/services/documentService";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function DocumentsPage() {
@@ -114,7 +114,21 @@ export default function DocumentsPage() {
   const handleDownloadDocument = async (doc: Document) => {
     toast({ title: "Download iniciado", description: `Baixando ${doc.name}...` });
     try {
-        await downloadFile(doc.filePath, doc.name);
+        const url = await getDownloadUrl(doc.filePath);
+        
+        // Client-side download logic
+        const response = await fetch(url);
+        const blob = await response.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = doc.name;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(blobUrl);
+        document.body.removeChild(a);
+
     } catch(error) {
         console.error("Download failed", error);
         toast({ title: "Falha no Download", description: "Não foi possível baixar o arquivo.", variant: "destructive" });

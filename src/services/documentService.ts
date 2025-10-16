@@ -95,30 +95,9 @@ export async function deleteDocument(document: Document): Promise<void> {
   await deleteDoc(docRef);
 }
 
-// DOWNLOAD
-export async function downloadFile(filePath: string, fileName: string): Promise<void> {
+// DOWNLOAD URL GETTER
+export async function getDownloadUrl(filePath: string): Promise<string> {
     const fileRef = ref(storage, filePath);
     const url = await getDownloadURL(fileRef);
-
-    // This part is tricky to do on the server side in a Next.js server action.
-    // The best approach is to pass the URL to the client and let the client handle the download.
-    // However, since this is a server action, we cannot directly trigger a browser download.
-    // This function will primarily be used to get the URL, which we can then use on the client.
-    // For a direct download simulation, we'd need a different setup (e.g. API route).
-    // For now, we will just open the url in a new tab.
-    
-    // The code below is a client-side pattern. It will throw an error on the server.
-    // We will call this function from the client to get the URL and handle the download there.
-    
-    const response = await fetch(url);
-    const blob = await response.blob();
-    const blobUrl = window.URL.createObjectURL(blob);
-    
-    const a = document.createElement('a');
-    a.href = blobUrl;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(blobUrl);
-    document.body.removeChild(a);
+    return url;
 }
