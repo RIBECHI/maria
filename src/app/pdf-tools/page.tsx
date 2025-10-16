@@ -94,7 +94,8 @@ export default function PdfToolsPage() {
       const pdf = new jsPDF({
         orientation: 'p',
         unit: 'mm',
-        format: 'a4'
+        format: 'a4',
+        compress: true,
       });
       
       const pageWidth = pdf.internal.pageSize.getWidth();
@@ -407,5 +408,3 @@ export default function PdfToolsPage() {
     </div>
   );
 }
-
-    
