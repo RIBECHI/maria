@@ -53,7 +53,7 @@ import { addEvent } from "@/services/eventService";
 const getStatusBadgeVariant = (status: string) => {
   switch (status) {
     case "Em Andamento": return "default";
-    case "Concluído": return "secondary";
+    case "Concluído": return "secondary"; 
     case "Suspenso": return "outline";
     default: return "outline";
   }
