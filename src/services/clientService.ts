@@ -15,7 +15,7 @@ const fromFirestore = (docSnap: DocumentData): Client => {
     cpf: data.cpf,
     caseCount: data.caseCount,
     lastActivity: data.lastActivity,
-    city: data.city,
+    address: data.address,
     notes: data.notes,
   };
   if (data.createdAt && data.createdAt instanceof Timestamp) {

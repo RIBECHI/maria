@@ -79,7 +79,7 @@ export default function DocumentGeneratorPage() {
       content = content.replace(/\{\{cliente\.nome\}\}/g, client.name || "");
       content = content.replace(/\{\{cliente\.cpf\}\}/g, client.cpf || "");
       content = content.replace(/\{\{cliente\.contato\}\}/g, client.contact || "");
-      content = content.replace(/\{\{cliente\.cidade\}\}/g, client.city || "");
+      content = content.replace(/\{\{cliente\.endereco\}\}/g, client.address || "");
       
       // Replace process variables
       content = content.replace(/\{\{processo\.numero\}\}/g, process.processNumber || "");

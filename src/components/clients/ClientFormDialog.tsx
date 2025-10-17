@@ -34,7 +34,7 @@ export interface Client extends DocumentData {
   cpf?: string;
   caseCount: number;
   lastActivity: string;
-  city?: string;
+  address?: string;
   notes?: string;
   createdAt?: string; // Can be a string (ISO date) or undefined
 }
@@ -43,7 +43,7 @@ const clientFormSchema = z.object({
   name: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres." }),
   contact: z.string().min(10, { message: "O contato deve ter pelo menos 10 caracteres (email ou telefone)." }),
   cpf: z.string().optional(),
-  city: z.string().optional(),
+  address: z.string().optional(),
   notes: z.string().optional(),
 });
 
@@ -65,7 +65,7 @@ export function ClientFormDialog({ isOpen, onClose, onSubmit, clientData }: Clie
       name: "",
       contact: "",
       cpf: "",
-      city: "",
+      address: "",
       notes: "",
     },
   });
@@ -76,7 +76,7 @@ export function ClientFormDialog({ isOpen, onClose, onSubmit, clientData }: Clie
         name: clientData.name,
         contact: clientData.contact,
         cpf: clientData.cpf || "",
-        city: clientData.city || "",
+        address: clientData.address || "",
         notes: clientData.notes || "",
       });
     } else {
@@ -84,7 +84,7 @@ export function ClientFormDialog({ isOpen, onClose, onSubmit, clientData }: Clie
         name: "",
         contact: "",
         cpf: "",
-        city: "",
+        address: "",
         notes: "",
       });
     }
@@ -157,12 +157,12 @@ export function ClientFormDialog({ isOpen, onClose, onSubmit, clientData }: Clie
             </div>
              <FormField
               control={form.control}
-              name="city"
+              name="address"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Cidade</FormLabel>
+                  <FormLabel>Endereço</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: Goiânia - GO" {...field} />
+                    <Input placeholder="Ex: Rua, Número, Bairro, Cidade - UF" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

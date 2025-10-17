@@ -46,7 +46,7 @@ const availableVariables = [
     { variable: "{{cliente.nome}}", description: "Nome completo do cliente" },
     { variable: "{{cliente.cpf}}", description: "CPF/CNPJ do cliente" },
     { variable: "{{cliente.contato}}", description: "Contato (email/telefone) do cliente" },
-    { variable: "{{cliente.cidade}}", description: "Cidade do cliente" },
+    { variable: "{{cliente.endereco}}", description: "Endereço do cliente" },
     { variable: "{{processo.numero}}", description: "Número do processo" },
     { variable: "{{processo.tipo}}", description: "Tipo do processo" },
     { variable: "{{processo.status}}", description: "Status atual do processo" },
