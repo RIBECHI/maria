@@ -14,6 +14,7 @@ import {
   Notebook,
   FileCog,
   FileSignature,
+  ListChecks,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -43,6 +44,7 @@ const navItems = [
   { href: '/', label: 'Painel', icon: <LayoutDashboard /> },
   { href: '/clients', label: 'Clientes', icon: <Users /> },
   { href: '/processes', label: 'Processos', icon: <Briefcase /> },
+  { href: '/tasks', label: 'Tarefas', icon: <ListChecks /> },
   { href: '/documents', label: 'Documentos', icon: <FileText /> },
   { href: '/agenda', label: 'Agenda', icon: <CalendarDays /> },
   { href: '/legal-reminder', label: 'Lembrete Legal', icon: <Lightbulb /> },

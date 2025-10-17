@@ -59,6 +59,8 @@ export interface TimelineEvent {
   date: string; // YYYY-MM-DD
   description: string;
   source: 'Resumo de E-mail PROJUDI' | 'Nota Manual' | 'Prazo' | 'Audiência' | 'Outro';
+  isTask?: boolean;
+  completed?: boolean;
 }
 
 export interface Process extends DocumentData {
@@ -96,6 +98,7 @@ const timelineEventSchema = z.object({
   eventDate: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Data inválida." }),
   eventDescription: z.string().min(5, { message: "A descrição deve ter pelo menos 5 caracteres." }),
   eventSource: z.enum(['Resumo de E-mail PROJUDI', 'Nota Manual', 'Prazo', 'Audiência', 'Outro']),
+  isTask: z.boolean().optional(),
 });
 type TimelineEventFormValues = z.infer<typeof timelineEventSchema>;
 
@@ -138,6 +141,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
       eventDate: format(new Date(), 'yyyy-MM-dd'),
       eventDescription: "",
       eventSource: "Nota Manual",
+      isTask: false,
     },
   });
   
@@ -176,6 +180,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
           eventDate: format(new Date(), 'yyyy-MM-dd'),
           eventDescription: "",
           eventSource: "Nota Manual",
+          isTask: false,
         });
     }
   }, [processData, form, timelineForm, isOpen]);
@@ -186,12 +191,15 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
       date: format(parseISO(data.eventDate + 'T00:00:00'), 'yyyy-MM-dd'),
       description: data.eventDescription,
       source: data.eventSource,
+      isTask: data.isTask,
+      completed: data.isTask ? false : undefined, // Só é 'false' se for uma tarefa
     };
     setCurrentTimeline(prev => [newEvent, ...prev].sort((a, b) => parseISO(b.date).getTime() - parseISO(a.date).getTime()));
     timelineForm.reset({
       eventDate: format(new Date(), 'yyyy-MM-dd'),
       eventDescription: "",
       eventSource: "Nota Manual",
+      isTask: false,
     });
     toast({ title: "Evento adicionado à linha do tempo!" });
   };
@@ -213,6 +221,15 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
     setIsDeleteTimelineAlertOpen(false);
   };
 
+    const handleToggleTask = (eventId: string) => {
+        setCurrentTimeline(prev =>
+            prev.map(event =>
+                event.id === eventId
+                    ? { ...event, completed: !event.completed }
+                    : event
+            )
+        );
+    };
 
   const handleFormSubmit: SubmitHandler<ProcessFormValues> = async (data) => {
     setIsLoading(true);
@@ -463,7 +480,20 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
               <CardContent>
                 <Form {...timelineForm}>
                   <div className="space-y-3 mb-6 p-4 border rounded-md">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                     <FormField
+                        control={timelineForm.control}
+                        name="eventDescription"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm">Descrição do Evento</FormLabel>
+                            <FormControl>
+                              <Textarea placeholder="Descreva o evento, atualização ou nota..." {...field} rows={2}/>
+                            </FormControl>
+                            <FormMessage className="text-xs" />
+                          </FormItem>
+                        )}
+                      />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-end">
                       <FormField
                         control={timelineForm.control}
                         name="eventDate"
@@ -501,28 +531,34 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
                           </FormItem>
                         )}
                       />
-                       <Button 
+                    </div>
+                     <div className="flex items-center justify-between pt-2">
+                        <FormField
+                            control={timelineForm.control}
+                            name="isTask"
+                            render={({ field }) => (
+                                <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                                    <FormControl>
+                                        <Checkbox
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                        id="is-task"
+                                        />
+                                    </FormControl>
+                                    <FormLabel htmlFor="is-task" className="text-sm font-normal">
+                                        É uma tarefa pendente?
+                                    </FormLabel>
+                                </FormItem>
+                            )}
+                        />
+                        <Button 
                           type="button" 
                           size="sm" 
-                          className="md:self-end h-10" 
                           onClick={timelineForm.handleSubmit(handleAddTimelineEvent)}
                         >
                           <PlusCircle className="mr-2 h-4 w-4" /> Adicionar
                         </Button>
                     </div>
-                     <FormField
-                        control={timelineForm.control}
-                        name="eventDescription"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-sm">Descrição do Evento</FormLabel>
-                            <FormControl>
-                              <Textarea placeholder="Descreva o evento, atualização ou nota..." {...field} rows={2}/>
-                            </FormControl>
-                            <FormMessage className="text-xs" />
-                          </FormItem>
-                        )}
-                      />
                   </div>
                 </Form>
 
@@ -530,12 +566,35 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
                   <div className="space-y-3 max-h-60 overflow-y-auto">
                     {currentTimeline.map(event => (
                       <div key={event.id} className="p-3 border rounded-md bg-muted/30 shadow-sm">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <p className="text-xs text-muted-foreground">{format(parseISO(event.date), "dd/MM/yyyy")} - <strong>{event.source}</strong></p>
-                            <p className="text-sm mt-1">{event.description}</p>
-                          </div>
-                          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/80 h-7 w-7" onClick={() => handleDeleteTimelineEvent(event.id)}>
+                        <div className="flex justify-between items-start gap-2">
+                          {event.isTask ? (
+                            <div className="flex items-start gap-3 flex-1 pt-1">
+                                <Checkbox 
+                                    id={`task-${event.id}`} 
+                                    checked={event.completed}
+                                    onCheckedChange={() => handleToggleTask(event.id)}
+                                    aria-label="Marcar tarefa como concluída"
+                                />
+                                <div className="flex-1">
+                                    <label 
+                                        htmlFor={`task-${event.id}`}
+                                        className={`text-sm ${event.completed ? 'line-through text-muted-foreground' : ''}`}
+                                    >
+                                        {event.description}
+                                    </label>
+                                    <p className={`text-xs text-muted-foreground mt-1 ${event.completed ? 'line-through' : ''}`}>
+                                        {format(parseISO(event.date), "dd/MM/yyyy")} - <strong>{event.source}</strong>
+                                    </p>
+                                </div>
+                            </div>
+                          ) : (
+                            <div>
+                                <p className="text-xs text-muted-foreground">{format(parseISO(event.date), "dd/MM/yyyy")} - <strong>{event.source}</strong></p>
+                                <p className="text-sm mt-1">{event.description}</p>
+                            </div>
+                          )}
+
+                          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/80 h-7 w-7 shrink-0" onClick={() => handleDeleteTimelineEvent(event.id)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -601,5 +660,3 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
     </>
   );
 }
-
-    

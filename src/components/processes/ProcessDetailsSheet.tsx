@@ -48,6 +48,7 @@ import {
     AlertDialogTitle,
   } from "@/components/ui/alert-dialog";
 import { addEvent } from "@/services/eventService";
+import { Checkbox } from "../ui/checkbox";
   
 
 const getStatusBadgeVariant = (status: string) => {
@@ -63,6 +64,7 @@ const timelineEventSchema = z.object({
     eventDate: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Data inválida." }),
     eventDescription: z.string().min(5, { message: "A descrição deve ter pelo menos 5 caracteres." }),
     eventSource: z.enum(['Resumo de E-mail PROJUDI', 'Nota Manual', 'Prazo', 'Audiência', 'Outro']),
+    isTask: z.boolean().optional(),
 });
 type TimelineEventFormValues = z.infer<typeof timelineEventSchema>;
 
@@ -87,6 +89,7 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
       eventDate: format(new Date(), 'yyyy-MM-dd'),
       eventDescription: "",
       eventSource: "Nota Manual",
+      isTask: false,
     },
   });
 
@@ -104,6 +107,15 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
     return null;
   }
 
+  const handleToggleTask = async (eventId: string) => {
+    const newTimeline = currentTimeline.map(event =>
+      event.id === eventId ? { ...event, completed: !event.completed } : event
+    );
+    
+    await onTimelineUpdate(processData.id, newTimeline);
+    setCurrentTimeline(newTimeline);
+  };
+
   const handleAddTimelineEvent: SubmitHandler<TimelineEventFormValues> = async (data) => {
     setIsSaving(true);
     
@@ -112,6 +124,8 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
       date: format(parseISO(data.eventDate + 'T00:00:00'), 'yyyy-MM-dd'),
       description: data.eventDescription,
       source: data.eventSource,
+      isTask: data.isTask,
+      completed: data.isTask ? false : undefined,
     };
     
     try {
@@ -146,6 +160,7 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
         eventDate: format(new Date(), 'yyyy-MM-dd'),
         eventDescription: "",
         eventSource: "Nota Manual",
+        isTask: false,
       });
       toast({ title: "Linha do tempo atualizada!" });
   
@@ -250,7 +265,7 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
                                     name="eventDate"
                                     render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel className="text-xs text-muted-foreground">Data</FormLabel>
+                                        <FormLabel className="text-xs text-muted-foreground">Data do Evento</FormLabel>
                                         <FormControl>
                                         <Input type="date" {...field} />
                                         </FormControl>
@@ -283,16 +298,35 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
                                     )}
                                 />
                             </div>
-                            <Button 
-                                type="button" 
-                                size="sm" 
-                                className="w-full"
-                                onClick={timelineForm.handleSubmit(handleAddTimelineEvent)}
-                                disabled={isSaving}
-                            >
-                                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlusCircle className="mr-2 h-4 w-4" />}
-                                Adicionar Evento
-                            </Button>
+                            <div className="flex items-center justify-between pt-2">
+                                <FormField
+                                    control={timelineForm.control}
+                                    name="isTask"
+                                    render={({ field }) => (
+                                        <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                                            <FormControl>
+                                                <Checkbox
+                                                checked={field.value}
+                                                onCheckedChange={field.onChange}
+                                                id="is-task-sheet"
+                                                />
+                                            </FormControl>
+                                            <FormLabel htmlFor="is-task-sheet" className="text-sm font-normal">
+                                                É uma tarefa pendente?
+                                            </FormLabel>
+                                        </FormItem>
+                                    )}
+                                />
+                                <Button 
+                                    type="button" 
+                                    size="sm" 
+                                    onClick={timelineForm.handleSubmit(handleAddTimelineEvent)}
+                                    disabled={isSaving}
+                                >
+                                    {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlusCircle className="mr-2 h-4 w-4" />}
+                                    Adicionar
+                                </Button>
+                            </div>
                         </div>
                     </Form>
                 </div>
@@ -305,13 +339,37 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
                         <div className="space-y-3">
                             {currentTimeline.map(event => (
                             <div key={event.id} className="p-3 border rounded-md bg-muted/30 shadow-sm relative group">
-                                <div className="pr-8">
-                                <p className="text-xs text-muted-foreground font-medium">{format(parseISO(event.date), "dd/MM/yyyy")} - <strong>{event.source}</strong></p>
-                                <p className="text-sm mt-1 whitespace-pre-wrap">{event.description}</p>
+                                <div className="flex justify-between items-start gap-2">
+                                    {event.isTask ? (
+                                        <div className="flex items-start gap-3 flex-1 pt-1">
+                                            <Checkbox
+                                                id={`task-sheet-${event.id}`}
+                                                checked={event.completed}
+                                                onCheckedChange={() => handleToggleTask(event.id)}
+                                                aria-label="Marcar tarefa como concluída"
+                                            />
+                                            <div className="flex-1">
+                                                <label
+                                                    htmlFor={`task-sheet-${event.id}`}
+                                                    className={`text-sm ${event.completed ? 'line-through text-muted-foreground' : ''}`}
+                                                >
+                                                    {event.description}
+                                                </label>
+                                                <p className={`text-xs text-muted-foreground mt-1 ${event.completed ? 'line-through' : ''}`}>
+                                                    {format(parseISO(event.date), "dd/MM/yyyy")} - <strong>{event.source}</strong>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="flex-1">
+                                            <p className="text-xs text-muted-foreground font-medium">{format(parseISO(event.date), "dd/MM/yyyy")} - <strong>{event.source}</strong></p>
+                                            <p className="text-sm mt-1 whitespace-pre-wrap">{event.description}</p>
+                                        </div>
+                                    )}
+                                    <Button variant="ghost" size="icon" className="absolute top-1 right-1 text-destructive hover:text-destructive/80 h-7 w-7 opacity-0 group-hover:opacity-100" onClick={() => handleDeleteTimelineEvent(event.id)} disabled={isSaving}>
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
                                 </div>
-                                <Button variant="ghost" size="icon" className="absolute top-1 right-1 text-destructive hover:text-destructive/80 h-7 w-7 opacity-0 group-hover:opacity-100" onClick={() => handleDeleteTimelineEvent(event.id)} disabled={isSaving}>
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
                             </div>
                             ))}
                         </div>
@@ -347,5 +405,3 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
     </>
   );
 }
-
-    
