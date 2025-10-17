@@ -185,31 +185,35 @@ export default function DashboardPage() {
                                 <Skeleton className="h-6 w-1/4" />
                             </div>
                         ) : processStats ? (
-                            <Link href="/processes" className="block hover:bg-muted/50 rounded-md transition-colors -m-3 p-3">
-                                 <List>
-                                    <ListItem className="flex items-center justify-between border-b-0 p-0">
+                            <List>
+                                <ListItem className="p-0 border-b-0">
+                                    <Link href="/processes?status=Em Andamento" className="flex items-center justify-between w-full p-2 rounded-md hover:bg-muted/50 transition-colors">
                                         <div className="flex items-center gap-2">
                                             <Hourglass className="h-4 w-4 text-blue-500" />
                                             <span>Em Andamento</span>
                                         </div>
                                         <span className="font-bold text-lg">{processStats.emAndamento}</span>
-                                    </ListItem>
-                                     <ListItem className="flex items-center justify-between border-b-0 p-0">
+                                    </Link>
+                                </ListItem>
+                                <ListItem className="p-0 border-b-0">
+                                    <Link href="/processes?status=Concluído" className="flex items-center justify-between w-full p-2 rounded-md hover:bg-muted/50 transition-colors">
                                         <div className="flex items-center gap-2">
                                             <CheckSquare className="h-4 w-4 text-green-600" />
                                             <span>Concluídos</span>
                                         </div>
                                         <span className="font-bold text-lg">{processStats.concluido}</span>
-                                    </ListItem>
-                                     <ListItem className="flex items-center justify-between border-b-0 p-0">
+                                    </Link>
+                                </ListItem>
+                                <ListItem className="p-0 border-b-0">
+                                     <Link href="/processes?status=Suspenso" className="flex items-center justify-between w-full p-2 rounded-md hover:bg-muted/50 transition-colors">
                                         <div className="flex items-center gap-2">
                                             <Briefcase className="h-4 w-4 text-yellow-500" />
                                             <span>Suspensos</span>
                                         </div>
                                         <span className="font-bold text-lg">{processStats.suspenso}</span>
-                                    </ListItem>
-                                </List>
-                            </Link>
+                                    </Link>
+                                </ListItem>
+                            </List>
                         ) : (
                             <p className="text-sm text-muted-foreground pt-2">Não foi possível carregar as estatísticas.</p>
                         )}

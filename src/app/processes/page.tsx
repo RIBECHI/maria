@@ -2,6 +2,7 @@
 "use client";
 
 import * as React from "react";
+import { useSearchParams } from 'next/navigation'
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -42,7 +43,12 @@ const getStatusBadgeVariant = (status: string) => {
   }
 }
 
-export default function ProcessesPage() {
+type StatusFilter = 'Todos' | 'Em Andamento' | 'Concluído' | 'Suspenso';
+
+function ProcessesPageComponent() {
+  const searchParams = useSearchParams()
+  const initialStatus = searchParams.get('status') as StatusFilter | null;
+
   const [processes, setProcesses] = React.useState<Process[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isFormDialogOpen, setIsFormDialogOpen] = React.useState(false);
@@ -51,6 +57,7 @@ export default function ProcessesPage() {
   const [processToDelete, setProcessToDelete] = React.useState<Process | null>(null);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [sortOrder, setSortOrder] = React.useState<"createdAt" | "clientName" | "updatedAt">("createdAt");
+  const [statusFilter, setStatusFilter] = React.useState<StatusFilter>(initialStatus || 'Todos');
   const [isDetailsSheetOpen, setIsDetailsSheetOpen] = React.useState(false);
   const [selectedProcessForDetails, setSelectedProcessForDetails] = React.useState<Process | null>(null);
   const { toast } = useToast();
@@ -75,6 +82,13 @@ export default function ProcessesPage() {
   React.useEffect(() => {
     fetchProcesses();
   }, [fetchProcesses]);
+  
+  React.useEffect(() => {
+    if (initialStatus) {
+      setStatusFilter(initialStatus);
+    }
+  }, [initialStatus]);
+
 
   const handleOpenFormDialog = (proc?: Process) => {
     setEditingProcess(proc);
@@ -170,12 +184,20 @@ export default function ProcessesPage() {
 };
 
   const sortedAndFilteredProcesses = React.useMemo(() => {
-    const filtered = processes.filter(proc =>
-      (proc.processNumber && proc.processNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (proc.client && proc.client.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (proc.type && proc.type.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (proc.apensos && proc.apensos.some(a => a.toLowerCase().includes(searchTerm.toLowerCase())))
-    );
+    let filtered = processes;
+
+    if (statusFilter !== 'Todos') {
+      filtered = filtered.filter(proc => proc.status === statusFilter);
+    }
+    
+    if (searchTerm) {
+        filtered = filtered.filter(proc =>
+            (proc.processNumber && proc.processNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (proc.client && proc.client.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (proc.type && proc.type.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (proc.apensos && proc.apensos.some(a => a.toLowerCase().includes(searchTerm.toLowerCase())))
+        );
+    }
 
     switch (sortOrder) {
       case 'clientName':
@@ -194,7 +216,7 @@ export default function ProcessesPage() {
             return dateB - dateA;
         });
     }
-  }, [processes, searchTerm, sortOrder]);
+  }, [processes, searchTerm, sortOrder, statusFilter]);
 
 
   return (
@@ -206,8 +228,8 @@ export default function ProcessesPage() {
         </Button>
       </div>
 
-      <div className="mb-6 flex items-center gap-4">
-        <div className="flex items-center gap-2 flex-1 max-w-sm">
+      <div className="mb-6 flex flex-wrap items-center gap-4">
+        <div className="flex items-center gap-2 flex-1 min-w-[250px] max-w-sm">
           <Search className="h-5 w-5 text-muted-foreground" />
           <Input
             placeholder="Buscar processos por Nº, apenso, cliente ou tipo..."
@@ -215,8 +237,20 @@ export default function ProcessesPage() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
+        <div className="flex items-center gap-4">
+         <Select onValueChange={(value: StatusFilter) => setStatusFilter(value)} value={statusFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filtrar por status..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Todos">Todos os Status</SelectItem>
+              <SelectItem value="Em Andamento">Em Andamento</SelectItem>
+              <SelectItem value="Concluído">Concluído</SelectItem>
+              <SelectItem value="Suspenso">Suspenso</SelectItem>
+            </SelectContent>
+          </Select>
          <Select onValueChange={(value: "createdAt" | "clientName" | "updatedAt") => setSortOrder(value)} defaultValue={sortOrder}>
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Ordenar por..." />
           </SelectTrigger>
           <SelectContent>
@@ -225,6 +259,7 @@ export default function ProcessesPage() {
             <SelectItem value="updatedAt">Última Atualização</SelectItem>
           </SelectContent>
         </Select>
+        </div>
       </div>
 
       <Card className="shadow-lg">
@@ -312,7 +347,7 @@ export default function ProcessesPage() {
               ) : (
                 <TableRow>
                   <TableCell colSpan={10} className="text-center h-24">
-                    Nenhum processo encontrado.
+                    Nenhum processo encontrado com os filtros atuais.
                   </TableCell>
                 </TableRow>
               )}
@@ -356,6 +391,11 @@ export default function ProcessesPage() {
   );
 }
 
-    
-
-    
+// React.Suspense é necessário para usar o useSearchParams no lado do cliente em App Router
+export default function ProcessesPage() {
+  return (
+    <React.Suspense fallback={<div>Carregando...</div>}>
+      <ProcessesPageComponent />
+    </React.Suspense>
+  );
+}
