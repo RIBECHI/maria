@@ -16,35 +16,20 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 
 export default function TasksPage() {
     const [processesWithTasks, setProcessesWithTasks] = React.useState<Process[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
+    const [filter, setFilter] = React.useState<'pending' | 'completed' | 'all'>('pending');
     const { toast } = useToast();
 
     const fetchTasks = React.useCallback(async () => {
         setIsLoading(true);
         try {
             const allProcesses = await getProcesses();
-            
-            const filteredProcesses = allProcesses
-                .map(p => {
-                    const tasks = (p.timeline || []).filter(t => t.isTask);
-                    if (tasks.length === 0) return null;
-
-                    const sortedTasks = tasks.sort((a, b) => {
-                        if (a.completed !== b.completed) {
-                            return a.completed ? 1 : -1;
-                        }
-                        return new Date(a.date).getTime() - new Date(b.date).getTime();
-                    });
-                    
-                    return { ...p, timeline: sortedTasks };
-                })
-                .filter((p): p is Process => p !== null);
-
-            setProcessesWithTasks(filteredProcesses);
+            setProcessesWithTasks(allProcesses);
 
         } catch (error) {
             console.error("Failed to fetch tasks:", error);
@@ -68,33 +53,65 @@ export default function TasksPage() {
         
         const updatedProcess = { ...process, timeline: updatedTimeline };
 
+        // Optimistic UI update
+        setProcessesWithTasks(prev => 
+            prev.map(p => p.id === processId ? updatedProcess : p)
+        );
+
         try {
             await updateProcess(processId, updatedProcess);
-            setProcessesWithTasks(prev => 
-                prev.map(p => p.id === processId ? updatedProcess : p)
-                  .map(p => { // Re-sort tasks within the updated process
-                      const sortedTasks = (p.timeline || []).sort((a, b) => {
-                          if (a.completed !== b.completed) {
-                              return a.completed ? 1 : -1;
-                          }
-                          return new Date(a.date).getTime() - new Date(b.date).getTime();
-                      });
-                      return { ...p, timeline: sortedTasks };
-                  })
-            );
-
         } catch (error) {
             console.error("Failed to update task status:", error);
             toast({ title: "Erro ao atualizar tarefa", variant: "destructive" });
+            // Revert UI on error
+            setProcessesWithTasks(prev => 
+                prev.map(p => p.id === processId ? process : p)
+            );
         }
     };
+    
+    const filteredAndSortedProcesses = React.useMemo(() => {
+        return processesWithTasks
+            .map(p => {
+                let tasks = (p.timeline || []).filter(t => t.isTask);
+
+                if (filter === 'pending') {
+                    tasks = tasks.filter(t => !t.completed);
+                } else if (filter === 'completed') {
+                    tasks = tasks.filter(t => t.completed);
+                }
+                
+                if (tasks.length === 0) return null;
+
+                const sortedTasks = tasks.sort((a, b) => {
+                    if (a.completed !== b.completed) {
+                        return a.completed ? 1 : -1;
+                    }
+                    return new Date(a.date).getTime() - new Date(b.date).getTime();
+                });
+                
+                return { ...p, timeline: sortedTasks };
+            })
+            .filter((p): p is Process => p !== null);
+    }, [processesWithTasks, filter]);
 
     return (
         <div className="container mx-auto p-4 md:p-6 lg:p-8">
             <div className="flex items-center gap-4 mb-8">
                 <ListChecks className="h-10 w-10 text-primary" />
-                <h1 className="text-4xl font-headline font-extrabold text-primary">Tarefas Pendentes</h1>
+                <div>
+                    <h1 className="text-4xl font-headline font-extrabold text-primary">Tarefas</h1>
+                    <p className="text-muted-foreground">Sua central de tarefas de todos os processos.</p>
+                </div>
             </div>
+
+            <Tabs defaultValue="pending" onValueChange={(value) => setFilter(value as any)} className="mb-6 w-full md:w-auto">
+                <TabsList>
+                    <TabsTrigger value="pending">Pendentes</TabsTrigger>
+                    <TabsTrigger value="completed">Concluídas</TabsTrigger>
+                    <TabsTrigger value="all">Todas</TabsTrigger>
+                </TabsList>
+            </Tabs>
 
             {isLoading ? (
                 <div className="space-y-4">
@@ -102,9 +119,9 @@ export default function TasksPage() {
                     <Skeleton className="h-20 w-full" />
                     <Skeleton className="h-20 w-full" />
                 </div>
-            ) : processesWithTasks.length > 0 ? (
-                 <Accordion type="multiple" defaultValue={processesWithTasks.map(p => p.id)} className="w-full space-y-4">
-                    {processesWithTasks.map(process => (
+            ) : filteredAndSortedProcesses.length > 0 ? (
+                 <Accordion type="multiple" defaultValue={filteredAndSortedProcesses.map(p => p.id)} className="w-full space-y-4">
+                    {filteredAndSortedProcesses.map(process => (
                         <AccordionItem value={process.id} key={process.id} className="border-none">
                              <Card className="shadow-md">
                                 <AccordionTrigger className="p-4 hover:no-underline rounded-lg data-[state=open]:rounded-b-none">
@@ -112,7 +129,7 @@ export default function TasksPage() {
                                         <div className="flex justify-between w-full">
                                             <CardTitle className="text-lg">{process.processNumber}</CardTitle>
                                             <div className="flex items-center gap-2">
-                                                <span className="text-sm font-medium text-muted-foreground">{process.timeline?.filter(t => !t.completed).length} pendente(s)</span>
+                                                <span className="text-sm font-medium text-muted-foreground">{process.timeline?.length} tarefa(s)</span>
                                             </div>
                                         </div>
                                         <CardDescription>{process.client}</CardDescription>
@@ -128,7 +145,7 @@ export default function TasksPage() {
                                                     onCheckedChange={() => handleToggleTask(process.id, task.id)}
                                                     className="mt-1"
                                                 />
-                                                <label htmlFor={`task-${process.id}-${task.id}`} className="flex-1">
+                                                <label htmlFor={`task-${process.id}-${task.id}`} className="flex-1 cursor-pointer">
                                                     <span className={`block text-sm ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
                                                         {task.description}
                                                     </span>
@@ -147,8 +164,12 @@ export default function TasksPage() {
             ) : (
                 <Card className="text-center py-20">
                     <CardContent>
-                        <h2 className="text-2xl font-semibold">Tudo em ordem!</h2>
-                        <p className="text-muted-foreground mt-2">Nenhuma tarefa pendente encontrada em seus processos.</p>
+                        <h2 className="text-2xl font-semibold">Nenhuma tarefa encontrada</h2>
+                        <p className="text-muted-foreground mt-2">
+                           {filter === 'pending' && 'Você não tem tarefas pendentes. Tudo em ordem!'}
+                           {filter === 'completed' && 'Nenhuma tarefa foi concluída ainda.'}
+                           {filter === 'all' && 'Nenhuma tarefa foi criada para os seus processos.'}
+                        </p>
                     </CardContent>
                 </Card>
             )}
