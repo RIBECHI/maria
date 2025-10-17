@@ -9,7 +9,6 @@ import {
   SheetHeader,
   SheetTitle,
   SheetDescription,
-  SheetFooter,
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
@@ -33,6 +32,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { EventFormDialog, type CalendarEvent, type EventFormValues } from "@/components/agenda/EventFormDialog";
 import { addEvent } from "@/services/eventService";
+import { Checkbox } from "../ui/checkbox";
+import { Label } from "../ui/label";
 
 
 interface NotepadSheetProps {
@@ -44,6 +45,7 @@ export function NotepadSheet({ isOpen, onOpenChange }: NotepadSheetProps) {
   const { toast } = useToast();
   const [notes, setNotes] = React.useState<Note[]>([]);
   const [newNoteContent, setNewNoteContent] = React.useState("");
+  const [isTask, setIsTask] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isSaving, setIsSaving] = React.useState(false);
   const [noteToDelete, setNoteToDelete] = React.useState<Note | null>(null);
@@ -75,6 +77,7 @@ export function NotepadSheet({ isOpen, onOpenChange }: NotepadSheetProps) {
         // Limpa o estado quando o painel é fechado para garantir que dados novos sejam carregados na próxima abertura
         setNewNoteContent("");
         setNotes([]);
+        setIsTask(false);
     }
   }, [isOpen, toast]);
 
@@ -90,6 +93,8 @@ export function NotepadSheet({ isOpen, onOpenChange }: NotepadSheetProps) {
         id: `note-${Date.now()}`,
         content: newNoteContent,
         createdAt: Timestamp.now(),
+        isTask: isTask,
+        completed: isTask ? false : undefined,
     };
 
     const updatedNotes = [newNote, ...notes];
@@ -98,13 +103,15 @@ export function NotepadSheet({ isOpen, onOpenChange }: NotepadSheetProps) {
         await saveNotes(updatedNotes);
         setNotes(updatedNotes);
         setNewNoteContent(""); // Limpa o textarea
+        setIsTask(false); // Reseta o checkbox
         toast({
-            title: "Anotação Adicionada!",
+            title: isTask ? "Tarefa Adicionada!" : "Anotação Adicionada!",
+            description: isTask ? "A nova tarefa também aparecerá na página de Tarefas." : "",
         });
     } catch (error) {
        toast({
-        title: "Erro ao Adicionar Nota",
-        description: "Não foi possível salvar a nova anotação na nuvem.",
+        title: "Erro ao Adicionar",
+        description: "Não foi possível salvar a nova anotação/tarefa na nuvem.",
         variant: "destructive",
       });
     } finally {
@@ -148,11 +155,25 @@ export function NotepadSheet({ isOpen, onOpenChange }: NotepadSheetProps) {
     });
     setIsEventDialogOpen(true);
   };
+  
+  const handleToggleTask = async (noteId: string) => {
+    const updatedNotes = notes.map(note =>
+        note.id === noteId ? { ...note, completed: !note.completed } : note
+    );
+    setNotes(updatedNotes); // Optimistic update
+    try {
+        await saveNotes(updatedNotes);
+    } catch(error) {
+        toast({ title: "Erro ao atualizar tarefa", variant: "destructive" });
+        // Revert on error
+        setNotes(notes);
+    }
+  };
 
   const handleSubmitEventForm = async (data: EventFormValues) => {
     try {
-        const newEvent = await addEvent(data);
-        toast({ title: "Evento adicionado!", description: `O evento "${newEvent.description}" foi adicionado à sua agenda.` });
+        await addEvent(data);
+        toast({ title: "Evento adicionado!", description: `O evento foi adicionado à sua agenda.` });
         setIsEventDialogOpen(false);
     } catch(error) {
       console.error("Failed to save event from note:", error);
@@ -166,38 +187,44 @@ export function NotepadSheet({ isOpen, onOpenChange }: NotepadSheetProps) {
       <Sheet open={isOpen} onOpenChange={onOpenChange}>
         <SheetContent side="left" className="w-full sm:max-w-lg flex flex-col">
           <SheetHeader>
-            <SheetTitle>Bloco de Notas</SheetTitle>
+            <SheetTitle>Bloco de Notas Rápido</SheetTitle>
             <SheetDescription>
-              Use este espaço para rascunhos e anotações rápidas. Suas notas são salvas na nuvem com data e hora.
+              Use para rascunhos, anotações e tarefas rápidas. Itens marcados como tarefas aparecerão na página principal de Tarefas.
             </SheetDescription>
           </SheetHeader>
 
           <div className="py-4 space-y-4">
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <Textarea
-                    placeholder="Digite sua nova anotação aqui..."
+                    placeholder="Digite sua nova anotação ou tarefa aqui..."
                     className="h-24 resize-y"
                     value={newNoteContent}
                     onChange={(e) => setNewNoteContent(e.target.value)}
                     disabled={isSaving}
                 />
-                <Button onClick={handleAddNote} disabled={isSaving} className="w-full">
-                    {isSaving && !noteToDelete ? (
-                    <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Adicionando...
-                    </>
-                    ) : (
-                    <>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Adicionar Anotação
-                    </>
-                    )}
-                </Button>
+                <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center space-x-2">
+                        <Checkbox id="is-task-note" checked={isTask} onCheckedChange={(checked) => setIsTask(!!checked)} />
+                        <Label htmlFor="is-task-note" className="text-sm font-normal">É uma tarefa pendente?</Label>
+                    </div>
+                    <Button onClick={handleAddNote} disabled={isSaving} className="flex-1">
+                        {isSaving && !noteToDelete ? (
+                        <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Adicionando...
+                        </>
+                        ) : (
+                        <>
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Adicionar
+                        </>
+                        )}
+                    </Button>
+                </div>
               </div>
 
             <div className="flex-1 flex flex-col">
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">Anotações Salvas</h3>
+                <h3 className="text-sm font-medium text-muted-foreground mb-2">Anotações e Tarefas Salvas</h3>
                 {isLoading ? (
                     <div className="space-y-2">
                         <Skeleton className="h-20 w-full" />
@@ -210,10 +237,31 @@ export function NotepadSheet({ isOpen, onOpenChange }: NotepadSheetProps) {
                         {notes.map(note => (
                             <Card key={note.id} className="bg-muted/40 relative group">
                             <CardContent className="p-3">
-                                <p className="text-sm whitespace-pre-wrap">{note.content}</p>
-                                <p className="text-xs text-muted-foreground mt-2">
-                                {note.createdAt ? format(note.createdAt.toDate(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : 'Salvando...'}
-                                </p>
+                                {note.isTask ? (
+                                    <div className="flex items-start gap-3">
+                                        <Checkbox 
+                                            id={`task-note-${note.id}`}
+                                            checked={note.completed}
+                                            onCheckedChange={() => handleToggleTask(note.id)}
+                                            className="mt-1"
+                                        />
+                                        <div className="flex-1">
+                                             <label htmlFor={`task-note-${note.id}`} className={`block text-sm cursor-pointer ${note.completed ? 'line-through text-muted-foreground' : ''}`}>
+                                                {note.content}
+                                            </label>
+                                            <p className={`text-xs text-muted-foreground mt-2 ${note.completed ? 'line-through' : ''}`}>
+                                                Tarefa criada em {note.createdAt ? format(note.createdAt.toDate(), "dd/MM/yyyy", { locale: ptBR }) : '...'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <p className="text-sm whitespace-pre-wrap">{note.content}</p>
+                                        <p className="text-xs text-muted-foreground mt-2">
+                                            Anotado em {note.createdAt ? format(note.createdAt.toDate(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : '...'}
+                                        </p>
+                                    </>
+                                )}
                                 <div className="absolute top-1 right-1 flex opacity-0 group-hover:opacity-100 transition-opacity">
                                   <Button
                                     variant="ghost"
@@ -221,6 +269,7 @@ export function NotepadSheet({ isOpen, onOpenChange }: NotepadSheetProps) {
                                     className="h-7 w-7 text-muted-foreground hover:text-primary"
                                     onClick={() => handleScheduleFromNote(note)}
                                     disabled={isSaving}
+                                    title="Agendar esta anotação"
                                     aria-label="Agendar nota"
                                   >
                                     <CalendarPlus className="h-4 w-4" />
@@ -231,6 +280,7 @@ export function NotepadSheet({ isOpen, onOpenChange }: NotepadSheetProps) {
                                     className="h-7 w-7 text-muted-foreground hover:text-destructive"
                                     onClick={() => handleDeleteConfirmation(note)}
                                     disabled={isSaving}
+                                    title="Excluir esta anotação"
                                     aria-label="Excluir nota"
                                   >
                                     <Trash2 className="h-4 w-4" />
@@ -259,7 +309,7 @@ export function NotepadSheet({ isOpen, onOpenChange }: NotepadSheetProps) {
             <AlertDialogHeader>
               <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
               <AlertDialogDescription>
-                Tem certeza que deseja excluir esta anotação? Esta ação não poderá ser desfeita.
+                Tem certeza que deseja excluir este item? Esta ação não poderá ser desfeita.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

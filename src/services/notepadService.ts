@@ -6,6 +6,8 @@ export interface Note {
   id: string;
   content: string;
   createdAt: Timestamp;
+  isTask?: boolean;
+  completed?: boolean;
 }
 
 const notepadDocRef = doc(db, 'notepad', 'main');
@@ -27,7 +29,7 @@ export async function getNotes(): Promise<Note[]> {
 }
 
 // SAVE
-export async function saveNotes(notes: Omit<Note, 'id'>[]): Promise<void> {
+export async function saveNotes(notes: Note[]): Promise<void> {
   // A ordenação já é feita no getNotes e ao adicionar, mas garantimos aqui antes de salvar.
   const sortedNotes = [...notes].sort((a, b) => 
     (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0)
@@ -37,4 +39,10 @@ export async function saveNotes(notes: Omit<Note, 'id'>[]): Promise<void> {
     notes: sortedNotes,
     updatedAt: serverTimestamp(),
   });
+}
+
+// GET ONLY TASKS
+export async function getNotepadTasks(): Promise<Note[]> {
+    const allNotes = await getNotes();
+    return allNotes.filter(note => note.isTask);
 }
