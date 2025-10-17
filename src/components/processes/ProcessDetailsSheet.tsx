@@ -129,6 +129,8 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
     };
     
     try {
+      // Regra: Sempre que um evento com data futura é criado na timeline (seja tarefa ou não),
+      // ele deve ser adicionado à agenda principal para visibilidade.
       const sourceLowerCase = data.eventSource.toLowerCase();
       let eventType: 'prazo' | 'audiencia' | 'consulta' | null = null;
       
@@ -136,7 +138,7 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
       else if (sourceLowerCase === 'audiência') eventType = 'audiencia';
       else if (sourceLowerCase === 'nota manual' || sourceLowerCase === 'outro') eventType = 'consulta';
 
-
+      // Adiciona na agenda se for um tipo mapeado
       if (eventType) {
           await addEvent({
               date: newEvent.date,
@@ -153,8 +155,10 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
   
       const newTimeline = [newEvent, ...currentTimeline].sort((a, b) => parseISO(b.date).getTime() - parseISO(a.date).getTime());
       
+      // Atualiza a linha do tempo do processo no banco de dados
       await onTimelineUpdate(processData.id, newTimeline);
   
+      // Atualiza o estado local
       setCurrentTimeline(newTimeline); 
       timelineForm.reset({
         eventDate: format(new Date(), 'yyyy-MM-dd'),
