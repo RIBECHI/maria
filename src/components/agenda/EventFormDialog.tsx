@@ -31,12 +31,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Search } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
-import { ClientSearchDialog } from "@/components/clients/ClientSearchDialog";
 import type { DocumentData } from 'firebase/firestore';
 import { getProcesses } from "@/services/processService";
+import { getClients } from "@/services/clientService";
 import type { Process } from "@/components/processes/ProcessFormDialog";
+import type { Client } from "@/components/clients/ClientFormDialog";
 import { useToast } from "@/hooks/use-toast";
 
 
@@ -46,7 +47,7 @@ export interface CalendarEvent extends DocumentData {
   type: 'prazo' | 'audiencia' | 'consulta';
   description: string;
   time?: string; // HH:MM (optional)
-  client?: string; // Optional
+  client?: string; // Optional - Client NAME
   process?: string; // Optional, agora será o ID do processo
   createdAt?: string;
 }
@@ -58,7 +59,7 @@ const eventFormSchema = z.object({
   time: z.string().optional().refine((val) => val === undefined || val === "" || /^([01]\d|2[0-3]):([0-5]\d)$/.test(val), {
     message: "Hora inválida (formato HH:MM)."
   }),
-  client: z.string().optional(),
+  clientId: z.string().optional(),
   process: z.string().optional(), // Este será o ID do processo
 });
 
@@ -67,15 +68,14 @@ export type EventFormValues = z.infer<typeof eventFormSchema>;
 interface EventFormDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: EventFormValues) => void;
+  onSubmit: (data: Omit<EventFormValues, 'clientId'> & { client?: string }) => void;
   eventData?: Partial<CalendarEvent>;
 }
 
 export function EventFormDialog({ isOpen, onClose, onSubmit, eventData }: EventFormDialogProps) {
   const [isLoading, setIsLoading] = React.useState(false);
-  const [isClientSearchOpen, setIsClientSearchOpen] = React.useState(false);
   const [allProcesses, setAllProcesses] = React.useState<Process[]>([]);
-  const [processOptions, setProcessOptions] = React.useState<{ value: string; label: string }[]>([]);
+  const [allClients, setAllClients] = React.useState<Client[]>([]);
   const { toast } = useToast();
 
   const form = useForm<EventFormValues>({
@@ -85,48 +85,37 @@ export function EventFormDialog({ isOpen, onClose, onSubmit, eventData }: EventF
       type: eventData?.type || 'prazo',
       description: "",
       time: "",
-      client: "",
+      clientId: "",
       process: "",
     },
   });
+  
+  const selectedClientId = form.watch("clientId");
 
-  const selectedClient = form.watch("client");
+  const filteredProcesses = React.useMemo(() => {
+    if (!selectedClientId) return [];
+    const selectedClient = allClients.find(c => c.id === selectedClientId);
+    if (!selectedClient) return [];
+    return allProcesses.filter(p => p.client === selectedClient.name);
+  }, [selectedClientId, allClients, allProcesses]);
 
-  // Busca todos os processos quando o diálogo é aberto
+
+  // Busca todos os processos e clientes quando o diálogo é aberto
   React.useEffect(() => {
     if (isOpen) {
-      async function fetchProcesses() {
+      async function fetchData() {
         try {
-          const processesFromDb = await getProcesses();
+          const [processesFromDb, clientsFromDb] = await Promise.all([getProcesses(), getClients()]);
           setAllProcesses(processesFromDb);
+          setAllClients(clientsFromDb);
         } catch (error) {
-          console.error("Failed to fetch processes:", error);
-          toast({ title: "Erro", description: "Não foi possível carregar a lista de processos.", variant: "destructive" });
+          console.error("Failed to fetch data:", error);
+          toast({ title: "Erro", description: "Não foi possível carregar a lista de processos e clientes.", variant: "destructive" });
         }
       }
-      fetchProcesses();
+      fetchData();
     }
   }, [isOpen, toast]);
-
-  // Filtra os processos quando um cliente é selecionado
-  React.useEffect(() => {
-    if (selectedClient && allProcesses.length > 0) {
-      const filtered = allProcesses.filter(p => p.client === selectedClient);
-      const options = filtered.map(p => ({ 
-        value: p.id, // Usar o ID do processo como valor
-        label: `${p.processNumber} - ${p.type}` 
-      }));
-      setProcessOptions(options);
-
-      const currentProcessValue = form.getValues("process");
-      if (currentProcessValue && !options.find(opt => opt.value === currentProcessValue)) {
-        form.setValue("process", "");
-      }
-    } else {
-      setProcessOptions([]);
-      form.setValue("process", "");
-    }
-  }, [selectedClient, allProcesses, form]);
   
   const parseISOAdjusted = (dateString: string | undefined) => {
     if (dateString && dateString.length === 10) { 
@@ -136,44 +125,49 @@ export function EventFormDialog({ isOpen, onClose, onSubmit, eventData }: EventF
   };
 
   React.useEffect(() => {
-    if (isOpen) { 
+    if (isOpen && allClients.length > 0) { 
       if (eventData) {
+        const client = allClients.find(c => c.name === eventData.client);
+        const clientId = client ? client.id : "";
+
         form.reset({
           date: format(parseISOAdjusted(eventData.date), 'yyyy-MM-dd'), 
           type: eventData.type || 'prazo',
           description: eventData.description || "",
           time: eventData.time || "",
-          client: eventData.client || "",
+          clientId: clientId,
           process: eventData.process || "", // O valor já deve ser o ID
         });
-        
-        if (eventData.client && allProcesses.length > 0) {
-             const filtered = allProcesses.filter(p => p.client === eventData.client);
-             const options = filtered.map(p => ({ value: p.id, label: `${p.processNumber} - ${p.type}` }));
-             setProcessOptions(options);
-        } else {
-            setProcessOptions([]);
-        }
-
       } else {
         form.reset({
           date: format(new Date(), 'yyyy-MM-dd'),
           type: 'prazo',
           description: "",
           time: "",
-          client: "",
+          clientId: "",
           process: "",
         });
-        setProcessOptions([]);
       }
     }
-  }, [eventData, form, isOpen, allProcesses]);
+  }, [eventData, form, isOpen, allClients]);
+
+  React.useEffect(() => {
+      // Limpa o processo selecionado se o cliente mudar
+      form.setValue('process', '');
+  }, [selectedClientId, form]);
   
   const handleFormSubmit: SubmitHandler<EventFormValues> = async (data) => {
     setIsLoading(true);
+    const selectedClient = allClients.find(c => c.id === data.clientId);
+    const clientName = selectedClient ? selectedClient.name : undefined;
+
     const submittedData = {
-      ...data,
-      date: format(new Date(data.date + 'T00:00:00'), 'yyyy-MM-dd') 
+      date: format(new Date(data.date + 'T00:00:00'), 'yyyy-MM-dd'),
+      type: data.type,
+      description: data.description,
+      time: data.time,
+      process: data.process,
+      client: clientName,
     };
     await onSubmit(submittedData);
     setIsLoading(false);
@@ -183,11 +177,6 @@ export function EventFormDialog({ isOpen, onClose, onSubmit, eventData }: EventF
     if (!isLoading) {
       onClose();
     }
-  };
-
-  const handleClientSelected = (clientName: string) => {
-    form.setValue("client", clientName);
-    setIsClientSearchOpen(false);
   };
 
   return (
@@ -267,24 +256,24 @@ export function EventFormDialog({ isOpen, onClose, onSubmit, eventData }: EventF
               />
                <FormField
                 control={form.control}
-                name="client"
+                name="clientId"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Cliente (Opcional)</FormLabel>
-                    <div className="flex items-center gap-2">
+                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <Input placeholder="Nome do cliente" {...field} className="flex-grow" />
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione um cliente" />
+                        </SelectTrigger>
                       </FormControl>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={() => setIsClientSearchOpen(true)}
-                        aria-label="Buscar cliente"
-                      >
-                        <Search className="h-4 w-4" />
-                      </Button>
-                    </div>
+                      <SelectContent>
+                         {allClients.map(client => (
+                            <SelectItem key={client.id} value={client.id}>
+                              {client.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -298,25 +287,19 @@ export function EventFormDialog({ isOpen, onClose, onSubmit, eventData }: EventF
                     <Select 
                       onValueChange={field.onChange} 
                       value={field.value} 
-                      disabled={!selectedClient || processOptions.length === 0}
+                      disabled={!selectedClientId || filteredProcesses.length === 0}
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder={!selectedClient ? "Selecione um cliente primeiro" : (processOptions.length === 0 ? "Nenhum processo para este cliente" : "Selecione o processo")} />
+                          <SelectValue placeholder={!selectedClientId ? "Selecione um cliente primeiro" : (filteredProcesses.length === 0 ? "Nenhum processo para este cliente" : "Selecione o processo")} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {processOptions.length > 0 ? (
-                          processOptions.map(option => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))
-                        ) : (
-                           <SelectItem value="no-process" disabled>
-                             {selectedClient ? "Nenhum processo encontrado" : "Selecione um cliente"}
-                           </SelectItem>
-                        )}
+                        {filteredProcesses.map(option => (
+                          <SelectItem key={option.id} value={option.id}>
+                            {option.processNumber} - {option.type}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -342,14 +325,6 @@ export function EventFormDialog({ isOpen, onClose, onSubmit, eventData }: EventF
           </Form>
         </DialogContent>
       </Dialog>
-
-      <ClientSearchDialog
-        isOpen={isClientSearchOpen}
-        onClose={() => setIsClientSearchOpen(false)}
-        onClientSelected={handleClientSelected}
-      />
     </>
   );
 }
-
-    

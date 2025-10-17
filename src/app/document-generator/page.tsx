@@ -24,6 +24,7 @@ export default function DocumentGeneratorPage() {
   const [clients, setClients] = React.useState<Client[]>([]);
   const [templates, setTemplates] = React.useState<DocumentTemplate[]>([]);
   
+  const [selectedClientId, setSelectedClientId] = React.useState<string | null>(null);
   const [selectedProcessId, setSelectedProcessId] = React.useState<string | null>(null);
   const [selectedTemplateId, setSelectedTemplateId] = React.useState<string | null>(null);
   const [generatedContent, setGeneratedContent] = React.useState<string>("");
@@ -51,10 +52,22 @@ export default function DocumentGeneratorPage() {
     }
     fetchData();
   }, [toast]);
+  
+  const handleClientChange = (clientId: string) => {
+    setSelectedClientId(clientId);
+    setSelectedProcessId(null); // Reseta o processo quando o cliente muda
+  };
+
+  const filteredProcesses = React.useMemo(() => {
+    if (!selectedClientId) return [];
+    const selectedClient = clients.find(c => c.id === selectedClientId);
+    if (!selectedClient) return [];
+    return processes.filter(p => p.client === selectedClient.name);
+  }, [selectedClientId, clients, processes]);
 
   const handleGenerate = () => {
     if (!selectedProcessId || !selectedTemplateId) {
-      toast({ title: "Seleção incompleta", description: "Por favor, selecione um processo e um modelo.", variant: "destructive" });
+      toast({ title: "Seleção incompleta", description: "Por favor, selecione um cliente, um processo e um modelo.", variant: "destructive" });
       return;
     }
     
@@ -106,7 +119,9 @@ export default function DocumentGeneratorPage() {
   const handleDownloadPdf = () => {
       if (!generatedContent) return;
 
-      const pdf = new jsPDF();
+      const pdf = new jsPDF({
+        compress: true,
+      });
       
       const textLines = pdf.splitTextToSize(generatedContent, 180);
       pdf.text(textLines, 15, 20);
@@ -127,26 +142,42 @@ export default function DocumentGeneratorPage() {
         <Card className="lg:col-span-1 shadow-lg sticky top-8">
             <CardHeader>
                 <CardTitle>1. Configurar</CardTitle>
-                <CardDescription>Escolha o processo e o modelo para gerar seu documento.</CardDescription>
+                <CardDescription>Escolha o cliente, processo e modelo para gerar seu documento.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
                 {isLoadingData ? (
                     <div className="space-y-4">
                         <Skeleton className="h-10 w-full" />
                         <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
                     </div>
                 ) : (
                     <>
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">Processo</label>
-                            <Select onValueChange={setSelectedProcessId} value={selectedProcessId || ""}>
+                            <label className="text-sm font-medium">Cliente</label>
+                             <Select onValueChange={handleClientChange} value={selectedClientId || ""}>
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Selecione um processo" />
+                                    <SelectValue placeholder="Selecione um cliente" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {processes.map(p => (
+                                    {clients.map(c => (
+                                        <SelectItem key={c.id} value={c.id}>
+                                            {c.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Processo</label>
+                            <Select onValueChange={setSelectedProcessId} value={selectedProcessId || ""} disabled={!selectedClientId}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder={selectedClientId ? "Selecione um processo" : "Primeiro escolha um cliente"} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {filteredProcesses.map(p => (
                                         <SelectItem key={p.id} value={p.id}>
-                                            {p.processNumber} - {p.client}
+                                            {p.processNumber} - {p.type}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>

@@ -3,7 +3,7 @@
 
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, orderBy, limit, serverTimestamp, getDoc } from 'firebase/firestore';
-import type { CalendarEvent, EventFormValues } from '@/components/agenda/EventFormDialog';
+import type { CalendarEvent } from '@/components/agenda/EventFormDialog';
 import { startOfToday, format } from 'date-fns';
 
 const eventsCollectionRef = collection(db, 'events');
@@ -47,7 +47,7 @@ export async function getEventsForDashboard(count: number): Promise<CalendarEven
 }
 
 // CREATE
-export async function addEvent(eventData: EventFormValues): Promise<CalendarEvent> {
+export async function addEvent(eventData: Omit<import("/home/user/app/src/components/agenda/EventFormDialog").EventFormValues, "clientId"> & { client?: string | undefined; }): Promise<CalendarEvent> {
   const docRef = await addDoc(eventsCollectionRef, {
     ...eventData,
     createdAt: serverTimestamp(),
@@ -57,7 +57,7 @@ export async function addEvent(eventData: EventFormValues): Promise<CalendarEven
 }
 
 // UPDATE
-export async function updateEvent(eventId: string, eventData: EventFormValues): Promise<CalendarEvent> {
+export async function updateEvent(eventId: string, eventData: Omit<import("/home/user/app/src/components/agenda/EventFormDialog").EventFormValues, "clientId"> & { client?: string | undefined; }): Promise<CalendarEvent> {
   const eventDocRef = doc(db, 'events', eventId);
   await updateDoc(eventDocRef, {
     ...eventData,
