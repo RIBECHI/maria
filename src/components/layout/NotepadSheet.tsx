@@ -94,7 +94,7 @@ export function NotepadSheet({ isOpen, onOpenChange }: NotepadSheetProps) {
         content: newNoteContent,
         createdAt: Timestamp.now(),
         isTask: isTask,
-        completed: isTask ? false : undefined,
+        ...(isTask && { completed: false }), // Apenas adiciona `completed` se for uma tarefa
     };
 
     const updatedNotes = [newNote, ...notes];
@@ -170,7 +170,7 @@ export function NotepadSheet({ isOpen, onOpenChange }: NotepadSheetProps) {
     }
   };
 
-  const handleSubmitEventForm = async (data: EventFormValues) => {
+  const handleSubmitEventForm = async (data: Omit<EventFormValues, "clientId"> & { client?: string }) => {
     try {
         await addEvent(data);
         toast({ title: "Evento adicionado!", description: `O evento foi adicionado à sua agenda.` });
@@ -207,7 +207,7 @@ export function NotepadSheet({ isOpen, onOpenChange }: NotepadSheetProps) {
                         <Checkbox id="is-task-note" checked={isTask} onCheckedChange={(checked) => setIsTask(!!checked)} />
                         <Label htmlFor="is-task-note" className="text-sm font-normal">É uma tarefa pendente?</Label>
                     </div>
-                    <Button onClick={handleAddNote} disabled={isSaving} className="flex-1">
+                    <Button onClick={handleAddNote} disabled={isSaving || newNoteContent.trim() === ""} className="flex-1">
                         {isSaving && !noteToDelete ? (
                         <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -330,3 +330,5 @@ export function NotepadSheet({ isOpen, onOpenChange }: NotepadSheetProps) {
     </>
   );
 }
+
+    
