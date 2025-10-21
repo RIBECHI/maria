@@ -5,17 +5,25 @@ import type { Process, ProcessFormValues, TimelineEvent } from '@/components/pro
 
 const processesCollectionRef = collection(db, 'processes');
 
-// Helper para remover chaves indefinidas de um objeto
-const removeUndefinedKeys = (obj: Record<string, any>) => {
-  const newObj: Record<string, any> = {};
-  Object.keys(obj).forEach(key => {
-    if (obj[key] !== undefined) {
-      newObj[key] = obj[key];
+// Helper para remover chaves indefinidas de um objeto, agora de forma recursiva
+const removeUndefinedKeys = (obj: any): any => {
+  if (Array.isArray(obj)) {
+    return obj.map(item => removeUndefinedKeys(item));
+  }
+  if (obj !== null && typeof obj === 'object') {
+    const newObj: { [key: string]: any } = {};
+    for (const key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        const value = obj[key];
+        if (value !== undefined) {
+          newObj[key] = removeUndefinedKeys(value);
+        }
+      }
     }
-  });
-  return newObj;
+    return newObj;
+  }
+  return obj;
 };
-
 
 // Helper para converter dados do Firestore
 const fromFirestore = (docSnap: DocumentData): Process => {
