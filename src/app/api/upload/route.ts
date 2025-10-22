@@ -5,6 +5,22 @@ import { getApps } from 'firebase-admin/app';
 
 // Função para garantir que o Firebase Admin seja inicializado
 function initializeAdminApp() {
+  // NOTA: A inicialização do Admin SDK requer variáveis de ambiente
+  // que precisam ser configuradas manualmente no arquivo .env.
+  // Se estas variáveis não estiverem presentes, a inicialização falhará.
+  const requiredEnv = [
+    'FIREBASE_PROJECT_ID',
+    'FIREBASE_CLIENT_EMAIL',
+    'FIREBASE_PRIVATE_KEY',
+    'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET'
+  ];
+  
+  const missingEnv = requiredEnv.filter(key => !process.env[key]);
+
+  if (missingEnv.length > 0) {
+    throw new Error(`Falha na configuração do servidor Firebase. As seguintes variáveis de ambiente estão faltando: ${missingEnv.join(', ')}. Por favor, configure o arquivo .env`);
+  }
+
   if (getApps().length === 0) {
     try {
       admin.initializeApp({
@@ -18,7 +34,8 @@ function initializeAdminApp() {
       console.log("Firebase Admin SDK inicializado com sucesso.");
     } catch (error: any) {
       console.error("Erro ao inicializar Firebase Admin SDK:", error.message);
-      throw new Error("Falha na configuração do servidor Firebase. Verifique as variáveis de ambiente.");
+      // Lança um erro mais específico para o catch principal
+      throw new Error(`Falha na inicialização do Firebase Admin: ${error.message}`);
     }
   }
   return admin;
@@ -27,7 +44,7 @@ function initializeAdminApp() {
 
 export async function POST(request: Request) {
   try {
-    // Garante a inicialização antes de qualquer operação
+    // A inicialização agora lança um erro claro se as variáveis de ambiente estiverem faltando
     const adminApp = initializeAdminApp();
     const bucket = adminApp.storage().bucket();
 
@@ -52,8 +69,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ filePath: filePath }, { status: 200 });
 
   } catch (error: any) {
-    console.error('Erro no upload do arquivo (API Route):', error);
-    // Retorna um erro JSON explícito em vez de deixar o Next.js retornar HTML
+    console.error('Erro na rota de upload (API Route):', error);
+    // Retorna um erro JSON explícito com a mensagem do erro capturado
     return NextResponse.json(
         { error: 'Erro interno do servidor ao fazer upload.', message: error.message }, 
         { status: 500 }
