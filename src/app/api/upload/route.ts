@@ -14,14 +14,17 @@ export async function POST(request: Request) {
     const bucket = adminStorage.bucket();
     const filePath = `documents/${Date.now()}-${file.name}`;
     
+    // Converte o arquivo para um buffer, que é o formato que o Admin SDK espera.
     const fileBuffer = Buffer.from(await file.arrayBuffer());
 
     const blob = bucket.file(filePath);
+    
+    // Usa um stream para fazer o upload do buffer
     const blobStream = blob.createWriteStream({
         metadata: {
             contentType: file.type,
         },
-        resumable: false,
+        resumable: false, // Usar upload simples para buffers
     });
 
     await new Promise((resolve, reject) => {
