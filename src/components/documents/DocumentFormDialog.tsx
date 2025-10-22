@@ -28,6 +28,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Search, FileUp } from "lucide-react";
 import { ProcessSearchDialog } from "@/components/processes/ProcessSearchDialog";
 import type { DocumentData } from "firebase/firestore";
+import { useToast } from "@/hooks/use-toast";
+import { addDocument } from "@/services/documentService";
 
 export interface Document extends DocumentData {
   id: string;
@@ -36,16 +38,15 @@ export interface Document extends DocumentData {
   tags: string[];
   uploadDate: string;
   createdAt?: string;
-  fileUrl: string;
+  fileUrl: string; // Pode ser vazia agora
   filePath: string;
 }
 
+// Esquema para o formulário principal que agora inclui o arquivo
 const documentFormSchema = z.object({
   process: z.string().min(3, { message: "O processo vinculado é obrigatório." }),
   tagsString: z.string().optional(),
-  file: z.any()
-    .refine((files) => files?.length == 1, "Arquivo é obrigatório.")
-    .refine((files) => files?.[0]?.size <= 5000000, `Tamanho máximo do arquivo é 5MB.`)
+  file: z.any().optional(), // O arquivo é opcional aqui porque o Zod no cliente não o validará
 });
 
 export type DocumentFormValues = z.infer<typeof documentFormSchema>;
@@ -53,13 +54,16 @@ export type DocumentFormValues = z.infer<typeof documentFormSchema>;
 interface DocumentFormDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: DocumentFormValues, file?: File) => Promise<void>;
+  // A submissão agora é tratada internamente para lidar com o upload
+  onSubmit: (data: any) => Promise<void>; 
   documentData?: Document;
 }
 
 export function DocumentFormDialog({ isOpen, onClose, onSubmit, documentData }: DocumentFormDialogProps) {
   const [isLoading, setIsLoading] = React.useState(false);
   const [isProcessSearchOpen, setIsProcessSearchOpen] = React.useState(false);
+  const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
+  const { toast } = useToast();
 
   const form = useForm<DocumentFormValues>({
     resolver: zodResolver(documentFormSchema),
@@ -75,30 +79,74 @@ export function DocumentFormDialog({ isOpen, onClose, onSubmit, documentData }: 
   React.useEffect(() => {
     if (isOpen) {
       if (documentData) {
-        // Modo edição: resetar com dados existentes, mas desabilitar mudança de arquivo
         form.reset({
           process: documentData.process,
           tagsString: documentData.tags.join(", "),
-          file: undefined,
         });
+        setSelectedFile(null);
       } else {
-        // Modo criação
         form.reset({
           process: "",
           tagsString: "",
-          file: undefined,
         });
+        setSelectedFile(null);
       }
     }
   }, [documentData, form, isOpen]);
 
   const handleFormSubmit: SubmitHandler<DocumentFormValues> = async (data) => {
     setIsLoading(true);
-    const file = data.file?.[0];
-    const submitData = { ...data, name: file?.name || documentData?.name };
-    await onSubmit(submitData, file);
+
+    if (documentData) {
+      // Modo de Edição (só metadados)
+      await onSubmit(data);
+    } else {
+      // Modo de Criação (com upload)
+      if (!selectedFile) {
+        toast({ title: "Arquivo Faltando", description: "Por favor, selecione um arquivo para carregar.", variant: "destructive"});
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        // 1. Fazer o upload para a nossa API
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        const uploadResponse = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!uploadResponse.ok) {
+          const errorData = await uploadResponse.json();
+          throw new Error(errorData.message || 'Falha no upload do arquivo.');
+        }
+
+        const { filePath } = await uploadResponse.json();
+
+        // 2. Salvar os metadados no Firestore usando o filePath retornado
+        const metadata = {
+          ...data,
+          name: selectedFile.name,
+        };
+        await addDocument(metadata, filePath);
+        
+        // Chamada ao onSubmit original para revalidar os dados na página
+        await onSubmit(metadata);
+        
+      } catch (error: any) {
+        console.error("Falha ao processar documento:", error);
+        toast({ title: "Erro ao Salvar", description: error.message || "Não foi possível salvar o documento.", variant: "destructive" });
+      }
+    }
+
     setIsLoading(false);
   };
+  
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] || null;
+    setSelectedFile(file);
+  }
 
   const handleDialogClose = () => {
     if (!isLoading) {
@@ -123,22 +171,16 @@ export function DocumentFormDialog({ isOpen, onClose, onSubmit, documentData }: 
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 py-4">
-               <FormField
-                control={form.control}
-                name="file"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Arquivo</FormLabel>
-                    <FormControl>
-                       <Input type="file" {...fileRef} disabled={!!documentData} />
-                    </FormControl>
-                    <FormDescriptionUI>
-                      {documentData ? `Arquivo carregado: ${documentData.name}` : 'Tamanho máximo: 5MB.'}
-                    </FormDescriptionUI>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+               <FormItem>
+                 <FormLabel>Arquivo</FormLabel>
+                 <FormControl>
+                    <Input type="file" onChange={handleFileChange} disabled={!!documentData} />
+                 </FormControl>
+                 <FormDescriptionUI>
+                   {documentData ? `Arquivo carregado: ${documentData.name}` : 'Tamanho máximo: 5MB.'}
+                 </FormDescriptionUI>
+                 <FormMessage />
+               </FormItem>
 
               <FormField
                 control={form.control}

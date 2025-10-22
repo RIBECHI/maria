@@ -19,8 +19,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { DocumentFormDialog, type DocumentFormValues, type Document } from "@/components/documents/DocumentFormDialog";
-import { getDocuments, addDocument, updateDocument, deleteDocument, getDownloadUrl } from "@/services/documentService";
+import { DocumentFormDialog, type Document } from "@/components/documents/DocumentFormDialog";
+import { getDocuments, updateDocument, deleteDocument } from "@/services/documentService";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function DocumentsPage() {
@@ -64,24 +64,18 @@ export default function DocumentsPage() {
     setIsFormDialogOpen(false);
   };
 
-  const handleSubmitDocumentForm = async (data: DocumentFormValues, file?: File) => {
+  const handleSubmitDocumentForm = async (data: any) => {
     try {
       if (editingDocument) {
-        // A lógica de atualização de arquivo não é suportada nesta versão, apenas metadados
-        if (file) {
-            toast({ title: "Aviso", description: "A substituição de arquivos não é suportada. Apenas os metadados foram atualizados." });
-        }
+        // A lógica de upload é tratada no novo componente, aqui apenas atualizamos metadados
         const updatedDoc = await updateDocument(editingDocument.id, data);
         setDocuments(documents.map(d => (d.id === editingDocument.id ? { ...d, ...updatedDoc } : d)));
-        toast({ title: "Documento atualizado!", description: `O documento ${data.name} foi atualizado.` });
+        toast({ title: "Documento atualizado!", description: `Os metadados de ${data.name} foram atualizados.` });
       } else {
-        if (!file) {
-            toast({ title: "Arquivo Faltando", description: "Por favor, selecione um arquivo para carregar.", variant: "destructive"});
-            return;
-        }
-        const newDocument = await addDocument(data, file);
-        setDocuments(prevDocs => [newDocument, ...prevDocs]);
-        toast({ title: "Documento adicionado!", description: `O documento ${newDocument.name} foi adicionado.` });
+        // A lógica de criação com upload agora está no form dialog
+        // Apenas re-buscamos os dados para mostrar o novo item.
+        toast({ title: "Documento adicionado!", description: `O documento foi enviado com sucesso.` });
+        fetchDocuments();
       }
       handleCloseFormDialog();
     } catch (error) {
@@ -114,9 +108,14 @@ export default function DocumentsPage() {
   const handleDownloadDocument = async (doc: Document) => {
     toast({ title: "Download iniciado", description: `Baixando ${doc.name}...` });
     try {
-        const url = await getDownloadUrl(doc.filePath);
+        const bucketName = "lexmanager.appspot.com";
+        const encodedFilePath = encodeURIComponent(doc.filePath);
         
-        const response = await fetch(url);
+        // Usar a rota de proxy configurada em next.config.ts
+        const proxyUrl = `/v0/b/${bucketName}/o/${encodedFilePath}?alt=media`;
+
+        const response = await fetch(proxyUrl);
+
         if (!response.ok) {
             throw new Error(`Falha no download: ${response.statusText}`);
         }
@@ -248,5 +247,3 @@ export default function DocumentsPage() {
     </div>
   );
 }
-
-    

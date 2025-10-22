@@ -3,7 +3,7 @@
 
 import { db, storage } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDoc, query, orderBy } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { ref, deleteObject, getDownloadURL } from "firebase/storage";
 import type { Document, DocumentFormValues } from '@/components/documents/DocumentFormDialog';
 import type { DocumentData } from 'firebase/firestore';
 
@@ -17,8 +17,9 @@ const fromFirestore = (docSnap: DocumentData): Document => {
     process: data.process,
     tags: data.tags || [],
     uploadDate: data.uploadDate,
-    fileUrl: data.fileUrl,
     filePath: data.filePath,
+    // fileUrl não é mais um campo primário, mas pode existir em documentos antigos
+    fileUrl: data.fileUrl || '', 
   };
    if (data.createdAt) {
       document.createdAt = data.createdAt.toDate().toISOString();
@@ -34,35 +35,28 @@ export async function getDocuments(): Promise<Document[]> {
 }
 
 // CREATE
-export async function addDocument(docData: DocumentFormValues & { name: string }, file: File): Promise<Document> {
-  if (!file) throw new Error("File is required for upload.");
-
-  const filePath = `documents/${Date.now()}-${file.name}`;
-  const storageRef = ref(storage, filePath);
-  
-  // Upload file to Firebase Storage
-  await uploadBytes(storageRef, file);
-  
+export async function addDocument(docData: Omit<DocumentFormValues, 'file'> & { name: string }, filePath: string): Promise<Document> {
   const tags = docData.tagsString ? docData.tagsString.split(',').map(t => t.trim()).filter(t => t) : [];
+  
   const docRef = await addDoc(documentsCollectionRef, {
     name: docData.name,
     process: docData.process,
     tags: tags,
     uploadDate: new Date().toISOString().split('T')[0], // Simple YYYY-MM-DD
     createdAt: serverTimestamp(),
-    filePath: filePath,
+    filePath: filePath, // Salva apenas o caminho do arquivo
   });
+
   const snapshot = await getDoc(docRef);
   return fromFirestore(snapshot);
 }
 
 // UPDATE (metadata only)
-export async function updateDocument(documentId: string, docData: DocumentFormValues & { name: string }): Promise<Document> {
+export async function updateDocument(documentId: string, docData: Omit<DocumentFormValues, 'file'> & { name: string }): Promise<Document> {
   const docRef = doc(db, 'documents', documentId);
   const tags = docData.tagsString ? docData.tagsString.split(',').map(t => t.trim()).filter(t => t) : [];
   
   await updateDoc(docRef, {
-    // name: docData.name, // O nome do arquivo não deve ser alterado sem alterar o arquivo
     process: docData.process,
     tags: tags,
     updatedAt: serverTimestamp(),
@@ -91,7 +85,7 @@ export async function deleteDocument(document: Document): Promise<void> {
   await deleteDoc(docRef);
 }
 
-// DOWNLOAD URL GETTER
+// DOWNLOAD URL GETTER (USADO APENAS PARA O PROXY AGORA)
 export async function getDownloadUrl(filePath: string): Promise<string> {
     const fileRef = ref(storage, filePath);
     const url = await getDownloadURL(fileRef);
