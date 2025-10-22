@@ -1,3 +1,4 @@
+
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
@@ -23,6 +24,14 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
     ],
+  },
+  async rewrites() {
+    return [
+      {
+        source: '/v0/b/:bucket/o/:path*',
+        destination: 'https://firebasestorage.googleapis.com/v0/b/:bucket/o/:path*',
+      },
+    ];
   },
 };
 
