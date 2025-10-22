@@ -15,16 +15,18 @@ export async function POST(request: Request) {
     const filePath = `documents/${Date.now()}-${file.name}`;
     const storageRef = ref(storage, filePath);
 
+    // Converte o arquivo para um ArrayBuffer, que é o que uploadBytes espera.
     const fileBuffer = await file.arrayBuffer();
+    
+    // Faz o upload do buffer com o tipo de conteúdo correto.
     await uploadBytes(storageRef, fileBuffer, { contentType: file.type });
     
-    // Não vamos mais usar getDownloadURL para evitar problemas de CORS no cliente
-    // Apenas retornamos o caminho do arquivo (filePath)
-    
+    // Apenas retornamos o caminho do arquivo (filePath), a URL não é mais necessária no cliente.
     return NextResponse.json({ filePath: filePath }, { status: 200 });
 
   } catch (error: any) {
     console.error('Erro no upload do arquivo:', error);
+    // Retorna uma mensagem de erro mais detalhada para depuração.
     return NextResponse.json({ error: 'Erro interno do servidor ao fazer upload.', message: error.message }, { status: 500 });
   }
 }
