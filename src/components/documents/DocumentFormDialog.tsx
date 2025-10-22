@@ -118,10 +118,13 @@ export function DocumentFormDialog({ isOpen, onClose, onSubmit, documentData }: 
         });
 
         if (!uploadResponse.ok) {
-          const errorData = await uploadResponse.json();
-          throw new Error(errorData.message || 'Falha no upload do arquivo.');
+          // Se a resposta não for OK, lemos como texto para ver o erro (geralmente HTML)
+          const errorText = await uploadResponse.text();
+          console.error("Server returned an error:", errorText);
+          throw new Error(`Falha na API de upload. Status: ${uploadResponse.status}`);
         }
 
+        // Se a resposta for OK, aí sim tentamos o .json()
         const { filePath } = await uploadResponse.json();
 
         // 2. Salvar os metadados no Firestore usando o filePath retornado
