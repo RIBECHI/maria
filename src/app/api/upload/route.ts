@@ -16,8 +16,7 @@ export async function POST(request: Request) {
     
     const fileBuffer = Buffer.from(await file.arrayBuffer());
 
-    // Abordagem mais robusta usando bucket.file().save()
-    // Isso substitui o createWriteStream que estava causando problemas.
+    // Abordagem robusta usando bucket.file().save() que é mais direta.
     await bucket.file(filePath).save(fileBuffer, {
       metadata: {
         contentType: file.type,
