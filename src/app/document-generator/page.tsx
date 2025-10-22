@@ -62,7 +62,8 @@ export default function DocumentGeneratorPage() {
     if (!selectedClientId) return [];
     const selectedClient = clients.find(c => c.id === selectedClientId);
     if (!selectedClient) return [];
-    return processes.filter(p => p.client === selectedClient.name);
+    // Corrigido para verificar o array 'clients' em vez do campo legado 'client'
+    return processes.filter(p => p.clients?.includes(selectedClient.name));
   }, [selectedClientId, clients, processes]);
 
   const handleGenerate = () => {
@@ -81,9 +82,11 @@ export default function DocumentGeneratorPage() {
           throw new Error("Processo ou modelo não encontrado.");
       }
 
-      const client = clients.find(c => c.name === process.client);
+      // Para manter a compatibilidade, usaremos o primeiro cliente da lista para preencher as variáveis.
+      // Uma melhoria futura poderia ser permitir escolher qual cliente usar, ou ter variáveis para múltiplos clientes.
+      const client = clients.find(c => c.name === process.clients[0]);
       if (!client) {
-          throw new Error(`Cliente "${process.client}" não encontrado.`);
+          throw new Error(`Cliente "${process.clients[0]}" não encontrado.`);
       }
 
       let content = template.content;
