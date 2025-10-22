@@ -67,43 +67,39 @@ export default function DocumentGeneratorPage() {
   }, [selectedClientId, clients, processes]);
 
   const handleGenerate = () => {
-    if (!selectedProcessId || !selectedTemplateId) {
-      toast({ title: "Seleção incompleta", description: "Por favor, selecione um cliente, um processo e um modelo.", variant: "destructive" });
-      return;
+    if (!selectedClientId || !selectedProcessId || !selectedTemplateId) {
+        toast({ title: "Seleção incompleta", description: "Por favor, selecione um cliente, um processo e um modelo.", variant: "destructive" });
+        return;
     }
     
     setIsGenerating(true);
     setGeneratedContent("");
 
     try {
-      const process = processes.find(p => p.id === selectedProcessId);
-      const template = templates.find(t => t.id === selectedTemplateId);
-      if (!process || !template) {
-          throw new Error("Processo ou modelo não encontrado.");
-      }
+        const process = processes.find(p => p.id === selectedProcessId);
+        const template = templates.find(t => t.id === selectedTemplateId);
+        // Usa o cliente selecionado no filtro, não o primeiro da lista do processo.
+        const client = clients.find(c => c.id === selectedClientId);
 
-      // Para manter a compatibilidade, usaremos o primeiro cliente da lista para preencher as variáveis.
-      // Uma melhoria futura poderia ser permitir escolher qual cliente usar, ou ter variáveis para múltiplos clientes.
-      const client = clients.find(c => c.name === process.clients[0]);
-      if (!client) {
-          throw new Error(`Cliente "${process.clients[0]}" não encontrado.`);
-      }
+        if (!process || !template || !client) {
+            throw new Error("Cliente, processo ou modelo não encontrado.");
+        }
 
-      let content = template.content;
+        let content = template.content;
 
-      // Replace client variables
-      content = content.replace(/\{\{cliente\.nome\}\}/g, client.name || "");
-      content = content.replace(/\{\{cliente\.cpf\}\}/g, client.cpf || "");
-      content = content.replace(/\{\{cliente\.contato\}\}/g, client.contact || "");
-      content = content.replace(/\{\{cliente\.endereco\}\}/g, client.address || "");
-      
-      // Replace process variables
-      content = content.replace(/\{\{processo\.numero\}\}/g, process.processNumber || "");
-      content = content.replace(/\{\{processo\.tipo\}\}/g, process.type || "");
-      content = content.replace(/\{\{processo\.status\}\}/g, process.status || "");
-      
-      setGeneratedContent(content);
-      toast({ title: "Documento Gerado!", description: "O texto foi preenchido com base no modelo." });
+        // Replace client variables
+        content = content.replace(/\{\{cliente\.nome\}\}/g, client.name || "");
+        content = content.replace(/\{\{cliente\.cpf\}\}/g, client.cpf || "");
+        content = content.replace(/\{\{cliente\.contato\}\}/g, client.contact || "");
+        content = content.replace(/\{\{cliente\.endereco\}\}/g, client.address || "");
+        
+        // Replace process variables
+        content = content.replace(/\{\{processo\.numero\}\}/g, process.processNumber || "");
+        content = content.replace(/\{\{processo\.tipo\}\}/g, process.type || "");
+        content = content.replace(/\{\{processo\.status\}\}/g, process.status || "");
+        
+        setGeneratedContent(content);
+        toast({ title: "Documento Gerado!", description: "O texto foi preenchido com base no modelo." });
 
     } catch(error: any) {
         toast({ title: "Erro ao gerar documento", description: error.message, variant: "destructive" });
