@@ -114,20 +114,9 @@ export default function DocumentsPage() {
   const handleDownloadDocument = async (doc: Document) => {
     toast({ title: "Download iniciado", description: `Baixando ${doc.name}...` });
     try {
-        // Obter a URL de download original do Firebase
         const url = await getDownloadUrl(doc.filePath);
         
-        // Em vez de usar a URL direta, usamos nosso proxy configurado no next.config.ts
-        // Extraimos o caminho do bucket e do arquivo da URL para montar a URL do proxy
-        const urlObj = new URL(url);
-        const path = urlObj.pathname.split('/o/')[1];
-        const bucket = urlObj.hostname.split('.')[0];
-        
-        // Construir a URL do proxy que o Next.js irá reescrever
-        const proxyUrl = `/v0/b/${bucket}/o/${path}?${urlObj.searchParams.toString()}`;
-
-        // Fazer a requisição através do proxy
-        const response = await fetch(proxyUrl);
+        const response = await fetch(url);
         if (!response.ok) {
             throw new Error(`Falha no download: ${response.statusText}`);
         }
