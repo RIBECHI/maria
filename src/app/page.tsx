@@ -48,7 +48,7 @@ export default function DashboardPage() {
                 const processActivities = processes.map(p => ({
                     id: p.id,
                     type: 'process' as const,
-                    text: `Novo processo para ${p.client}`,
+                    text: `Novo processo para ${p.clients.join(', ')}`,
                     createdAt: p.createdAt ? parseISO(p.createdAt) : new Date(0),
                     icon: <FilePlus2 className="h-5 w-5 text-muted-foreground" />
                 }));

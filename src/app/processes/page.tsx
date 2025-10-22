@@ -116,7 +116,7 @@ function ProcessesPageComponent() {
         const updatedData = { ...data, timeline: data.timeline || editingProcess.timeline };
         const updatedProcess = await updateProcess(editingProcess.id, updatedData);
         setProcesses(processes.map(p => (p.id === editingProcess.id ? updatedProcess : p)));
-        toast({ title: "Processo atualizado!", description: `O processo ${data.client} - ${data.type} foi atualizado.` });
+        toast({ title: "Processo atualizado!", description: `O processo para ${data.clients.join(', ')} foi atualizado.` });
       } else {
         const newProcessData = {
           ...data,
@@ -124,7 +124,7 @@ function ProcessesPageComponent() {
           timeline: data.timeline || []
         };
         await addProcess(newProcessData);
-        toast({ title: "Processo adicionado!", description: `Novo processo para ${data.client} foi adicionado.` });
+        toast({ title: "Processo adicionado!", description: `Novo processo para ${data.clients.join(', ')} foi adicionado.` });
       }
       handleCloseFormDialog();
       fetchProcesses();
@@ -193,7 +193,7 @@ function ProcessesPageComponent() {
     if (searchTerm) {
         filtered = filtered.filter(proc =>
             (proc.processNumber && proc.processNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
-            (proc.client && proc.client.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (proc.clients && proc.clients.some(c => c.toLowerCase().includes(searchTerm.toLowerCase()))) ||
             (proc.type && proc.type.toLowerCase().includes(searchTerm.toLowerCase())) ||
             (proc.apensos && proc.apensos.some(a => a.toLowerCase().includes(searchTerm.toLowerCase())))
         );
@@ -201,7 +201,7 @@ function ProcessesPageComponent() {
 
     switch (sortOrder) {
       case 'clientName':
-        return filtered.sort((a, b) => a.client.localeCompare(b.client));
+        return filtered.sort((a, b) => (a.clients?.[0] || '').localeCompare(b.clients?.[0] || ''));
       case 'updatedAt':
         return filtered.sort((a, b) => {
           const lastUpdateA = a.timeline && a.timeline.length > 0 ? parseISO(a.timeline[0].date).getTime() : 0;
@@ -272,7 +272,7 @@ function ProcessesPageComponent() {
               <TableRow>
                 <TableHead>Nº Processo</TableHead>
                 <TableHead>Apenso</TableHead>
-                <TableHead>Cliente</TableHead>
+                <TableHead>Cliente(s)</TableHead>
                 <TableHead>Tipo</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Próximo Prazo</TableHead>
@@ -307,7 +307,7 @@ function ProcessesPageComponent() {
                         {process.apensos?.map(apenso => <Badge key={apenso} variant="secondary">{apenso}</Badge>)}
                       </div>
                     </TableCell>
-                    <TableCell>{process.client}</TableCell>
+                    <TableCell>{(process.clients || [process.client]).join(', ')}</TableCell>
                     <TableCell>{process.type}</TableCell>
                     <TableCell>
                       <Badge variant={getStatusBadgeVariant(process.status) as any}>{process.status}</Badge>
@@ -377,7 +377,7 @@ function ProcessesPageComponent() {
             <AlertDialogHeader>
               <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
               <AlertDialogDescription>
-                Tem certeza que deseja excluir o processo "{processToDelete.processNumber} - {processToDelete.client}"? Esta ação não poderá ser desfeita.
+                Tem certeza que deseja excluir o processo "{processToDelete.processNumber} - {(processToDelete.clients || [processToDelete.client]).join(', ')}"? Esta ação não poderá ser desfeita.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

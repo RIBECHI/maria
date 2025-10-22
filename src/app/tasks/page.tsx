@@ -205,7 +205,7 @@ export default function TasksPage() {
                                                 <span className="text-sm font-medium text-muted-foreground">{process.timeline?.length} tarefa(s)</span>
                                             </div>
                                         </div>
-                                        <CardDescription>{process.client}</CardDescription>
+                                        <CardDescription>{(process.clients || []).join(', ')}</CardDescription>
                                     </div>
                                 </AccordionTrigger>
                                 <AccordionContent className="p-4 pt-0">

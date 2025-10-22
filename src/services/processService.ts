@@ -31,7 +31,7 @@ const fromFirestore = (docSnap: DocumentData): Process => {
   const process: Process = {
     id: docSnap.id,
     processNumber: data.processNumber,
-    client: data.client,
+    clients: data.clients || (data.client ? [data.client] : []), // Compatibilidade
     type: data.type,
     status: data.status,
     nextDeadline: data.nextDeadline,

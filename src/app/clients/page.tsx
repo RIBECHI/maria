@@ -187,7 +187,7 @@ export default function ClientsPage() {
                   >
                     <TableCell className="font-medium">{client.name}</TableCell>
                     <TableCell>{client.contact}</TableCell>
-                    <TableCell className="text-center">{processes.filter(p => p.client === client.name).length}</TableCell>
+                    <TableCell className="text-center">{processes.filter(p => p.clients?.includes(client.name)).length}</TableCell>
                     <TableCell>{client.lastActivity}</TableCell>
                     <TableCell className="text-right">
                       <Button
@@ -242,7 +242,7 @@ export default function ClientsPage() {
                     <p className="font-bold text-primary">{client.name}</p>
                     <p className="text-sm text-muted-foreground">{client.contact}</p>
                     <p className="text-xs text-muted-foreground">
-                      Casos: {processes.filter(p => p.client === client.name).length}
+                      Casos: {processes.filter(p => p.clients?.includes(client.name)).length}
                     </p>
                   </div>
                    <div className="flex flex-col items-end -mr-2 -mt-2">

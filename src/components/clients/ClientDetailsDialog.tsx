@@ -44,7 +44,7 @@ export function ClientDetailsDialog({ isOpen, onClose, clientData, allProcesses 
   const valueClass = "text-foreground break-words";
 
   const clientProcesses = allProcesses.filter(
-    (process) => process.client === clientData.name
+    (process) => process.clients && process.clients.includes(clientData.name)
   );
 
   return (

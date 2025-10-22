@@ -144,7 +144,7 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
               date: newEvent.date,
               type: eventType,
               description: `[Processo: ${processData.processNumber}] ${data.eventDescription}`,
-              client: processData.client,
+              client: processData.clients?.join(', '),
               process: processData.id,
           });
           toast({
@@ -221,8 +221,8 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
                 <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                     <div className="flex items-center gap-2 text-foreground">
                         <Briefcase className="h-4 w-4 text-muted-foreground" />
-                        <strong>Cliente:</strong>
-                        <span className="truncate">{processData.client}</span>
+                        <strong>Cliente(s):</strong>
+                        <span className="truncate">{(processData.clients || []).join(', ')}</span>
                     </div>
                     <div className="flex items-center gap-2 text-foreground">
                         <Info className="h-4 w-4 text-muted-foreground" />
