@@ -29,7 +29,10 @@ import { Loader2, Search, FileUp } from "lucide-react";
 import { ProcessSearchDialog } from "@/components/processes/ProcessSearchDialog";
 import type { DocumentData } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
-import { addDocument } from "@/services/documentService";
+import { addDocument, updateDocument } from "@/services/documentService";
+import { storage } from "@/lib/firebase";
+import { ref, uploadBytes } from "firebase/storage";
+
 
 export interface Document extends DocumentData {
   id: string;
@@ -38,15 +41,13 @@ export interface Document extends DocumentData {
   tags: string[];
   uploadDate: string;
   createdAt?: string;
-  fileUrl: string; // Pode ser vazia agora
+  fileUrl: string;
   filePath: string;
 }
 
-// Esquema para o formulário principal que agora inclui o arquivo
 const documentFormSchema = z.object({
   process: z.string().min(3, { message: "O processo vinculado é obrigatório." }),
   tagsString: z.string().optional(),
-  file: z.any().optional(), // O arquivo é opcional aqui porque o Zod no cliente não o validará
 });
 
 export type DocumentFormValues = z.infer<typeof documentFormSchema>;
@@ -54,7 +55,6 @@ export type DocumentFormValues = z.infer<typeof documentFormSchema>;
 interface DocumentFormDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  // A submissão agora é tratada internamente para lidar com o upload
   onSubmit: (data: any) => Promise<void>; 
   documentData?: Document;
 }
@@ -70,11 +70,8 @@ export function DocumentFormDialog({ isOpen, onClose, onSubmit, documentData }: 
     defaultValues: {
       process: "",
       tagsString: "",
-      file: undefined,
     },
   });
-
-  const fileRef = form.register("file");
 
   React.useEffect(() => {
     if (isOpen) {
@@ -97,53 +94,45 @@ export function DocumentFormDialog({ isOpen, onClose, onSubmit, documentData }: 
   const handleFormSubmit: SubmitHandler<DocumentFormValues> = async (data) => {
     setIsLoading(true);
 
-    if (documentData) {
-      // Modo de Edição (só metadados)
-      await onSubmit(data);
-    } else {
-      // Modo de Criação (com upload)
-      if (!selectedFile) {
-        toast({ title: "Arquivo Faltando", description: "Por favor, selecione um arquivo para carregar.", variant: "destructive"});
-        setIsLoading(false);
-        return;
-      }
+    try {
+        if (documentData) {
+            // Modo Edição: Apenas metadados
+            const tags = data.tagsString ? data.tagsString.split(',').map(t => t.trim()).filter(Boolean) : [];
+            await updateDocument(documentData.id, { ...data, tags });
+            toast({ title: "Documento atualizado!", description: `Os metadados de ${documentData.name} foram atualizados.` });
+            await onSubmit({ ...data, tags });
 
-      try {
-        // 1. Fazer o upload para a nossa API
-        const formData = new FormData();
-        formData.append('file', selectedFile);
-        const uploadResponse = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
+        } else {
+            // Modo Criação: Upload + Metadados
+            if (!selectedFile) {
+                toast({ title: "Arquivo Faltando", description: "Por favor, selecione um arquivo para carregar.", variant: "destructive"});
+                setIsLoading(false);
+                return;
+            }
+            
+            // 1. Fazer upload para o Firebase Storage no cliente
+            const filePath = `documents/${Date.now()}-${selectedFile.name}`;
+            const storageRef = ref(storage, filePath);
+            
+            await uploadBytes(storageRef, selectedFile);
 
-        if (!uploadResponse.ok) {
-          // Se a resposta não for OK, lemos como texto para ver o erro (geralmente HTML)
-          const errorText = await uploadResponse.text();
-          console.error("Server returned an error:", errorText);
-          throw new Error(`Falha na API de upload. Status: ${uploadResponse.status}`);
+            // 2. Salvar metadados no Firestore
+            const metadata = {
+                ...data,
+                name: selectedFile.name,
+            };
+            await addDocument(metadata, filePath);
+            
+            // 3. Chamar o onSubmit para revalidar a lista na página
+            await onSubmit(metadata);
         }
 
-        // Se a resposta for OK, aí sim tentamos o .json()
-        const { filePath } = await uploadResponse.json();
-
-        // 2. Salvar os metadados no Firestore usando o filePath retornado
-        const metadata = {
-          ...data,
-          name: selectedFile.name,
-        };
-        await addDocument(metadata, filePath);
-        
-        // Chamada ao onSubmit original para revalidar os dados na página
-        await onSubmit(metadata);
-        
-      } catch (error: any) {
+    } catch (error: any) {
         console.error("Falha ao processar documento:", error);
         toast({ title: "Erro ao Salvar", description: error.message || "Não foi possível salvar o documento.", variant: "destructive" });
-      }
+    } finally {
+        setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
   
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -180,7 +169,7 @@ export function DocumentFormDialog({ isOpen, onClose, onSubmit, documentData }: 
                     <Input type="file" onChange={handleFileChange} disabled={!!documentData} />
                  </FormControl>
                  <FormDescriptionUI>
-                   {documentData ? `Arquivo carregado: ${documentData.name}` : 'Tamanho máximo: 5MB.'}
+                   {documentData ? `Arquivo carregado: ${documentData.name}` : 'Seus arquivos são enviados diretamente para seu Firebase Storage.'}
                  </FormDescriptionUI>
                  <FormMessage />
                </FormItem>

@@ -18,7 +18,6 @@ const fromFirestore = (docSnap: DocumentData): Document => {
     tags: data.tags || [],
     uploadDate: data.uploadDate,
     filePath: data.filePath,
-    // fileUrl não é mais um campo primário, mas pode existir em documentos antigos
     fileUrl: data.fileUrl || '', 
   };
    if (data.createdAt) {
@@ -35,16 +34,16 @@ export async function getDocuments(): Promise<Document[]> {
 }
 
 // CREATE
-export async function addDocument(docData: Omit<DocumentFormValues, 'file'> & { name: string }, filePath: string): Promise<Document> {
-  const tags = docData.tagsString ? docData.tagsString.split(',').map(t => t.trim()).filter(t => t) : [];
+export async function addDocument(docData: { process: string; tagsString?: string | undefined; name: string; }, filePath: string): Promise<Document> {
+  const tags = docData.tagsString ? docData.tagsString.split(',').map(t => t.trim()).filter(Boolean) : [];
   
   const docRef = await addDoc(documentsCollectionRef, {
     name: docData.name,
     process: docData.process,
     tags: tags,
-    uploadDate: new Date().toISOString().split('T')[0], // Simple YYYY-MM-DD
+    uploadDate: new Date().toISOString().split('T')[0],
     createdAt: serverTimestamp(),
-    filePath: filePath, // Salva apenas o caminho do arquivo
+    filePath: filePath,
   });
 
   const snapshot = await getDoc(docRef);
@@ -52,13 +51,12 @@ export async function addDocument(docData: Omit<DocumentFormValues, 'file'> & { 
 }
 
 // UPDATE (metadata only)
-export async function updateDocument(documentId: string, docData: Omit<DocumentFormValues, 'file'> & { name: string }): Promise<Document> {
+export async function updateDocument(documentId: string, docData: { process: string, tags: string[] }): Promise<Document> {
   const docRef = doc(db, 'documents', documentId);
-  const tags = docData.tagsString ? docData.tagsString.split(',').map(t => t.trim()).filter(t => t) : [];
   
   await updateDoc(docRef, {
     process: docData.process,
-    tags: tags,
+    tags: docData.tags,
     updatedAt: serverTimestamp(),
   });
   
@@ -68,11 +66,9 @@ export async function updateDocument(documentId: string, docData: Omit<DocumentF
 
 // DELETE
 export async function deleteDocument(document: Document): Promise<void> {
-  // Delete file from storage
   if (document.filePath) {
       const fileRef = ref(storage, document.filePath);
       await deleteObject(fileRef).catch(error => {
-          // It's okay if the file doesn't exist, log other errors.
           if (error.code !== 'storage/object-not-found') {
               console.error("Error deleting file from storage:", error);
               throw error;
@@ -80,12 +76,11 @@ export async function deleteDocument(document: Document): Promise<void> {
       });
   }
 
-  // Delete document from Firestore
   const docRef = doc(db, 'documents', document.id);
   await deleteDoc(docRef);
 }
 
-// DOWNLOAD URL GETTER (USADO APENAS PARA O PROXY AGORA)
+// DOWNLOAD URL GETTER
 export async function getDownloadUrl(filePath: string): Promise<string> {
     const fileRef = ref(storage, filePath);
     const url = await getDownloadURL(fileRef);
