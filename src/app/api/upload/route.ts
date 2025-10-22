@@ -1,7 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from '@/lib/firebase';
+import { adminStorage } from '@/lib/firebase-admin';
 
 export async function POST(request: Request) {
   try {
@@ -12,21 +11,37 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Nenhum arquivo enviado.' }, { status: 400 });
     }
 
+    const bucket = adminStorage.bucket();
     const filePath = `documents/${Date.now()}-${file.name}`;
-    const storageRef = ref(storage, filePath);
+    
+    const fileBuffer = Buffer.from(await file.arrayBuffer());
 
-    // Converte o arquivo para um ArrayBuffer, que é o que uploadBytes espera.
-    const fileBuffer = await file.arrayBuffer();
-    
-    // Faz o upload do buffer com o tipo de conteúdo correto.
-    await uploadBytes(storageRef, fileBuffer, { contentType: file.type });
-    
-    // Apenas retornamos o caminho do arquivo (filePath), a URL não é mais necessária no cliente.
+    const blob = bucket.file(filePath);
+    const blobStream = blob.createWriteStream({
+        metadata: {
+            contentType: file.type,
+        },
+        resumable: false,
+    });
+
+    await new Promise((resolve, reject) => {
+        blobStream.on('error', (err) => {
+            console.error('Erro no stream de upload:', err);
+            reject(new Error('Falha ao fazer upload do arquivo.'));
+        });
+
+        blobStream.on('finish', () => {
+            resolve(true);
+        });
+
+        blobStream.end(fileBuffer);
+    });
+
+    // O arquivo agora está no Storage. Retornamos o caminho para ser salvo no Firestore.
     return NextResponse.json({ filePath: filePath }, { status: 200 });
 
   } catch (error: any) {
-    console.error('Erro no upload do arquivo:', error);
-    // Retorna uma mensagem de erro mais detalhada para depuração.
+    console.error('Erro no upload do arquivo (API Route):', error);
     return NextResponse.json({ error: 'Erro interno do servidor ao fazer upload.', message: error.message }, { status: 500 });
   }
 }
