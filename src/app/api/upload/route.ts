@@ -14,30 +14,14 @@ export async function POST(request: Request) {
     const bucket = adminStorage.bucket();
     const filePath = `documents/${Date.now()}-${file.name}`;
     
-    // Converte o arquivo para um buffer, que é o formato que o Admin SDK espera.
     const fileBuffer = Buffer.from(await file.arrayBuffer());
 
-    const blob = bucket.file(filePath);
-    
-    // Usa um stream para fazer o upload do buffer
-    const blobStream = blob.createWriteStream({
-        metadata: {
-            contentType: file.type,
-        },
-        resumable: false, // Usar upload simples para buffers
-    });
-
-    await new Promise((resolve, reject) => {
-        blobStream.on('error', (err) => {
-            console.error('Erro no stream de upload:', err);
-            reject(new Error('Falha ao fazer upload do arquivo.'));
-        });
-
-        blobStream.on('finish', () => {
-            resolve(true);
-        });
-
-        blobStream.end(fileBuffer);
+    // Abordagem mais robusta usando bucket.upload()
+    // Isso substitui o createWriteStream que estava causando problemas.
+    await bucket.file(filePath).save(fileBuffer, {
+      metadata: {
+        contentType: file.type,
+      },
     });
 
     // O arquivo agora está no Storage. Retornamos o caminho para ser salvo no Firestore.
@@ -45,6 +29,10 @@ export async function POST(request: Request) {
 
   } catch (error: any) {
     console.error('Erro no upload do arquivo (API Route):', error);
-    return NextResponse.json({ error: 'Erro interno do servidor ao fazer upload.', message: error.message }, { status: 500 });
+    // Retorna um erro JSON explícito em vez de deixar o Next.js retornar HTML
+    return NextResponse.json(
+        { error: 'Erro interno do servidor ao fazer upload.', message: error.message }, 
+        { status: 500 }
+    );
   }
 }
