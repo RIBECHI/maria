@@ -18,7 +18,8 @@ function initializeAdminApp() {
   const missingEnv = requiredEnv.filter(key => !process.env[key]);
 
   if (missingEnv.length > 0) {
-    throw new Error(`Falha na configuração do servidor Firebase. As seguintes variáveis de ambiente estão faltando: ${missingEnv.join(', ')}. Por favor, configure o arquivo .env`);
+    console.error(`Falha na configuração do servidor Firebase. As seguintes variáveis de ambiente estão faltando: ${missingEnv.join(', ')}`);
+    throw new Error(`Falha na configuração do servidor Firebase. As seguintes variáveis de ambiente estão faltando: ${missingEnv.join(', ')}`);
   }
 
   if (getApps().length === 0) {
