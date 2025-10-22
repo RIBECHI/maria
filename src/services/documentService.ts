@@ -43,9 +43,6 @@ export async function addDocument(docData: DocumentFormValues & { name: string }
   // Upload file to Firebase Storage
   await uploadBytes(storageRef, file);
   
-  // Get download URL
-  const fileUrl = await getDownloadURL(storageRef);
-
   const tags = docData.tagsString ? docData.tagsString.split(',').map(t => t.trim()).filter(t => t) : [];
   const docRef = await addDoc(documentsCollectionRef, {
     name: docData.name,
@@ -53,7 +50,6 @@ export async function addDocument(docData: DocumentFormValues & { name: string }
     tags: tags,
     uploadDate: new Date().toISOString().split('T')[0], // Simple YYYY-MM-DD
     createdAt: serverTimestamp(),
-    fileUrl: fileUrl,
     filePath: filePath,
   });
   const snapshot = await getDoc(docRef);
