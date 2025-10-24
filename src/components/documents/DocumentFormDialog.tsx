@@ -108,21 +108,21 @@ export function DocumentFormDialog({ isOpen, onClose, onSubmit, documentData }: 
             }
             
             const filePath = `documents/${Date.now()}-${selectedFile.name}`;
-            const bucketName = "lexmanager.appspot.com";
             
-            // A URL de upload deve usar a mesma estrutura do proxy de download/delete
-            const uploadUrl = `/v0/b/${bucketName}/o?name=${encodeURIComponent(filePath)}`;
-            
-            const uploadResponse = await fetch(uploadUrl, {
+            // 1. Enviar para a rota de API interna
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('filePath', filePath);
+
+            const uploadResponse = await fetch('/api/upload', {
                 method: 'POST',
-                headers: { 'Content-Type': selectedFile.type },
-                body: selectedFile
+                body: formData
             });
 
             if (!uploadResponse.ok) {
-                 const errorText = await uploadResponse.text();
-                 console.error("Server returned an error:", errorText);
-                 throw new Error(`Falha no upload via proxy. Status: ${uploadResponse.status}`);
+                 const errorBody = await uploadResponse.json();
+                 console.error("Server returned an error:", errorBody);
+                 throw new Error(errorBody.error || `Falha na API de upload. Status: ${uploadResponse.status}`);
             }
 
             // 2. Salvar metadados no Firestore
