@@ -33,10 +33,10 @@ const nextConfig: NextConfig = {
         source: '/v0/b/:bucket/o/:path*',
         destination: `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/:path*`,
       },
-       // Proxy para uploads (Adicionado)
+       // Proxy para uploads (Corrigido para usar o endpoint de upload correto)
       {
-        source: '/api/storage-proxy/:path*',
-        destination: `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/:path*`,
+        source: '/api/storage-proxy',
+        destination: `https://firebasestorage.googleapis.com/v1/b/${bucket}/o`,
       },
     ];
   },
