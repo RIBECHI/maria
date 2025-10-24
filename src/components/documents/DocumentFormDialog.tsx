@@ -107,13 +107,9 @@ export function DocumentFormDialog({ isOpen, onClose, onSubmit, documentData }: 
                 return;
             }
             
-            // 1. Fazer upload para o Firebase Storage via Proxy do Next.js
             const filePath = `documents/${Date.now()}-${selectedFile.name}`;
-            const encodedFilePath = encodeURIComponent(filePath);
             
-            // A URL de destino para upload é diferente da de download.
-            // O nome do arquivo vai como parâmetro de query 'name'.
-            const proxyUrl = `/api/storage-proxy?name=${encodedFilePath}`;
+            const proxyUrl = `/api/storage-proxy?name=${encodeURIComponent(filePath)}`;
             
             const uploadResponse = await fetch(proxyUrl, {
                 method: 'POST',

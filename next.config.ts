@@ -26,17 +26,17 @@ const nextConfig: NextConfig = {
     ],
   },
   async rewrites() {
-    const bucket = `${process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}`;
+    const bucket = `${process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "lexmanager.appspot.com"}`;
     return [
       // Proxy para downloads
       {
         source: '/v0/b/:bucket/o/:path*',
         destination: `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/:path*`,
       },
-       // Proxy para uploads (Corrigido para usar o endpoint de upload correto)
+       // Proxy para uploads (Corrigido para usar o endpoint v0)
       {
         source: '/api/storage-proxy',
-        destination: `https://firebasestorage.googleapis.com/v1/b/${bucket}/o`,
+        destination: `https://firebasestorage.googleapis.com/v0/b/${bucket}/o`,
       },
     ];
   },
