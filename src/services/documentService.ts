@@ -3,8 +3,7 @@
 
 import { db, storage } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDoc, query, orderBy } from 'firebase/firestore';
-import { ref, deleteObject, getDownloadURL } from "firebase/storage";
-import type { Document, DocumentFormValues } from '@/components/documents/DocumentFormDialog';
+import type { Document } from '@/components/documents/DocumentFormDialog';
 import type { DocumentData } from 'firebase/firestore';
 
 const documentsCollectionRef = collection(db, 'documents');
@@ -67,12 +66,13 @@ export async function updateDocument(documentId: string, docData: { process: str
 // DELETE
 export async function deleteDocument(document: Document): Promise<void> {
   if (document.filePath) {
-      const fileRef = ref(storage, document.filePath);
-      await deleteObject(fileRef).catch(error => {
-          if (error.code !== 'storage/object-not-found') {
-              console.error("Error deleting file from storage:", error);
-              throw error;
-          }
+      const encodedFilePath = encodeURIComponent(document.filePath);
+      const proxyUrl = `/api/storage-proxy/${encodedFilePath}`;
+      
+      // Usa o proxy para deletar
+      await fetch(proxyUrl, { method: 'DELETE' }).catch(error => {
+          console.error("Error deleting file via proxy:", error);
+          // Não joga o erro para não impedir a deleção do registro no DB
       });
   }
 
@@ -82,7 +82,7 @@ export async function deleteDocument(document: Document): Promise<void> {
 
 // DOWNLOAD URL GETTER
 export async function getDownloadUrl(filePath: string): Promise<string> {
-    const fileRef = ref(storage, filePath);
-    const url = await getDownloadURL(fileRef);
-    return url;
+    const encodedFilePath = encodeURIComponent(filePath);
+    // Usa o proxy para obter a URL de download
+    return `/v0/b/${process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}/o/${encodedFilePath}?alt=media`;
 }

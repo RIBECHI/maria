@@ -30,9 +30,6 @@ import { ProcessSearchDialog } from "@/components/processes/ProcessSearchDialog"
 import type { DocumentData } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { addDocument, updateDocument } from "@/services/documentService";
-import { storage } from "@/lib/firebase";
-import { ref, uploadBytes } from "firebase/storage";
-
 
 export interface Document extends DocumentData {
   id: string;
@@ -110,11 +107,22 @@ export function DocumentFormDialog({ isOpen, onClose, onSubmit, documentData }: 
                 return;
             }
             
-            // 1. Fazer upload para o Firebase Storage no cliente
+            // 1. Fazer upload para o Firebase Storage via Proxy do Next.js
             const filePath = `documents/${Date.now()}-${selectedFile.name}`;
-            const storageRef = ref(storage, filePath);
+            const encodedFilePath = encodeURIComponent(filePath);
+            const proxyUrl = `/api/storage-proxy/${encodedFilePath}`;
             
-            await uploadBytes(storageRef, selectedFile);
+            const uploadResponse = await fetch(proxyUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': selectedFile.type },
+                body: selectedFile
+            });
+
+            if (!uploadResponse.ok) {
+                 const errorText = await uploadResponse.text();
+                 console.error("Server returned an error:", errorText);
+                 throw new Error(`Falha no upload via proxy. Status: ${uploadResponse.status}`);
+            }
 
             // 2. Salvar metadados no Firestore
             const metadata = {
@@ -169,7 +177,7 @@ export function DocumentFormDialog({ isOpen, onClose, onSubmit, documentData }: 
                     <Input type="file" onChange={handleFileChange} disabled={!!documentData} />
                  </FormControl>
                  <FormDescriptionUI>
-                   {documentData ? `Arquivo carregado: ${documentData.name}` : 'Seus arquivos são enviados diretamente para seu Firebase Storage.'}
+                   {documentData ? `Arquivo carregado: ${documentData.name}` : 'Selecione o arquivo do seu computador.'}
                  </FormDescriptionUI>
                  <FormMessage />
                </FormItem>
