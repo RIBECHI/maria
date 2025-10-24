@@ -66,10 +66,12 @@ export async function updateDocument(documentId: string, docData: { process: str
 // DELETE
 export async function deleteDocument(document: Document): Promise<void> {
   if (document.filePath) {
+      const bucketName = "lexmanager.appspot.com";
       const encodedFilePath = encodeURIComponent(document.filePath);
-      const proxyUrl = `/api/storage-proxy/${encodedFilePath}`;
       
       // Usa o proxy para deletar
+      const proxyUrl = `/v0/b/${bucketName}/o/${encodedFilePath}`;
+      
       await fetch(proxyUrl, { method: 'DELETE' }).catch(error => {
           console.error("Error deleting file via proxy:", error);
           // Não joga o erro para não impedir a deleção do registro no DB
@@ -82,7 +84,8 @@ export async function deleteDocument(document: Document): Promise<void> {
 
 // DOWNLOAD URL GETTER
 export async function getDownloadUrl(filePath: string): Promise<string> {
+    const bucketName = "lexmanager.appspot.com";
     const encodedFilePath = encodeURIComponent(filePath);
     // Usa o proxy para obter a URL de download
-    return `/v0/b/${process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}/o/${encodedFilePath}?alt=media`;
+    return `/v0/b/${bucketName}/o/${encodedFilePath}?alt=media`;
 }

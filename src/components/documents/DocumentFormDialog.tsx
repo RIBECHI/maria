@@ -108,10 +108,12 @@ export function DocumentFormDialog({ isOpen, onClose, onSubmit, documentData }: 
             }
             
             const filePath = `documents/${Date.now()}-${selectedFile.name}`;
+            const bucketName = "lexmanager.appspot.com";
             
-            const proxyUrl = `/api/storage-proxy?name=${encodeURIComponent(filePath)}`;
+            // A URL de upload deve usar a mesma estrutura do proxy de download/delete
+            const uploadUrl = `/v0/b/${bucketName}/o?name=${encodeURIComponent(filePath)}`;
             
-            const uploadResponse = await fetch(proxyUrl, {
+            const uploadResponse = await fetch(uploadUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': selectedFile.type },
                 body: selectedFile
