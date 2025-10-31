@@ -3,9 +3,10 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Regra geral: permite leitura e escrita em qualquer documento
-    // apenas para usuários autenticados.
-    match /{document=**} {
+    // Permite que qualquer usuário autenticado leia, escreva, atualize e exclua
+    // qualquer documento em qualquer coleção. A operação 'list' está
+    // inclusa em 'read'.
+    match /{path=**} {
       allow read, write: if request.auth != null;
     }
   }
