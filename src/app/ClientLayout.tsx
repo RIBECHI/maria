@@ -110,22 +110,30 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const auth = getAuth(app);
-        const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-            if (firebaseUser) {
-                setUser({
-                    uid: firebaseUser.uid,
-                    displayName: firebaseUser.displayName || "Usuário",
-                    email: firebaseUser.email || "",
-                    photoURL: firebaseUser.photoURL || "",
-                });
-            } else {
-                setUser(null);
-            }
+        try {
+            const auth = getAuth(app);
+            const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+                if (firebaseUser) {
+                    setUser({
+                        uid: firebaseUser.uid,
+                        displayName: firebaseUser.displayName || "Usuário",
+                        email: firebaseUser.email || "",
+                        photoURL: firebaseUser.photoURL || "",
+                    });
+                } else {
+                    setUser(null);
+                }
+                setIsLoading(false);
+            });
+    
+            return () => unsubscribe();
+        } catch (error) {
+            // Se a inicialização do Firebase falhar (por exemplo, config ausente no .env),
+            // tratamos como se o usuário estivesse deslogado e paramos o loading.
+            console.error("Firebase Auth initialization error:", error);
+            setUser(null);
             setIsLoading(false);
-        });
-
-        return () => unsubscribe();
+        }
     }, [setUser]);
 
     useEffect(() => {
