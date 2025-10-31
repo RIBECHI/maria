@@ -178,34 +178,33 @@ function ProtectedAppLayout({ children }: { children: React.ReactNode }) {
 
 
 function AppRouter({ children }: { children: React.ReactNode }) {
-  const { currentUser, isLoading } = useAuth();
+  const { currentUser } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
 
+  const isLoginPage = pathname === '/login';
+
   useEffect(() => {
-    if (isLoading) return; // Don't do anything while loading
-
-    const isLoginPage = pathname === '/login';
-
+    // This effect runs after the AuthProvider has determined the auth state.
     if (!currentUser && !isLoginPage) {
       router.push('/login');
     } else if (currentUser && isLoginPage) {
       router.push('/');
     }
-  }, [currentUser, isLoading, pathname, router]);
+  }, [currentUser, isLoginPage, router]);
 
-  // While loading, or if we are about to redirect, we can show nothing or a loader
-  if (isLoading || (!currentUser && pathname !== '/login') || (currentUser && pathname === '/login')) {
-    return null; // The AuthProvider will show a full page loader
+  // Render based on the current auth state and route.
+  if (!currentUser && isLoginPage) {
+    return <>{children}</>;
   }
 
-  // If user is not logged in, only render children if on the login page
-  if (!currentUser) {
-    return pathname === '/login' ? <>{children}</> : null;
+  if (currentUser && !isLoginPage) {
+    return <ProtectedAppLayout>{children}</ProtectedAppLayout>;
   }
-  
-  // If user is logged in, render the protected layout
-  return <ProtectedAppLayout>{children}</ProtectedAppLayout>;
+
+  // In any other case (e.g., redirecting), render null to avoid flashes of content.
+  // The AuthProvider already shows a full-page loader, so this is safe.
+  return null;
 }
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {

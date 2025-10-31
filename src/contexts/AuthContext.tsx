@@ -17,24 +17,14 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 const FullPageLoader = () => (
-    <div className="flex flex-col h-screen">
-        <header className="flex h-14 lg:h-[60px] items-center gap-4 border-b bg-gray-100/40 px-6 dark:bg-gray-800/40">
-            <Skeleton className="h-8 w-8 rounded-full" />
-            <Skeleton className="h-6 w-32" />
-        </header>
-        <div className="flex flex-1">
-            <nav className="hidden border-r bg-gray-100/40 md:block dark:bg-gray-800/40 p-4">
-                <div className="flex flex-col gap-2">
-                    <Skeleton className="h-8 w-40" />
-                    <Skeleton className="h-8 w-40" />
-                    <Skeleton className="h-8 w-40" />
-                </div>
-            </nav>
-            <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
-                <Skeleton className="h-10 w-64" />
-                <Skeleton className="h-40 w-full" />
-            </main>
+    <div className="flex h-screen w-full items-center justify-center bg-background">
+      <div className="flex flex-col items-center gap-4">
+        <Skeleton className="h-12 w-12 rounded-full" />
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-[250px]" />
+          <Skeleton className="h-4 w-[200px]" />
         </div>
+      </div>
     </div>
 );
 
@@ -56,9 +46,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const value = { currentUser, isLoading };
 
+  // Render a full-page loader while the auth state is being determined.
+  // This prevents hydration mismatches.
+  if (isLoading) {
+    return <FullPageLoader />;
+  }
+
   return (
     <AuthContext.Provider value={value}>
-      {isLoading ? <FullPageLoader /> : children}
+      {children}
     </AuthContext.Provider>
   );
 };
