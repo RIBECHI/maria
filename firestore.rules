@@ -10,23 +10,38 @@ service cloud.firestore {
 
     // Permite que qualquer pessoa leia as coleções principais (clientes, processos, eventos, etc.)
     match /clients/{clientId} {
-      allow read: if true;
+      allow get: if true;
+    }
+    match /clients {
+      allow list: if true;
     }
 
     match /processes/{processId} {
-      allow read: if true;
+      allow get: if true;
+    }
+    match /processes {
+      allow list: if true;
     }
 
     match /events/{eventId} {
-      allow read: if true;
+      allow get: if true;
+    }
+    match /events {
+      allow list: if true;
     }
 
     match /documents/{documentId} {
-      allow read: if true;
+      allow get: if true;
+    }
+    match /documents {
+      allow list: if true;
     }
     
     match /documentTemplates/{templateId} {
-      allow read: if true;
+      allow get: if true;
+    }
+    match /documentTemplates {
+      allow list: if true;
     }
 
     match /notepad/{docId} {
