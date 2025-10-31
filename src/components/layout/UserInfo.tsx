@@ -3,8 +3,8 @@
 
 import { useUser } from '@/contexts/UserContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { getAuth, signOut } from 'firebase/auth';
-import { app } from '@/lib/firebase';
+import { signOut } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { LogOut } from 'lucide-react';
 import {
@@ -20,7 +20,6 @@ export default function UserInfo() {
   const { toast } = useToast();
 
   const handleSignOut = async () => {
-    const auth = getAuth(app);
     try {
       await signOut(auth);
       setUserName("Advogado"); // Reseta para o nome padrão no contexto

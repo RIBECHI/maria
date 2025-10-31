@@ -42,8 +42,8 @@ import ThemeToggle from '@/components/layout/ThemeToggle';
 import type React from 'react';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 import { useRouter, usePathname } from 'next/navigation';
-import { getAuth, onAuthStateChanged, updateProfile } from 'firebase/auth';
-import { app } from '@/lib/firebase';
+import { onAuthStateChanged, updateProfile } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -117,7 +117,6 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         try {
-            const auth = getAuth(app);
             const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
                 if (firebaseUser) {
                     const needsDisplayName = !firebaseUser.displayName;
@@ -151,7 +150,6 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
     }, [isLoading, user, pathname, router]);
 
     const handleUpdateDisplayName = async () => {
-        const auth = getAuth(app);
         const currentUser = auth.currentUser;
         if (currentUser && newDisplayName.trim()) {
             try {
@@ -310,5 +308,3 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     </UserProvider>
   );
 }
-
-    

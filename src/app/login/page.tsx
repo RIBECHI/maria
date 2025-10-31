@@ -5,8 +5,8 @@ import * as React from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { app } from "@/lib/firebase";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import Logo from "@/components/layout/Logo";
@@ -46,7 +46,6 @@ export default function LoginPage() {
 
   const handleLogin: SubmitHandler<z.infer<typeof loginSchema>> = async (data) => {
     setIsLoading(true);
-    const auth = getAuth(app);
     try {
       await signInWithEmailAndPassword(auth, data.email, data.password);
       toast({
@@ -70,7 +69,6 @@ export default function LoginPage() {
 
   const handleRegister: SubmitHandler<z.infer<typeof registerSchema>> = async (data) => {
     setIsLoading(true);
-    const auth = getAuth(app);
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
         await updateProfile(userCredential.user, { displayName: data.displayName });
@@ -155,5 +153,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-    
