@@ -1,33 +1,45 @@
 
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { initializeApp, getApps, cert, getApp } from 'firebase-admin/app';
 import { getStorage } from 'firebase-admin/storage';
 
-const serviceAccount = {
-  projectId: process.env.FIREBASE_PROJECT_ID,
-  clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-  privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-};
+function initializeFirebaseAdmin() {
+  if (getApps().length > 0) {
+    return getApp();
+  }
 
-const BUCKET_NAME = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
+  const serviceAccount = {
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+  };
 
-// Garante que o app admin seja inicializado apenas uma vez.
-if (!getApps().length) {
+  // Durante o build, as variáveis de ambiente podem não estar disponíveis.
+  // Não inicialize se as credenciais não estiverem completas.
+  if (!serviceAccount.projectId || !serviceAccount.clientEmail || !serviceAccount.privateKey) {
+    console.warn("Firebase Admin credentials not fully provided. Skipping initialization.");
+    return null;
+  }
+
   try {
-    initializeApp({
+    return initializeApp({
       credential: cert(serviceAccount),
-      storageBucket: BUCKET_NAME,
+      storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
     });
   } catch (e: any) {
     console.error('Firebase Admin Initialization Error:', e.message);
-    // Não lança o erro para evitar que a aplicação quebre em cenários onde o admin sdk não é estritamente necessário.
+    return null;
   }
 }
 
-let bucket;
-try {
-  bucket = getStorage().bucket();
-} catch (e: any) {
-  console.error("Could not get storage bucket. Firebase Admin SDK might not be initialized correctly.");
+function getBucket() {
+  const app = initializeFirebaseAdmin();
+  if (!app) {
+    console.error("Cannot get bucket, Firebase Admin SDK is not initialized.");
+    return null; // Retorna null se a inicialização falhar
+  }
+  return getStorage(app).bucket();
 }
+
+const bucket = getBucket();
 
 export { bucket };
