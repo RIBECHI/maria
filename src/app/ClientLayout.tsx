@@ -209,16 +209,6 @@ function AuthWrapper({ children }: { children: ReactNode }) {
 function AppLayout({ children }: { children: ReactNode }) {
   const [isNotepadOpen, setIsNotepadOpen] = useState(false);
   
-  useEffect(() => {
-    // Theme logic can stay here as it reads from localStorage which is client-side
-    const storedTheme = localStorage.getItem("theme");
-    if (storedTheme === "light") {
-      document.documentElement.classList.remove("dark");
-    } else {
-      document.documentElement.classList.add("dark");
-    }
-  }, []);
-
   return (
     <>
       <JusticeSymbolWatermark />
