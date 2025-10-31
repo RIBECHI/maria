@@ -1,4 +1,6 @@
 
+"use client";
+
 import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
 import { getFirestore, type Firestore } from "firebase/firestore";
@@ -18,7 +20,12 @@ let auth: Auth;
 let db: Firestore;
 let storage: FirebaseStorage;
 
-if (firebaseConfig.apiKey && firebaseConfig.projectId) {
+// This check is the key to fixing the build issue.
+// It ensures that Firebase is only initialized when the config is fully available.
+if (
+  firebaseConfig.apiKey &&
+  firebaseConfig.projectId
+) {
   if (!getApps().length) {
     app = initializeApp(firebaseConfig);
   } else {
@@ -28,15 +35,14 @@ if (firebaseConfig.apiKey && firebaseConfig.projectId) {
   db = getFirestore(app);
   storage = getStorage(app);
 } else {
-  // Isso é um fallback para ambientes onde as variáveis de ambiente podem não estar disponíveis (como alguns estágios de build).
-  // No entanto, ele garante que as variáveis não sejam 'undefined' no cliente.
-  console.warn("Firebase config is missing or incomplete. Firebase services may not be available.");
+  // If the config is not available (e.g., during build),
+  // we provide a mock/dummy initialization to prevent the app from crashing.
+  // The actual services will not be usable, but the build process can complete.
+  console.warn("Firebase config is missing or incomplete. Using dummy initialization for build process.");
   if (!getApps().length) {
-      // Inicializa com um config 'vazio' para evitar que o app quebre,
-      // embora as chamadas ao Firebase falharão, o erro será mais informativo.
-      app = initializeApp({});
+    app = initializeApp({});
   } else {
-      app = getApp();
+    app = getApp();
   }
   auth = getAuth(app);
   db = getFirestore(app);
