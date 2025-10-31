@@ -15,6 +15,8 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
+import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
+
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Por favor, insira um e-mail válido." }),
@@ -106,42 +108,86 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           {isLoginView ? (
-            <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="login-email">E-mail</Label>
-                <Input id="login-email" type="email" placeholder="seu@email.com" {...loginForm.register("email")} />
-                {loginForm.formState.errors.email && <p className="text-xs text-destructive">{loginForm.formState.errors.email.message}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="login-password">Senha</Label>
-                <Input id="login-password" type="password" placeholder="******" {...loginForm.register("password")} />
-                 {loginForm.formState.errors.password && <p className="text-xs text-destructive">{loginForm.formState.errors.password.message}</p>}
-              </div>
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? <Loader2 className="animate-spin" /> : "Entrar"}
-              </Button>
-            </form>
+            <Form {...loginForm}>
+              <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
+                <FormField
+                  control={loginForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <Label htmlFor="login-email">E-mail</Label>
+                      <FormControl>
+                        <Input id="login-email" type="email" placeholder="seu@email.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={loginForm.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <Label htmlFor="login-password">Senha</Label>
+                      <FormControl>
+                        <Input id="login-password" type="password" placeholder="******" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? <Loader2 className="animate-spin" /> : "Entrar"}
+                </Button>
+              </form>
+            </Form>
           ) : (
-            <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
-               <div className="space-y-2">
-                <Label htmlFor="register-name">Nome Completo</Label>
-                <Input id="register-name" type="text" placeholder="Seu nome" {...registerForm.register("displayName")} />
-                {registerForm.formState.errors.displayName && <p className="text-xs text-destructive">{registerForm.formState.errors.displayName.message}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="register-email">E-mail</Label>
-                <Input id="register-email" type="email" placeholder="seu@email.com" {...registerForm.register("email")} />
-                {registerForm.formState.errors.email && <p className="text-xs text-destructive">{registerForm.formState.errors.email.message}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="register-password">Senha</Label>
-                <Input id="register-password" type="password" placeholder="Mínimo 6 caracteres" {...registerForm.register("password")} />
-                {registerForm.formState.errors.password && <p className="text-xs text-destructive">{registerForm.formState.errors.password.message}</p>}
-              </div>
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                 {isLoading ? <Loader2 className="animate-spin" /> : "Criar Conta"}
-              </Button>
-            </form>
+            <Form {...registerForm}>
+              <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
+                <FormField
+                  control={registerForm.control}
+                  name="displayName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <Label htmlFor="register-name">Nome Completo</Label>
+                      <FormControl>
+                        <Input id="register-name" type="text" placeholder="Seu nome" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={registerForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <Label htmlFor="register-email">E-mail</Label>
+                      <FormControl>
+                        <Input id="register-email" type="email" placeholder="seu@email.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={registerForm.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <Label htmlFor="register-password">Senha</Label>
+                      <FormControl>
+                        <Input id="register-password" type="password" placeholder="Mínimo 6 caracteres" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? <Loader2 className="animate-spin" /> : "Criar Conta"}
+                </Button>
+              </form>
+            </Form>
           )}
         </CardContent>
         <CardFooter className="flex justify-center text-sm">
