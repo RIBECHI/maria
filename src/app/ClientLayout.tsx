@@ -114,7 +114,13 @@ function AuthWrapper({ children }: { children: ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
 
+    // Se estamos na página de login, apenas renderize o conteúdo sem nenhuma lógica de auth.
+    if (pathname === '/login') {
+      return <>{children}</>;
+    }
+
     useEffect(() => {
+        // Este useEffect só será executado para páginas protegidas
         const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
             if (firebaseUser) {
                 const needsDisplayName = !firebaseUser.displayName;
@@ -129,18 +135,14 @@ function AuthWrapper({ children }: { children: ReactNode }) {
                 });
             } else {
                 setUser(null);
+                // Se não houver usuário, redireciona para o login
+                router.push('/login');
             }
             setIsLoading(false);
         });
 
         return () => unsubscribe();
-    }, [setUser, setIsLoading]);
-
-    useEffect(() => {
-        if (!isLoading && !user && pathname !== '/login') {
-            router.push('/login');
-        }
-    }, [isLoading, user, pathname, router]);
+    }, [setUser, setIsLoading, router]);
 
     const handleUpdateDisplayName = async () => {
         const currentUser = auth.currentUser;
@@ -156,8 +158,9 @@ function AuthWrapper({ children }: { children: ReactNode }) {
         }
     };
 
-
-    if (isLoading || (!user && pathname !== '/login')) {
+    // Enquanto carrega ou se não houver usuário (e não for a página de login), mostra o loader.
+    // Esta verificação garante que a tela de carregamento só apareça em rotas protegidas.
+    if (isLoading || !user) {
       return (
         <div className="flex h-screen w-screen items-center justify-center">
             <div className="flex flex-col items-center gap-4">
@@ -168,10 +171,7 @@ function AuthWrapper({ children }: { children: ReactNode }) {
       );
     }
     
-    if (pathname === '/login') {
-      return <>{children}</>;
-    }
-
+    // Se o usuário estiver logado e não for a página de login, renderiza o layout principal.
     return (
         <>
             <AppLayout>{children}</AppLayout>
@@ -300,3 +300,5 @@ export default function AppProviders({ children }: { children: ReactNode }) {
     </UserProvider>
   );
 }
+
+    
