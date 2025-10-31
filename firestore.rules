@@ -10,40 +10,26 @@ service cloud.firestore {
 
     // Permite que qualquer pessoa leia as coleções principais
     match /clients/{clientId} {
-      allow get: if true;
-    }
-    match /clients {
-      allow list: if true;
+      allow get, list: if true;
     }
 
     match /processes/{processId} {
-      allow get: if true;
-    }
-    match /processes {
-      allow list: if true;
+      allow get, list: if true;
     }
 
     match /events/{eventId} {
-      allow get: if true;
-    }
-    match /events {
-      allow list: if true;
+      allow get, list: if true;
     }
 
     match /documents/{documentId} {
-      allow get: if true;
-    }
-    match /documents {
-      allow list: if true;
+      allow get, list: if true;
     }
     
     match /documentTemplates/{templateId} {
-      allow get: if true;
-    }
-    match /documentTemplates {
-      allow list: if true;
+      allow get, list: if true;
     }
 
+    // O bloco de notas só pode ser lido/escrito por usuários autenticados
     match /notepad/{docId} {
        allow read, write: if request.auth != null;
     }
