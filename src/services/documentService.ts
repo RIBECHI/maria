@@ -26,6 +26,10 @@ const fromFirestore = (docSnap: DocumentData): Document => {
 
 // READ
 export async function getDocuments(): Promise<Document[]> {
+  if (!db) {
+    console.error("Firestore DB is not initialized.");
+    return [];
+  }
   const documentsCollectionRef = collection(db, 'documents');
   const q = query(documentsCollectionRef, orderBy("createdAt", "desc"));
   const querySnapshot = await getDocs(q).catch(async (serverError) => {
@@ -41,6 +45,9 @@ export async function getDocuments(): Promise<Document[]> {
 
 // CREATE
 export async function addDocument(docData: { process: string; tagsString?: string | undefined; name: string; }, filePath: string): Promise<Document> {
+  if (!db) {
+    throw new Error("Firestore DB is not initialized.");
+  }
   const documentsCollectionRef = collection(db, 'documents');
   const tags = docData.tagsString ? docData.tagsString.split(',').map(t => t.trim()).filter(Boolean) : [];
   
@@ -70,6 +77,9 @@ export async function addDocument(docData: { process: string; tagsString?: strin
 
 // UPDATE (metadata only)
 export async function updateDocument(documentId: string, docData: { process: string, tags: string[] }): Promise<Document> {
+  if (!db) {
+    throw new Error("Firestore DB is not initialized.");
+  }
   const docRef = doc(db, 'documents', documentId);
   const dataToUpdate = {
     process: docData.process,
@@ -94,6 +104,9 @@ export async function updateDocument(documentId: string, docData: { process: str
 
 // DELETE
 export async function deleteDocument(document: Document): Promise<void> {
+  if (!db) {
+    throw new Error("Firestore DB is not initialized.");
+  }
   const docRef = doc(db, 'documents', document.id);
   deleteDoc(docRef)
     .catch(async (serverError) => {

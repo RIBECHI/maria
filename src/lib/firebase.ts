@@ -1,6 +1,3 @@
-
-"use client";
-
 import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
 import { getFirestore, type Firestore } from "firebase/firestore";
@@ -15,23 +12,39 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
+// This function ensures Firebase is initialized only once
+const getFirebaseApp = (): FirebaseApp => {
+  if (getApps().length === 0) {
+    // This check ensures we have a valid config before initializing
+    if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+      // In a server environment during build, these might be undefined.
+      // We throw a clear error that can be seen during development.
+      // In production (Vercel), these env vars MUST be set.
+      throw new Error("Firebase config is not valid. Make sure NEXT_PUBLIC_FIREBASE_ environment variables are set.");
+    }
+    return initializeApp(firebaseConfig);
+  } else {
+    return getApp();
+  }
+};
+
 let app: FirebaseApp;
 let auth: Auth;
 let db: Firestore;
 let storage: FirebaseStorage;
 
-// Garante que a inicialização só aconteça no ambiente do navegador
-if (typeof window !== 'undefined' && !getApps().length) {
-  app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  db = getFirestore(app);
-  storage = getStorage(app);
-} else if (typeof window !== 'undefined') {
-  app = getApp();
-  auth = getAuth(app);
-  db = getFirestore(app);
-  storage = getStorage(app);
+// This block ensures that Firebase is ONLY initialized on the client-side
+if (typeof window !== 'undefined') {
+  try {
+    app = getFirebaseApp();
+    auth = getAuth(app);
+    db = getFirestore(app);
+    storage = getStorage(app);
+  } catch (e) {
+    console.error("Failed to initialize Firebase on the client.", e);
+    // You could potentially set these to null or handle the error gracefully
+  }
 }
 
-// @ts-ignore - Essas variáveis serão inicializadas no cliente
+// @ts-ignore - These will be initialized on the client
 export { app, db, storage, auth };

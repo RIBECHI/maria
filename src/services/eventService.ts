@@ -26,6 +26,10 @@ const fromFirestore = (docSnap: any): CalendarEvent => {
 
 // READ ALL
 export async function getEvents(): Promise<CalendarEvent[]> {
+  if (!db) {
+    console.error("Firestore DB is not initialized.");
+    return [];
+  }
   const eventsCollectionRef = collection(db, 'events');
   const q = query(eventsCollectionRef, orderBy('date', 'asc'));
   const querySnapshot = await getDocs(q).catch(async (serverError) => {
@@ -41,6 +45,10 @@ export async function getEvents(): Promise<CalendarEvent[]> {
 
 // READ for Dashboard/Sidebar
 export async function getEventsForDashboard(count: number): Promise<CalendarEvent[]> {
+  if (!db) {
+    console.error("Firestore DB is not initialized.");
+    return [];
+  }
   const eventsCollectionRef = collection(db, 'events');
   const today = format(startOfToday(), 'yyyy-MM-dd');
   const q = query(
@@ -63,6 +71,9 @@ export async function getEventsForDashboard(count: number): Promise<CalendarEven
 
 // CREATE
 export async function addEvent(eventData: Omit<import("/home/user/app/src/components/agenda/EventFormDialog").EventFormValues, "clientId"> & { client?: string | undefined; }): Promise<CalendarEvent> {
+  if (!db) {
+    throw new Error("Firestore DB is not initialized.");
+  }
   const eventsCollectionRef = collection(db, 'events');
   const dataToSave = {
     ...eventData,
@@ -84,6 +95,9 @@ export async function addEvent(eventData: Omit<import("/home/user/app/src/compon
 
 // UPDATE
 export async function updateEvent(eventId: string, eventData: Omit<import("/home/user/app/src/components/agenda/EventFormDialog").EventFormValues, "clientId"> & { client?: string | undefined; }): Promise<CalendarEvent> {
+  if (!db) {
+    throw new Error("Firestore DB is not initialized.");
+  }
   const eventDocRef = doc(db, 'events', eventId);
   const dataToUpdate = {
     ...eventData,
@@ -105,6 +119,9 @@ export async function updateEvent(eventId: string, eventData: Omit<import("/home
 
 // DELETE
 export async function deleteEvent(eventId: string): Promise<void> {
+  if (!db) {
+    throw new Error("Firestore DB is not initialized.");
+  }
   const eventDocRef = doc(db, 'events', eventId);
   deleteDoc(eventDocRef)
     .catch(async (serverError) => {
