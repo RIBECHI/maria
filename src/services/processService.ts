@@ -1,7 +1,8 @@
 
-import { getDb } from '@/lib/firebase';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, type DocumentData, query, orderBy, limit, getDoc, Timestamp } from 'firebase/firestore';
+import { auth, db } from '@/lib/firebase';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, type DocumentData, query, orderBy, limit, getDoc, Timestamp, FirestoreError } from 'firebase/firestore';
 import type { Process, ProcessFormValues, TimelineEvent } from '@/components/processes/ProcessFormDialog';
+import { errorEmitter, FirestorePermissionError, SecurityRuleContext } from '@/lib/errors';
 
 // Helper para remover chaves indefinidas de um objeto, agora de forma recursiva
 const removeUndefinedKeys = (obj: any): any => {
@@ -48,17 +49,27 @@ const fromFirestore = (docSnap: DocumentData): Process => {
 
 // READ ALL
 export async function getProcesses(): Promise<Process[]> {
-  const db = getDb();
   if (!db) throw new Error("Firebase DB not initialized");
   const processesCollectionRef = collection(db, 'processes');
   const q = query(processesCollectionRef, orderBy("createdAt", "desc"));
-  const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(fromFirestore);
+  try {
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(fromFirestore);
+  } catch (error) {
+    if (error instanceof FirestoreError && error.code === 'permission-denied') {
+      const context: SecurityRuleContext = {
+        path: 'processes',
+        operation: 'list',
+        auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
+      };
+      errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+    }
+    throw error;
+  }
 }
 
 // READ RECENT
 export async function getRecentProcesses(count?: number): Promise<Process[]> {
-    const db = getDb();
     if (!db) throw new Error("Firebase DB not initialized");
     const processesCollectionRef = collection(db, 'processes');
     const q = count 
@@ -72,37 +83,72 @@ export async function getRecentProcesses(count?: number): Promise<Process[]> {
 
 // CREATE
 export async function addProcess(processData: Omit<Process, 'id' | 'createdAt'>): Promise<Process> {
-  const db = getDb();
   if (!db) throw new Error("Firebase DB not initialized");
   const processesCollectionRef = collection(db, 'processes');
   const cleanData = removeUndefinedKeys(processData);
-  const docRef = await addDoc(processesCollectionRef, {
-    ...cleanData,
-    createdAt: serverTimestamp(),
-  });
-  const snapshot = await getDoc(docRef);
-  return fromFirestore(snapshot);
+  try {
+    const docRef = await addDoc(processesCollectionRef, {
+        ...cleanData,
+        createdAt: serverTimestamp(),
+    });
+    const snapshot = await getDoc(docRef);
+    return fromFirestore(snapshot);
+  } catch (error) {
+    if (error instanceof FirestoreError && error.code === 'permission-denied') {
+        const context: SecurityRuleContext = {
+            path: `processes`,
+            operation: 'create',
+            auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
+            resource: cleanData,
+        };
+        errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+    }
+    throw error;
+  }
 }
 
 // UPDATE
 export async function updateProcess(processId: string, processData: ProcessFormValues & { timeline?: TimelineEvent[] }): Promise<Process> {
-  const db = getDb();
   if (!db) throw new Error("Firebase DB not initialized");
   const processDocRef = doc(db, 'processes', processId);
   const cleanData = removeUndefinedKeys(processData);
-  await updateDoc(processDocRef, {
-    ...cleanData,
-    updatedAt: serverTimestamp(),
-  });
+  try {
+    await updateDoc(processDocRef, {
+        ...cleanData,
+        updatedAt: serverTimestamp(),
+    });
 
-  const snapshot = await getDoc(processDocRef);
-  return fromFirestore(snapshot);
+    const snapshot = await getDoc(processDocRef);
+    return fromFirestore(snapshot);
+  } catch (error) {
+    if (error instanceof FirestoreError && error.code === 'permission-denied') {
+        const context: SecurityRuleContext = {
+            path: `processes/${processId}`,
+            operation: 'update',
+            auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
+            resource: cleanData,
+        };
+        errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+    }
+    throw error;
+  }
 }
 
 // DELETE
 export async function deleteProcess(processId: string): Promise<void> {
-  const db = getDb();
   if (!db) throw new Error("Firebase DB not initialized");
   const processDocRef = doc(db, 'processes', processId);
-  await deleteDoc(processDocRef);
+  try {
+    await deleteDoc(processDocRef);
+  } catch (error) {
+    if (error instanceof FirestoreError && error.code === 'permission-denied') {
+        const context: SecurityRuleContext = {
+            path: `processes/${processId}`,
+            operation: 'delete',
+            auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
+        };
+        errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+    }
+    throw error;
+  }
 }

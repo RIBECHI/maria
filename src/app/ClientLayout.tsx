@@ -3,6 +3,7 @@
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   Users,
@@ -39,6 +40,8 @@ import { NotepadSheet } from '@/components/layout/NotepadSheet';
 import UpcomingEventsSidebar from '@/components/layout/UpcomingEventsSidebar';
 import ThemeToggle from '@/components/layout/ThemeToggle';
 import type React from 'react';
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import FirebaseErrorListener from '@/components/layout/FirebaseErrorListener';
 
 const navItems = [
   { href: '/', label: 'Painel', icon: <LayoutDashboard /> },
@@ -96,18 +99,38 @@ function PanelLeftIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-export default function ClientLayout({ children }: { children: React.ReactNode }) {
-  const [isNotepadOpen, setIsNotepadOpen] = useState(false);
+function AuthWrapper({ children }: { children: React.ReactNode }) {
+    const { currentUser, isLoading } = useAuth();
+    const router = useRouter();
+    const pathname = usePathname();
 
-  useEffect(() => {
-    const storedTheme = localStorage.getItem("theme");
-    if (storedTheme === "light") {
-      document.documentElement.classList.remove("dark");
-    } else {
-      document.documentElement.classList.add("dark");
+    useEffect(() => {
+        if (!isLoading && !currentUser && pathname !== '/login') {
+            router.push('/login');
+        }
+        if (!isLoading && currentUser && pathname === '/login') {
+            router.push('/');
+        }
+    }, [currentUser, isLoading, pathname, router]);
+
+    if (isLoading) {
+        return null; // The loading state is handled by the AuthProvider
     }
-  }, []);
+    
+    if (!currentUser && pathname !== '/login') {
+        return null; // Avoid rendering children while redirecting
+    }
 
+    if (currentUser && pathname === '/login') {
+        return null; // Avoid rendering login page while redirecting
+    }
+
+    return <>{children}</>;
+}
+
+
+function AppLayout({ children }: { children: React.ReactNode }) {
+  const [isNotepadOpen, setIsNotepadOpen] = useState(false);
 
   return (
     <UserProvider>
@@ -175,9 +198,26 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
             {children}
           </main>
           <Toaster />
+          <FirebaseErrorListener />
         </SidebarInset>
       </SidebarProvider>
       <NotepadSheet isOpen={isNotepadOpen} onOpenChange={setIsNotepadOpen} />
     </UserProvider>
+  );
+}
+
+export default function ClientLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+
+  return (
+    <AuthProvider>
+        {pathname === '/login' ? (
+            children
+        ) : (
+            <AuthWrapper>
+                <AppLayout>{children}</AppLayout>
+            </AuthWrapper>
+        )}
+    </AuthProvider>
   );
 }

@@ -13,27 +13,28 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// This function is safe to be called in any environment.
-// It checks if we are on the client side before initializing.
-function getFirebaseApp(): FirebaseApp | null {
-    if (typeof window === 'undefined') {
-        return null;
+// Singleton pattern to ensure Firebase is initialized only once
+let app: FirebaseApp;
+let auth: Auth;
+let db: Firestore;
+let storage: FirebaseStorage;
+
+function initializeFirebase() {
+    if (typeof window !== 'undefined') {
+        if (!getApps().length) {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            storage = getStorage(app);
+        } else {
+            app = getApp();
+            auth = getAuth(app);
+            db = getFirestore(app);
+            storage = getStorage(app);
+        }
     }
-    return getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 }
 
-// These functions will now safely return null on the server
-export function getDb(): Firestore | null {
-    const app = getFirebaseApp();
-    return app ? getFirestore(app) : null;
-}
+initializeFirebase();
 
-export function getAuthInstance(): Auth | null {
-    const app = getFirebaseApp();
-    return app ? getAuth(app) : null;
-}
-
-export function getStorageInstance(): FirebaseStorage | null {
-    const app = getFirebaseApp();
-    return app ? getStorage(app) : null;
-}
+export { app, auth, db, storage };

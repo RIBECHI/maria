@@ -1,8 +1,9 @@
 
-import { getDb } from '@/lib/firebase';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy, limit, type DocumentData, getDoc } from 'firebase/firestore';
+import { auth, db } from '@/lib/firebase';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy, limit, type DocumentData, getDoc, FirestoreError } from 'firebase/firestore';
 import type { Client, ClientFormValues } from '@/components/clients/ClientFormDialog';
 import { Timestamp } from 'firebase/firestore';
+import { errorEmitter, FirestorePermissionError, SecurityRuleContext } from '@/lib/errors';
 
 const fromFirestore = (docSnap: DocumentData): Client => {
   const data = docSnap.data();
@@ -25,17 +26,29 @@ const fromFirestore = (docSnap: DocumentData): Client => {
 
 // READ
 export async function getClients(): Promise<Client[]> {
-  const db = getDb();
   if (!db) throw new Error("Firebase DB not initialized");
   const clientsCollectionRef = collection(db, 'clients');
   const q = query(clientsCollectionRef, orderBy("name", "asc"));
-  const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(fromFirestore);
+  try {
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(fromFirestore);
+  } catch (error) {
+    if (error instanceof FirestoreError && error.code === 'permission-denied') {
+      const context: SecurityRuleContext = {
+        path: 'clients',
+        operation: 'list',
+        auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
+      };
+      const permissionError = new FirestorePermissionError(context);
+      errorEmitter.emit('permission-error', permissionError);
+    }
+    // Re-throw other errors or handle them as needed
+    throw error;
+  }
 }
 
 // READ RECENT
 export async function getRecentClients(count: number = 3): Promise<Client[]> {
-  const db = getDb();
   if (!db) throw new Error("Firebase DB not initialized");
   const clientsCollectionRef = collection(db, 'clients');
   const q = query(clientsCollectionRef, orderBy("createdAt", "desc"), limit(count));
@@ -45,35 +58,71 @@ export async function getRecentClients(count: number = 3): Promise<Client[]> {
 
 // CREATE
 export async function addClient(clientData: Omit<Client, 'id' | 'createdAt'>): Promise<Client> {
-    const db = getDb();
     if (!db) throw new Error("Firebase DB not initialized");
     const clientsCollectionRef = collection(db, 'clients');
-    const docRef = await addDoc(clientsCollectionRef, {
-        ...clientData,
-        createdAt: serverTimestamp(),
-    });
-    const snapshot = await getDoc(docRef);
-    return fromFirestore(snapshot);
+    
+    try {
+        const docRef = await addDoc(clientsCollectionRef, {
+            ...clientData,
+            createdAt: serverTimestamp(),
+        });
+        const snapshot = await getDoc(docRef);
+        return fromFirestore(snapshot);
+    } catch(error) {
+        if (error instanceof FirestoreError && error.code === 'permission-denied') {
+            const context: SecurityRuleContext = {
+                path: `clients`,
+                operation: 'create',
+                auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
+                resource: clientData,
+            };
+            errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+        }
+        throw error;
+    }
 }
 
 // UPDATE
 export async function updateClient(clientId: string, clientData: ClientFormValues): Promise<Client> {
-    const db = getDb();
     if (!db) throw new Error("Firebase DB not initialized");
     const clientDocRef = doc(db, 'clients', clientId);
-    await updateDoc(clientDocRef, {
-        ...clientData,
-        updatedAt: serverTimestamp(),
-    });
-    
-    const snapshot = await getDoc(clientDocRef);
-    return fromFirestore(snapshot);
+    try {
+        await updateDoc(clientDocRef, {
+            ...clientData,
+            updatedAt: serverTimestamp(),
+        });
+        
+        const snapshot = await getDoc(clientDocRef);
+        return fromFirestore(snapshot);
+    } catch(error) {
+        if (error instanceof FirestoreError && error.code === 'permission-denied') {
+            const context: SecurityRuleContext = {
+                path: `clients/${clientId}`,
+                operation: 'update',
+                auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
+                resource: clientData,
+            };
+            errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+        }
+        throw error;
+    }
 }
 
 // DELETE
 export async function deleteClient(clientId: string): Promise<void> {
-    const db = getDb();
     if (!db) throw new Error("Firebase DB not initialized");
     const clientDocRef = doc(db, 'clients', clientId);
-    await deleteDoc(clientDocRef);
+    try {
+        await deleteDoc(clientDocRef);
+    } catch(error) {
+        if (error instanceof FirestoreError && error.code === 'permission-denied') {
+            const context: SecurityRuleContext = {
+                path: `clients/${clientId}`,
+                operation: 'delete',
+                auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
+            };
+            errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+        }
+        throw error;
+    }
 }
