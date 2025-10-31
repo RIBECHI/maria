@@ -39,9 +39,10 @@ import { NotepadSheet } from '@/components/layout/NotepadSheet';
 import UpcomingEventsSidebar from '@/components/layout/UpcomingEventsSidebar';
 import ThemeToggle from '@/components/layout/ThemeToggle';
 import type React from 'react';
-import { AuthProvider } from '@/contexts/AuthContext';
+import { AuthProvider, AuthWrapper } from '@/contexts/AuthContext';
 import FirebaseErrorListener from '@/components/layout/FirebaseErrorListener';
 import { ErrorBoundary } from '@/components/utils/ErrorBoundary';
+import { usePathname } from 'next/navigation';
 
 const navItems = [
   { href: '/', label: 'Painel', icon: <LayoutDashboard /> },
@@ -178,11 +179,18 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
-  // Simplificado para renderizar diretamente o layout principal, removendo toda a lógica de autenticação.
+  const pathname = usePathname();
+
   return (
     <AuthProvider>
       <ErrorBoundary>
-        <AppLayout>{children}</AppLayout>
+        <AuthWrapper>
+            {pathname === '/login' ? (
+                children
+            ) : (
+                <AppLayout>{children}</AppLayout>
+            )}
+        </AuthWrapper>
       </ErrorBoundary>
     </AuthProvider>
   );
