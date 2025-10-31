@@ -73,6 +73,7 @@ export async function saveNotes(notes: Note[]): Promise<void> {
 
 // GET ONLY TASKS
 export async function getNotepadTasks(): Promise<Note[]> {
+    if (!db) return [];
     const allNotes = await getNotes();
     return allNotes.filter(note => note.isTask);
 }
