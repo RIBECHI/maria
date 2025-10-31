@@ -18,9 +18,9 @@ import { Button } from '../ui/button';
 export default function UserInfo() {
   const { user, setUserName } = useUser(); // Agora pegamos o objeto 'user'
   const { toast } = useToast();
-  const auth = getAuthInstance();
-
+  
   const handleSignOut = async () => {
+    const auth = getAuthInstance();
     try {
       await signOut(auth);
       setUserName("Advogado"); // Reseta para o nome padrão no contexto

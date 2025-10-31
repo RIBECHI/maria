@@ -35,7 +35,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = React.useState(false);
   const { toast } = useToast();
   const router = useRouter();
-  const auth = getAuthInstance();
+  
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -49,6 +49,7 @@ export default function LoginPage() {
 
   const handleLogin: SubmitHandler<z.infer<typeof loginSchema>> = async (data) => {
     setIsLoading(true);
+    const auth = getAuthInstance();
     try {
       await signInWithEmailAndPassword(auth, data.email, data.password);
       toast({
@@ -72,6 +73,7 @@ export default function LoginPage() {
 
   const handleRegister: SubmitHandler<z.infer<typeof registerSchema>> = async (data) => {
     setIsLoading(true);
+    const auth = getAuthInstance();
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
         await updateProfile(userCredential.user, { displayName: data.displayName });
