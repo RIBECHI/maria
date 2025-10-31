@@ -116,31 +116,25 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
 
     useEffect(() => {
-        try {
-            const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-                if (firebaseUser) {
-                    const needsDisplayName = !firebaseUser.displayName;
-                    if (needsDisplayName) {
-                        setIsDisplayNameModalOpen(true);
-                    }
-                    setUser({
-                        uid: firebaseUser.uid,
-                        displayName: firebaseUser.displayName || "Novo Usuário",
-                        email: firebaseUser.email || "",
-                        photoURL: firebaseUser.photoURL || "",
-                    });
-                } else {
-                    setUser(null);
+        const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+            if (firebaseUser) {
+                const needsDisplayName = !firebaseUser.displayName;
+                if (needsDisplayName) {
+                    setIsDisplayNameModalOpen(true);
                 }
-                setIsLoading(false);
-            });
-    
-            return () => unsubscribe();
-        } catch (error) {
-            console.error("Firebase Auth initialization error:", error);
-            setUser(null);
+                setUser({
+                    uid: firebaseUser.uid,
+                    displayName: firebaseUser.displayName || "Novo Usuário",
+                    email: firebaseUser.email || "",
+                    photoURL: firebaseUser.photoURL || "",
+                });
+            } else {
+                setUser(null);
+            }
             setIsLoading(false);
-        }
+        });
+
+        return () => unsubscribe();
     }, [setUser, setIsLoading]);
 
     useEffect(() => {
