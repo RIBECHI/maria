@@ -1,10 +1,8 @@
 
-import { db } from '@/lib/firebase';
+import { getDb } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy, limit, type DocumentData, getDoc } from 'firebase/firestore';
 import type { Client, ClientFormValues } from '@/components/clients/ClientFormDialog';
 import { Timestamp } from 'firebase/firestore';
-
-const clientsCollectionRef = collection(db, 'clients');
 
 const fromFirestore = (docSnap: DocumentData): Client => {
   const data = docSnap.data();
@@ -27,6 +25,9 @@ const fromFirestore = (docSnap: DocumentData): Client => {
 
 // READ
 export async function getClients(): Promise<Client[]> {
+  const db = getDb();
+  if (!db) throw new Error("Firebase DB not initialized");
+  const clientsCollectionRef = collection(db, 'clients');
   const q = query(clientsCollectionRef, orderBy("name", "asc"));
   const querySnapshot = await getDocs(q);
   return querySnapshot.docs.map(fromFirestore);
@@ -34,6 +35,9 @@ export async function getClients(): Promise<Client[]> {
 
 // READ RECENT
 export async function getRecentClients(count: number = 3): Promise<Client[]> {
+  const db = getDb();
+  if (!db) throw new Error("Firebase DB not initialized");
+  const clientsCollectionRef = collection(db, 'clients');
   const q = query(clientsCollectionRef, orderBy("createdAt", "desc"), limit(count));
   const querySnapshot = await getDocs(q);
   return querySnapshot.docs.map(fromFirestore);
@@ -41,6 +45,9 @@ export async function getRecentClients(count: number = 3): Promise<Client[]> {
 
 // CREATE
 export async function addClient(clientData: Omit<Client, 'id' | 'createdAt'>): Promise<Client> {
+    const db = getDb();
+    if (!db) throw new Error("Firebase DB not initialized");
+    const clientsCollectionRef = collection(db, 'clients');
     const docRef = await addDoc(clientsCollectionRef, {
         ...clientData,
         createdAt: serverTimestamp(),
@@ -51,20 +58,22 @@ export async function addClient(clientData: Omit<Client, 'id' | 'createdAt'>): P
 
 // UPDATE
 export async function updateClient(clientId: string, clientData: ClientFormValues): Promise<Client> {
+    const db = getDb();
+    if (!db) throw new Error("Firebase DB not initialized");
     const clientDocRef = doc(db, 'clients', clientId);
     await updateDoc(clientDocRef, {
         ...clientData,
         updatedAt: serverTimestamp(),
     });
     
-    // Para um retorno consistente, o ideal seria refazer a busca do documento,
-    // mas para simplificar, montamos o objeto de retorno.
     const snapshot = await getDoc(clientDocRef);
     return fromFirestore(snapshot);
 }
 
 // DELETE
 export async function deleteClient(clientId: string): Promise<void> {
+    const db = getDb();
+    if (!db) throw new Error("Firebase DB not initialized");
     const clientDocRef = doc(db, 'clients', clientId);
     await deleteDoc(clientDocRef);
 }

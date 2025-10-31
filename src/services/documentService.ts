@@ -1,13 +1,12 @@
 
 "use server";
 
-import { db, storage } from '@/lib/firebase';
+import { getDb, getStorageInstance } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDoc, query, orderBy } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import type { Document, DocumentFormValues } from '@/components/documents/DocumentFormDialog';
 import type { DocumentData } from 'firebase/firestore';
 
-const documentsCollectionRef = collection(db, 'documents');
 
 const fromFirestore = (docSnap: DocumentData): Document => {
   const data = docSnap.data();
@@ -28,6 +27,9 @@ const fromFirestore = (docSnap: DocumentData): Document => {
 
 // READ
 export async function getDocuments(): Promise<Document[]> {
+  const db = getDb();
+  if (!db) throw new Error("Firebase DB not initialized");
+  const documentsCollectionRef = collection(db, 'documents');
   const q = query(documentsCollectionRef, orderBy("createdAt", "desc"));
   const querySnapshot = await getDocs(q);
   return querySnapshot.docs.map(fromFirestore);
@@ -35,6 +37,10 @@ export async function getDocuments(): Promise<Document[]> {
 
 // CREATE
 export async function addDocument(docData: DocumentFormValues & { name: string }, file: File): Promise<Document> {
+  const db = getDb();
+  const storage = getStorageInstance();
+  if (!db || !storage) throw new Error("Firebase not initialized");
+
   if (!file) throw new Error("File is required for upload.");
 
   const filePath = `documents/${Date.now()}-${file.name}`;
@@ -47,6 +53,7 @@ export async function addDocument(docData: DocumentFormValues & { name: string }
   const fileUrl = await getDownloadURL(storageRef);
 
   const tags = docData.tagsString ? docData.tagsString.split(',').map(t => t.trim()).filter(t => t) : [];
+  const documentsCollectionRef = collection(db, 'documents');
   const docRef = await addDoc(documentsCollectionRef, {
     name: docData.name,
     process: docData.process,
@@ -62,11 +69,12 @@ export async function addDocument(docData: DocumentFormValues & { name: string }
 
 // UPDATE (metadata only)
 export async function updateDocument(documentId: string, docData: DocumentFormValues & { name: string }): Promise<Document> {
+  const db = getDb();
+  if (!db) throw new Error("Firebase DB not initialized");
   const docRef = doc(db, 'documents', documentId);
   const tags = docData.tagsString ? docData.tagsString.split(',').map(t => t.trim()).filter(t => t) : [];
   
   await updateDoc(docRef, {
-    // name: docData.name, // O nome do arquivo não deve ser alterado sem alterar o arquivo
     process: docData.process,
     tags: tags,
     updatedAt: serverTimestamp(),
@@ -78,6 +86,10 @@ export async function updateDocument(documentId: string, docData: DocumentFormVa
 
 // DELETE
 export async function deleteDocument(document: Document): Promise<void> {
+  const db = getDb();
+  const storage = getStorageInstance();
+  if (!db || !storage) throw new Error("Firebase not initialized");
+
   // Delete file from storage
   if (document.filePath) {
       const fileRef = ref(storage, document.filePath);
@@ -97,6 +109,8 @@ export async function deleteDocument(document: Document): Promise<void> {
 
 // DOWNLOAD URL GETTER
 export async function getDownloadUrl(filePath: string): Promise<string> {
+    const storage = getStorageInstance();
+    if (!storage) throw new Error("Firebase Storage not initialized");
     const fileRef = ref(storage, filePath);
     const url = await getDownloadURL(fileRef);
     return url;

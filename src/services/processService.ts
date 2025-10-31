@@ -1,9 +1,7 @@
 
-import { db } from '@/lib/firebase';
+import { getDb } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, type DocumentData, query, orderBy, limit, getDoc, Timestamp } from 'firebase/firestore';
 import type { Process, ProcessFormValues, TimelineEvent } from '@/components/processes/ProcessFormDialog';
-
-const processesCollectionRef = collection(db, 'processes');
 
 // Helper para remover chaves indefinidas de um objeto, agora de forma recursiva
 const removeUndefinedKeys = (obj: any): any => {
@@ -50,6 +48,9 @@ const fromFirestore = (docSnap: DocumentData): Process => {
 
 // READ ALL
 export async function getProcesses(): Promise<Process[]> {
+  const db = getDb();
+  if (!db) throw new Error("Firebase DB not initialized");
+  const processesCollectionRef = collection(db, 'processes');
   const q = query(processesCollectionRef, orderBy("createdAt", "desc"));
   const querySnapshot = await getDocs(q);
   return querySnapshot.docs.map(fromFirestore);
@@ -57,6 +58,9 @@ export async function getProcesses(): Promise<Process[]> {
 
 // READ RECENT
 export async function getRecentProcesses(count?: number): Promise<Process[]> {
+    const db = getDb();
+    if (!db) throw new Error("Firebase DB not initialized");
+    const processesCollectionRef = collection(db, 'processes');
     const q = count 
         ? query(processesCollectionRef, orderBy("createdAt", "desc"), limit(count))
         : query(processesCollectionRef, orderBy("createdAt", "desc"));
@@ -68,6 +72,9 @@ export async function getRecentProcesses(count?: number): Promise<Process[]> {
 
 // CREATE
 export async function addProcess(processData: Omit<Process, 'id' | 'createdAt'>): Promise<Process> {
+  const db = getDb();
+  if (!db) throw new Error("Firebase DB not initialized");
+  const processesCollectionRef = collection(db, 'processes');
   const cleanData = removeUndefinedKeys(processData);
   const docRef = await addDoc(processesCollectionRef, {
     ...cleanData,
@@ -79,6 +86,8 @@ export async function addProcess(processData: Omit<Process, 'id' | 'createdAt'>)
 
 // UPDATE
 export async function updateProcess(processId: string, processData: ProcessFormValues & { timeline?: TimelineEvent[] }): Promise<Process> {
+  const db = getDb();
+  if (!db) throw new Error("Firebase DB not initialized");
   const processDocRef = doc(db, 'processes', processId);
   const cleanData = removeUndefinedKeys(processData);
   await updateDoc(processDocRef, {
@@ -92,8 +101,8 @@ export async function updateProcess(processId: string, processData: ProcessFormV
 
 // DELETE
 export async function deleteProcess(processId: string): Promise<void> {
+  const db = getDb();
+  if (!db) throw new Error("Firebase DB not initialized");
   const processDocRef = doc(db, 'processes', processId);
   await deleteDoc(processDocRef);
 }
-
-    
