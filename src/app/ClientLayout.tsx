@@ -99,38 +99,38 @@ function PanelLeftIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-function AuthWrapper({ children }: { children: React.ReactNode }) {
-    const { currentUser, isLoading } = useAuth();
-    const router = useRouter();
-    const pathname = usePathname();
-
-    useEffect(() => {
-        if (!isLoading && !currentUser && pathname !== '/login') {
-            router.push('/login');
-        }
-        if (!isLoading && currentUser && pathname === '/login') {
-            router.push('/');
-        }
-    }, [currentUser, isLoading, pathname, router]);
-
-    if (isLoading) {
-        return null; // The loading state is handled by the AuthProvider
-    }
-    
-    if (!currentUser && pathname !== '/login') {
-        return null; // Avoid rendering children while redirecting
-    }
-
-    if (currentUser && pathname === '/login') {
-        return null; // Avoid rendering login page while redirecting
-    }
-
-    return <>{children}</>;
-}
-
-
 function AppLayout({ children }: { children: React.ReactNode }) {
   const [isNotepadOpen, setIsNotepadOpen] = useState(false);
+  const { currentUser } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    // If auth is done loading and there's no user, redirect to login.
+    if (!currentUser && pathname !== '/login') {
+      router.push('/login');
+    }
+    // If there is a user and they are on the login page, redirect to home.
+    if (currentUser && pathname === '/login') {
+      router.push('/');
+    }
+  }, [currentUser, pathname, router]);
+
+  // If there's no user and we are not on the login page, don't render anything
+  // while the redirect happens.
+  if (!currentUser && pathname !== '/login') {
+    return null;
+  }
+  
+  // If there is a user and we are on the login page, don't render the login page.
+  if (currentUser && pathname === '/login') {
+    return null;
+  }
+
+  // Render the login page without the main app layout.
+  if (pathname === '/login') {
+    return <>{children}</>;
+  }
 
   return (
     <UserProvider>
@@ -207,17 +207,9 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 }
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-
   return (
     <AuthProvider>
-        {pathname === '/login' ? (
-            children
-        ) : (
-            <AuthWrapper>
-                <AppLayout>{children}</AppLayout>
-            </AuthWrapper>
-        )}
+        <AppLayout>{children}</AppLayout>
     </AuthProvider>
   );
 }
