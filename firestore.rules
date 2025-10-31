@@ -2,10 +2,35 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Permite acesso de leitura e escrita a qualquer documento
-    // somente se o usuário estiver autenticado.
+    
+    // Regra geral: permite escrita apenas para usuários autenticados.
     match /{document=**} {
-      allow read, write: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // Permite que qualquer pessoa leia as coleções principais (clientes, processos, eventos, etc.)
+    match /clients/{clientId} {
+      allow read: if true;
+    }
+
+    match /processes/{processId} {
+      allow read: if true;
+    }
+
+    match /events/{eventId} {
+      allow read: if true;
+    }
+
+    match /documents/{documentId} {
+      allow read: if true;
+    }
+    
+    match /documentTemplates/{templateId} {
+      allow read: if true;
+    }
+
+    match /notepad/{docId} {
+       allow read, write: if request.auth != null;
     }
   }
 }
