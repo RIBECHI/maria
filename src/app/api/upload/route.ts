@@ -16,7 +16,7 @@ const BUCKET_NAME = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
 if (!getApps().length) {
   try {
     initializeApp({
-      credential: cert(serviceAccount),
+      credential: cert(serviceAccount as any),
       storageBucket: BUCKET_NAME,
     });
   } catch (e: any) {
