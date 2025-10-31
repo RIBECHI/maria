@@ -11,7 +11,10 @@ interface AuthContextType {
   isLoading: boolean;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType>({
+  currentUser: null,
+  isLoading: true,
+});
 
 const FullPageLoader = () => (
     <div className="flex flex-col h-screen">
@@ -38,35 +41,24 @@ const FullPageLoader = () => (
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
-  const [isClient, setIsClient] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // This effect runs only on the client, after the initial render.
-    setIsClient(true);
-  }, []);
-
-  useEffect(() => {
-    if (!isClient) return; // Don't run auth logic on the server or during the first render.
-
     const auth = getAuth(app);
     const unsubscribe = onAuthStateChanged(auth, user => {
       setCurrentUser(user);
-      setIsLoadingAuth(false);
+      setIsLoading(false);
     });
 
+    // Cleanup subscription on unmount
     return () => unsubscribe();
-  }, [isClient]);
+  }, []);
 
-  // Render a loader if we are still authenticating OR if we are on the server/first client render.
-  // This guarantees that the initial server-rendered HTML matches the first client-rendered HTML.
-  if (isLoadingAuth || !isClient) {
-    return <FullPageLoader />;
-  }
+  const value = { currentUser, isLoading };
 
   return (
-    <AuthContext.Provider value={{ currentUser, isLoading: isLoadingAuth }}>
-      {children}
+    <AuthContext.Provider value={value}>
+      {isLoading ? <FullPageLoader /> : children}
     </AuthContext.Provider>
   );
 };

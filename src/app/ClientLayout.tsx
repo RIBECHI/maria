@@ -99,39 +99,9 @@ function PanelLeftIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-function AppLayout({ children }: { children: React.ReactNode }) {
+function ProtectedAppLayout({ children }: { children: React.ReactNode }) {
   const [isNotepadOpen, setIsNotepadOpen] = useState(false);
-  const { currentUser } = useAuth();
-  const router = useRouter();
-  const pathname = usePathname();
-
-  useEffect(() => {
-    // If auth is done loading and there's no user, redirect to login.
-    if (!currentUser && pathname !== '/login') {
-      router.push('/login');
-    }
-    // If there is a user and they are on the login page, redirect to home.
-    if (currentUser && pathname === '/login') {
-      router.push('/');
-    }
-  }, [currentUser, pathname, router]);
-
-  // If there's no user and we are not on the login page, don't render anything
-  // while the redirect happens.
-  if (!currentUser && pathname !== '/login') {
-    return null;
-  }
   
-  // If there is a user and we are on the login page, don't render the login page.
-  if (currentUser && pathname === '/login') {
-    return null;
-  }
-
-  // Render the login page without the main app layout.
-  if (pathname === '/login') {
-    return <>{children}</>;
-  }
-
   return (
     <UserProvider>
       <JusticeSymbolWatermark />
@@ -206,10 +176,42 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
+
+function AppRouter({ children }: { children: React.ReactNode }) {
+  const { currentUser, isLoading } = useAuth();
+  const pathname = usePathname();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isLoading) return; // Don't do anything while loading
+
+    const isLoginPage = pathname === '/login';
+
+    if (!currentUser && !isLoginPage) {
+      router.push('/login');
+    } else if (currentUser && isLoginPage) {
+      router.push('/');
+    }
+  }, [currentUser, isLoading, pathname, router]);
+
+  // While loading, or if we are about to redirect, we can show nothing or a loader
+  if (isLoading || (!currentUser && pathname !== '/login') || (currentUser && pathname === '/login')) {
+    return null; // The AuthProvider will show a full page loader
+  }
+
+  // If user is not logged in, only render children if on the login page
+  if (!currentUser) {
+    return pathname === '/login' ? <>{children}</> : null;
+  }
+  
+  // If user is logged in, render the protected layout
+  return <ProtectedAppLayout>{children}</ProtectedAppLayout>;
+}
+
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
-        <AppLayout>{children}</AppLayout>
+        <AppRouter>{children}</AppRouter>
     </AuthProvider>
   );
 }
