@@ -42,10 +42,14 @@ import ThemeToggle from '@/components/layout/ThemeToggle';
 import type React from 'react';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 import { useRouter, usePathname } from 'next/navigation';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, updateProfile } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
 
 const navItems = [
   { href: '/', label: 'Painel', icon: <LayoutDashboard /> },
@@ -104,19 +108,25 @@ function PanelLeftIcon(props: React.SVGProps<SVGSVGElement>) {
 }
 
 function AuthWrapper({ children }: { children: React.ReactNode }) {
-    const { user, setUser } = useUser();
+    const { user, setUser, isLoading, setIsLoading } = useUser();
+    const [isDisplayNameModalOpen, setIsDisplayNameModalOpen] = useState(false);
+    const [newDisplayName, setNewDisplayName] = useState('');
+    const { toast } = useToast();
     const router = useRouter();
     const pathname = usePathname();
-    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         try {
             const auth = getAuth(app);
             const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
                 if (firebaseUser) {
+                    const needsDisplayName = !firebaseUser.displayName;
+                    if (needsDisplayName) {
+                        setIsDisplayNameModalOpen(true);
+                    }
                     setUser({
                         uid: firebaseUser.uid,
-                        displayName: firebaseUser.displayName || "Usuário",
+                        displayName: firebaseUser.displayName || "Novo Usuário",
                         email: firebaseUser.email || "",
                         photoURL: firebaseUser.photoURL || "",
                     });
@@ -128,19 +138,33 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
     
             return () => unsubscribe();
         } catch (error) {
-            // Se a inicialização do Firebase falhar (por exemplo, config ausente no .env),
-            // tratamos como se o usuário estivesse deslogado e paramos o loading.
             console.error("Firebase Auth initialization error:", error);
             setUser(null);
             setIsLoading(false);
         }
-    }, [setUser]);
+    }, [setUser, setIsLoading]);
 
     useEffect(() => {
         if (!isLoading && !user && pathname !== '/login') {
             router.push('/login');
         }
     }, [isLoading, user, pathname, router]);
+
+    const handleUpdateDisplayName = async () => {
+        const auth = getAuth(app);
+        const currentUser = auth.currentUser;
+        if (currentUser && newDisplayName.trim()) {
+            try {
+                await updateProfile(currentUser, { displayName: newDisplayName.trim() });
+                setUser({ ...user!, displayName: newDisplayName.trim() });
+                setIsDisplayNameModalOpen(false);
+                toast({ title: "Nome de exibição salvo!", description: "Seu perfil foi atualizado." });
+            } catch (error: any) {
+                toast({ title: "Erro ao salvar nome", description: error.message, variant: "destructive" });
+            }
+        }
+    };
+
 
     if (isLoading || (!user && pathname !== '/login')) {
       return (
@@ -157,7 +181,38 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
       return <>{children}</>;
     }
 
-    return <AppLayout>{children}</AppLayout>;
+    return (
+        <>
+            <AppLayout>{children}</AppLayout>
+            <Dialog open={isDisplayNameModalOpen} onOpenChange={setIsDisplayNameModalOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Bem-vindo(a) ao LexManager!</DialogTitle>
+                        <DialogDescription>
+                            Para personalizar sua experiência, por favor, insira como você gostaria de ser chamado(a).
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="displayName" className="text-right">
+                                Nome
+                            </Label>
+                            <Input
+                                id="displayName"
+                                value={newDisplayName}
+                                onChange={(e) => setNewDisplayName(e.target.value)}
+                                className="col-span-3"
+                                placeholder="Seu nome ou do escritório"
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button onClick={handleUpdateDisplayName}>Salvar Nome</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </>
+    );
 }
 
 
@@ -255,3 +310,5 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     </UserProvider>
   );
 }
+
+    

@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import React, { createContext, useContext, useState, type ReactNode } from 'react';
 
 // Nova interface para o objeto de usuário, alinhada com o Firebase Auth
 export interface AuthUser {
@@ -14,6 +14,8 @@ export interface AuthUser {
 interface UserContextType {
   user: AuthUser | null;
   setUser: (user: AuthUser | null) => void;
+  isLoading: boolean;
+  setIsLoading: (isLoading: boolean) => void;
   // Mantemos userName e setUserName para compatibilidade com partes do app que ainda não foram migradas
   userName: string;
   setUserName: (name: string) => void;
@@ -24,32 +26,34 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true); // Começa como true para esperar a verificação do onAuthStateChanged
   const [userName, setUserNameState] = useState("Advogado"); // Valor padrão
   const userTitle = "Advogado";
 
-  useEffect(() => {
-    // Quando o usuário do Firebase mudar, atualiza o 'userName' também
-    if (user) {
+  // Sincroniza o userName com o displayName do objeto de usuário do Firebase
+  React.useEffect(() => {
+    if (user?.displayName) {
       setUserNameState(user.displayName);
     } else {
-      // Se não houver usuário, verifica o localStorage por um nome salvo (útil para o modo offline ou pré-login)
-      const storedName = localStorage.getItem('userName');
-      setUserNameState(storedName || "Advogado");
+      // Se não houver usuário, usa um valor padrão
+      setUserNameState("Advogado");
     }
   }, [user]);
 
   const setUserName = (name: string) => {
-    localStorage.setItem('userName', name);
-    setUserNameState(name);
-    // Também atualizamos o objeto de usuário se ele existir
+    // Esta função agora pode ser usada para atualizar o perfil do Firebase
+    // A lógica de salvar no localStorage e atualizar o estado do Firebase é movida para o AuthWrapper
     if (user) {
       setUser({ ...user, displayName: name });
     }
+    setUserNameState(name);
   };
 
   const contextValue = {
     user,
     setUser,
+    isLoading,
+    setIsLoading,
     userName,
     setUserName,
     userTitle,
@@ -69,3 +73,5 @@ export const useUser = () => {
   }
   return context;
 };
+
+    

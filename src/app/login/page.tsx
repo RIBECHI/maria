@@ -1,47 +1,96 @@
 
 "use client";
 
-import { getAuth, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import * as React from "react";
+import { useForm, type SubmitHandler } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { app } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import Logo from "@/components/layout/Logo";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
 
-// SVG for Google Icon
-const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 48 48" {...props}>
-    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24s.92 7.54 2.56 10.78l7.97-6.19z"/>
-    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-    <path fill="none" d="M0 0h48v48H0z"/>
-  </svg>
-);
+const loginSchema = z.object({
+  email: z.string().email({ message: "Por favor, insira um e-mail válido." }),
+  password: z.string().min(6, { message: "A senha deve ter pelo menos 6 caracteres." }),
+});
+
+const registerSchema = z.object({
+  displayName: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres."}),
+  email: z.string().email({ message: "Por favor, insira um e-mail válido." }),
+  password: z.string().min(6, { message: "A senha deve ter pelo menos 6 caracteres." }),
+});
 
 
 export default function LoginPage() {
+  const [isLoginView, setIsLoginView] = React.useState(true);
+  const [isLoading, setIsLoading] = React.useState(false);
   const { toast } = useToast();
   const router = useRouter();
 
-  const handleGoogleSignIn = async () => {
+  const loginForm = useForm<z.infer<typeof loginSchema>>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: "", password: "" },
+  });
+
+  const registerForm = useForm<z.infer<typeof registerSchema>>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: { displayName: "", email: "", password: "" },
+  });
+
+  const handleLogin: SubmitHandler<z.infer<typeof loginSchema>> = async (data) => {
+    setIsLoading(true);
     const auth = getAuth(app);
-    const provider = new GoogleAuthProvider();
     try {
-      await signInWithPopup(auth, provider);
+      await signInWithEmailAndPassword(auth, data.email, data.password);
       toast({
         title: "Login bem-sucedido!",
         description: "Bem-vindo(a) de volta!",
       });
-      router.push('/'); // Redireciona para o painel após o login
+      router.push('/');
     } catch (error: any) {
-      console.error("Erro no login com Google:", error);
+      console.error("Erro no login:", error);
       toast({
         title: "Erro no Login",
-        description: error.message || "Não foi possível fazer login com o Google. Tente novamente.",
+        description: error.code === 'auth/invalid-credential' 
+            ? "Credenciais inválidas. Verifique seu e-mail e senha."
+            : "Não foi possível fazer login. Tente novamente.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRegister: SubmitHandler<z.infer<typeof registerSchema>> = async (data) => {
+    setIsLoading(true);
+    const auth = getAuth(app);
+    try {
+        const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+        await updateProfile(userCredential.user, { displayName: data.displayName });
+
+        toast({
+            title: "Conta criada com sucesso!",
+            description: "Você será redirecionado para o painel.",
+        });
+        router.push('/');
+    } catch (error: any) {
+        console.error("Erro no registro:", error);
+        toast({
+            title: "Erro no Registro",
+            description: error.code === 'auth/email-already-in-use'
+                ? 'Este e-mail já está em uso. Tente fazer login.'
+                : 'Não foi possível criar sua conta. Tente novamente.',
+            variant: "destructive",
+        });
+    } finally {
+        setIsLoading(false);
     }
   };
 
@@ -53,15 +102,58 @@ export default function LoginPage() {
             <Logo className="h-16 w-16 text-primary" />
           </div>
           <CardTitle className="text-3xl font-headline">LexManager</CardTitle>
-          <CardDescription>Faça login para acessar seu painel</CardDescription>
+          <CardDescription>
+            {isLoginView ? "Faça login para acessar seu painel" : "Crie uma nova conta"}
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button onClick={handleGoogleSignIn} className="w-full" size="lg">
-            <GoogleIcon className="mr-2 h-5 w-5" />
-            Entrar com Google
-          </Button>
+          {isLoginView ? (
+            <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="login-email">E-mail</Label>
+                <Input id="login-email" type="email" placeholder="seu@email.com" {...loginForm.register("email")} />
+                {loginForm.formState.errors.email && <p className="text-xs text-destructive">{loginForm.formState.errors.email.message}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="login-password">Senha</Label>
+                <Input id="login-password" type="password" placeholder="******" {...loginForm.register("password")} />
+                 {loginForm.formState.errors.password && <p className="text-xs text-destructive">{loginForm.formState.errors.password.message}</p>}
+              </div>
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? <Loader2 className="animate-spin" /> : "Entrar"}
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
+               <div className="space-y-2">
+                <Label htmlFor="register-name">Nome Completo</Label>
+                <Input id="register-name" type="text" placeholder="Seu nome" {...registerForm.register("displayName")} />
+                {registerForm.formState.errors.displayName && <p className="text-xs text-destructive">{registerForm.formState.errors.displayName.message}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="register-email">E-mail</Label>
+                <Input id="register-email" type="email" placeholder="seu@email.com" {...registerForm.register("email")} />
+                {registerForm.formState.errors.email && <p className="text-xs text-destructive">{registerForm.formState.errors.email.message}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="register-password">Senha</Label>
+                <Input id="register-password" type="password" placeholder="Mínimo 6 caracteres" {...registerForm.register("password")} />
+                {registerForm.formState.errors.password && <p className="text-xs text-destructive">{registerForm.formState.errors.password.message}</p>}
+              </div>
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                 {isLoading ? <Loader2 className="animate-spin" /> : "Criar Conta"}
+              </Button>
+            </form>
+          )}
         </CardContent>
+        <CardFooter className="flex justify-center text-sm">
+            <Button variant="link" onClick={() => setIsLoginView(!isLoginView)}>
+                {isLoginView ? "Não tem uma conta? Crie agora" : "Já tem uma conta? Faça login"}
+            </Button>
+        </CardFooter>
       </Card>
     </div>
   );
 }
+
+    
