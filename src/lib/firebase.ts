@@ -21,12 +21,13 @@ let db: Firestore;
 let storage: FirebaseStorage;
 
 // Garante que a inicialização só aconteça no ambiente do navegador
-if (typeof window !== 'undefined') {
-  if (getApps().length === 0) {
-    app = initializeApp(firebaseConfig);
-  } else {
-    app = getApp();
-  }
+if (typeof window !== 'undefined' && !getApps().length) {
+  app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  db = getFirestore(app);
+  storage = getStorage(app);
+} else if (typeof window !== 'undefined') {
+  app = getApp();
   auth = getAuth(app);
   db = getFirestore(app);
   storage = getStorage(app);
