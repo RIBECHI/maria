@@ -1,6 +1,4 @@
 
-"use server";
-
 import { db, storage } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDoc, query, orderBy } from 'firebase/firestore';
 import type { Document } from '@/components/documents/DocumentFormDialog';

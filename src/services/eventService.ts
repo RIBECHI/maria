@@ -1,6 +1,4 @@
 
-"use server";
-
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, orderBy, limit, serverTimestamp, getDoc } from 'firebase/firestore';
 import type { CalendarEvent } from '@/components/agenda/EventFormDialog';
