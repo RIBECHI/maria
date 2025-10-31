@@ -18,25 +18,22 @@ let auth: Auth;
 let db: Firestore;
 let storage: FirebaseStorage;
 
-// Inicialização segura que só acontece se as variáveis estiverem presentes
-// Isso evita erros durante o build estático
-if (firebaseConfig.apiKey && firebaseConfig.projectId) {
-    app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+function initializeFirebase() {
+  if (firebaseConfig.apiKey && firebaseConfig.projectId) {
+    if (!getApps().length) {
+      app = initializeApp(firebaseConfig);
+    } else {
+      app = getApp();
+    }
     auth = getAuth(app);
     db = getFirestore(app);
     storage = getStorage(app);
-} else {
-    console.warn("Firebase config is missing or incomplete. Firebase services will not be available.");
-    // Criamos instâncias "dummy" para evitar que o app quebre se tentar importá-las
-    // @ts-ignore
-    app = null;
-    // @ts-ignore
-    auth = null;
-    // @ts-ignore
-    db = null;
-    // @ts-ignore
-    storage = null;
+  } else {
+    console.warn("Firebase config is missing or incomplete. Firebase services may not be available.");
+  }
 }
 
+// Chame a função de inicialização para que 'db', 'auth', 'storage' sejam populados.
+initializeFirebase();
 
 export { app, db, storage, auth };
