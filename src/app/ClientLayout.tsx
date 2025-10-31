@@ -100,7 +100,7 @@ function PanelLeftIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-function ProtectedAppLayout({ children }: { children: React.ReactNode }) {
+function AppLayout({ children }: { children: React.ReactNode }) {
   const [isNotepadOpen, setIsNotepadOpen] = useState(false);
   
   return (
@@ -178,52 +178,14 @@ function ProtectedAppLayout({ children }: { children: React.ReactNode }) {
 }
 
 
-function AppRouter({ children }: { children: React.ReactNode }) {
-  const { currentUser, isLoading } = useAuth();
+export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  useEffect(() => {
-    if (!isClient || isLoading) return;
-
-    const isLoginPage = pathname === '/login';
-
-    if (!currentUser && !isLoginPage) {
-      router.push('/login');
-    } else if (currentUser && isLoginPage) {
-      router.push('/');
-    }
-  }, [currentUser, isLoading, pathname, router, isClient]);
-
-  if (!isClient || isLoading) {
-    // Render nothing on the server and during initial client-side loading to prevent hydration mismatch
-    return null;
-  }
-  
   const isLoginPage = pathname === '/login';
 
-  if (!currentUser && isLoginPage) {
-    return <>{children}</>;
-  }
-
-  if (currentUser && !isLoginPage) {
-    return <ProtectedAppLayout>{children}</ProtectedAppLayout>;
-  }
-  
-  // For redirection cases, returning null prevents content flashing
-  return null;
-}
-
-export default function ClientLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
       <ErrorBoundary>
-        <AppRouter>{children}</AppRouter>
+        {isLoginPage ? children : <AppLayout>{children}</AppLayout>}
       </ErrorBoundary>
     </AuthProvider>
   );
