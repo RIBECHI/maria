@@ -18,22 +18,29 @@ let auth: Auth;
 let db: Firestore;
 let storage: FirebaseStorage;
 
-function initializeFirebase() {
-  if (firebaseConfig.apiKey && firebaseConfig.projectId) {
-    if (!getApps().length) {
-      app = initializeApp(firebaseConfig);
-    } else {
-      app = getApp();
-    }
-    auth = getAuth(app);
-    db = getFirestore(app);
-    storage = getStorage(app);
+if (firebaseConfig.apiKey && firebaseConfig.projectId) {
+  if (!getApps().length) {
+    app = initializeApp(firebaseConfig);
   } else {
-    console.warn("Firebase config is missing or incomplete. Firebase services may not be available.");
+    app = getApp();
   }
+  auth = getAuth(app);
+  db = getFirestore(app);
+  storage = getStorage(app);
+} else {
+  // Isso é um fallback para ambientes onde as variáveis de ambiente podem não estar disponíveis (como alguns estágios de build).
+  // No entanto, ele garante que as variáveis não sejam 'undefined' no cliente.
+  console.warn("Firebase config is missing or incomplete. Firebase services may not be available.");
+  if (!getApps().length) {
+      // Inicializa com um config 'vazio' para evitar que o app quebre,
+      // embora as chamadas ao Firebase falharão, o erro será mais informativo.
+      app = initializeApp({});
+  } else {
+      app = getApp();
+  }
+  auth = getAuth(app);
+  db = getFirestore(app);
+  storage = getStorage(app);
 }
-
-// Chame a função de inicialização para que 'db', 'auth', 'storage' sejam populados.
-initializeFirebase();
 
 export { app, db, storage, auth };
