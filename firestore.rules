@@ -3,35 +3,10 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Regra geral: permite escrita apenas para usuários autenticados.
+    // Regra geral: permite leitura e escrita em qualquer documento
+    // apenas para usuários autenticados.
     match /{document=**} {
-      allow write: if request.auth != null;
-    }
-
-    // Permite que qualquer pessoa leia as coleções principais
-    match /clients/{clientId} {
-      allow get, list: if true;
-    }
-
-    match /processes/{processId} {
-      allow get, list: if true;
-    }
-
-    match /events/{eventId} {
-      allow get, list: if true;
-    }
-
-    match /documents/{documentId} {
-      allow get, list: if true;
-    }
-    
-    match /documentTemplates/{templateId} {
-      allow get, list: if true;
-    }
-
-    // O bloco de notas só pode ser lido/escrito por usuários autenticados
-    match /notepad/{docId} {
-       allow read, write: if request.auth != null;
+      allow read, write: if request.auth != null;
     }
   }
 }
