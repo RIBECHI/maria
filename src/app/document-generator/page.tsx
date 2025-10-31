@@ -62,7 +62,8 @@ export default function DocumentGeneratorPage() {
     if (!selectedClientId) return [];
     const selectedClient = clients.find(c => c.id === selectedClientId);
     if (!selectedClient) return [];
-    return processes.filter(p => p.client === selectedClient.name);
+    // Corrected logic: Check if the client's name is included in the process's clients array.
+    return processes.filter(p => p.clients && p.clients.includes(selectedClient.name));
   }, [selectedClientId, clients, processes]);
 
   const handleGenerate = () => {
@@ -81,9 +82,12 @@ export default function DocumentGeneratorPage() {
           throw new Error("Processo ou modelo não encontrado.");
       }
 
-      const client = clients.find(c => c.name === process.client);
+      // Since a process can have multiple clients, we'll use the first client for template filling.
+      // This could be improved in the future to let the user choose which client to use if multiple exist.
+      const primaryClientName = process.clients[0];
+      const client = clients.find(c => c.name === primaryClientName);
       if (!client) {
-          throw new Error(`Cliente "${process.client}" não encontrado.`);
+          throw new Error(`Cliente "${primaryClientName}" não encontrado.`);
       }
 
       let content = template.content;
