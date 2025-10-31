@@ -1,12 +1,10 @@
 
-import { db } from '@/lib/firebase';
+import { getDb } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy, limit, type DocumentData, getDoc } from 'firebase/firestore';
 import type { Client, ClientFormValues } from '@/components/clients/ClientFormDialog';
 import { Timestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
-
-const clientsCollectionRef = collection(db, 'clients');
 
 const fromFirestore = (docSnap: DocumentData): Client => {
   const data = docSnap.data();
@@ -29,10 +27,12 @@ const fromFirestore = (docSnap: DocumentData): Client => {
 
 // READ
 export async function getClients(): Promise<Client[]> {
+  const db = getDb();
+  const clientsCollectionRef = collection(db, 'clients');
   const q = query(clientsCollectionRef, orderBy("name", "asc"));
   const querySnapshot = await getDocs(q).catch(async (serverError) => {
     const permissionError = new FirestorePermissionError({
-        path: clientsCollectionRef.path,
+        path: 'clients',
         operation: 'list',
     } satisfies SecurityRuleContext);
     errorEmitter.emit('permission-error', permissionError);
@@ -43,10 +43,12 @@ export async function getClients(): Promise<Client[]> {
 
 // READ RECENT
 export async function getRecentClients(count: number = 3): Promise<Client[]> {
+  const db = getDb();
+  const clientsCollectionRef = collection(db, 'clients');
   const q = query(clientsCollectionRef, orderBy("createdAt", "desc"), limit(count));
   const querySnapshot = await getDocs(q).catch(async (serverError) => {
     const permissionError = new FirestorePermissionError({
-        path: clientsCollectionRef.path,
+        path: 'clients',
         operation: 'list',
     } satisfies SecurityRuleContext);
     errorEmitter.emit('permission-error', permissionError);
@@ -57,6 +59,8 @@ export async function getRecentClients(count: number = 3): Promise<Client[]> {
 
 // CREATE
 export async function addClient(clientData: Omit<Client, 'id' | 'createdAt'>): Promise<Client> {
+    const db = getDb();
+    const clientsCollectionRef = collection(db, 'clients');
     const dataWithTimestamp = {
         ...clientData,
         createdAt: serverTimestamp(),
@@ -64,7 +68,7 @@ export async function addClient(clientData: Omit<Client, 'id' | 'createdAt'>): P
     const docRef = await addDoc(clientsCollectionRef, dataWithTimestamp)
         .catch(async (serverError) => {
             const permissionError = new FirestorePermissionError({
-                path: clientsCollectionRef.path,
+                path: 'clients',
                 operation: 'create',
                 requestResourceData: dataWithTimestamp,
             } satisfies SecurityRuleContext);
@@ -77,6 +81,7 @@ export async function addClient(clientData: Omit<Client, 'id' | 'createdAt'>): P
 
 // UPDATE
 export async function updateClient(clientId: string, clientData: ClientFormValues): Promise<Client> {
+    const db = getDb();
     const clientDocRef = doc(db, 'clients', clientId);
     const dataWithTimestamp = {
         ...clientData,
@@ -99,8 +104,9 @@ export async function updateClient(clientId: string, clientData: ClientFormValue
 
 // DELETE
 export async function deleteClient(clientId: string): Promise<void> {
+    const db = getDb();
     const clientDocRef = doc(db, 'clients', clientId);
-    deleteDoc(clientDocRef)
+    await deleteDoc(clientDocRef)
         .catch(async (serverError) => {
             const permissionError = new FirestorePermissionError({
                 path: clientDocRef.path,
@@ -110,3 +116,5 @@ export async function deleteClient(clientId: string): Promise<void> {
             throw permissionError;
         });
 }
+
+    

@@ -1,5 +1,5 @@
 
-import { db } from '@/lib/firebase';
+import { getDb } from '@/lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
@@ -12,10 +12,10 @@ export interface Note {
   completed?: boolean;
 }
 
-const notepadDocRef = doc(db, 'notepad', 'main');
-
 // GET
 export async function getNotes(): Promise<Note[]> {
+  const db = getDb();
+  const notepadDocRef = doc(db, 'notepad', 'main');
   const docSnap = await getDoc(notepadDocRef).catch(async (serverError) => {
     const permissionError = new FirestorePermissionError({
         path: notepadDocRef.path,
@@ -40,6 +40,8 @@ export async function getNotes(): Promise<Note[]> {
 
 // SAVE
 export async function saveNotes(notes: Note[]): Promise<void> {
+  const db = getDb();
+  const notepadDocRef = doc(db, 'notepad', 'main');
   // A ordenação já é feita no getNotes e ao adicionar, mas garantimos aqui antes de salvar.
   const sortedNotes = [...notes].sort((a, b) => 
     (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0)
@@ -50,7 +52,7 @@ export async function saveNotes(notes: Note[]): Promise<void> {
     updatedAt: serverTimestamp(),
   };
 
-  setDoc(notepadDocRef, dataToSave)
+  await setDoc(notepadDocRef, dataToSave)
     .catch(async (serverError) => {
         const permissionError = new FirestorePermissionError({
             path: notepadDocRef.path,
@@ -67,3 +69,5 @@ export async function getNotepadTasks(): Promise<Note[]> {
     const allNotes = await getNotes();
     return allNotes.filter(note => note.isTask);
 }
+
+    

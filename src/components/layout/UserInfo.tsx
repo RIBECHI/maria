@@ -4,7 +4,7 @@
 import { useUser } from '@/contexts/UserContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { signOut } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { getAuthInstance } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { LogOut } from 'lucide-react';
 import {
@@ -18,6 +18,7 @@ import { Button } from '../ui/button';
 export default function UserInfo() {
   const { user, setUserName } = useUser(); // Agora pegamos o objeto 'user'
   const { toast } = useToast();
+  const auth = getAuthInstance();
 
   const handleSignOut = async () => {
     try {
@@ -74,3 +75,5 @@ export default function UserInfo() {
     </DropdownMenu>
   );
 }
+
+    

@@ -1,12 +1,10 @@
 
-import { db } from '@/lib/firebase';
+import { getDb } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, orderBy, limit, serverTimestamp, getDoc } from 'firebase/firestore';
 import type { CalendarEvent } from '@/components/agenda/EventFormDialog';
 import { startOfToday, format } from 'date-fns';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
-
-const eventsCollectionRef = collection(db, 'events');
 
 const fromFirestore = (docSnap: any): CalendarEvent => {
     const data = docSnap.data();
@@ -27,10 +25,12 @@ const fromFirestore = (docSnap: any): CalendarEvent => {
 
 // READ ALL
 export async function getEvents(): Promise<CalendarEvent[]> {
+  const db = getDb();
+  const eventsCollectionRef = collection(db, 'events');
   const q = query(eventsCollectionRef, orderBy('date', 'asc'));
   const querySnapshot = await getDocs(q).catch(async (serverError) => {
     const permissionError = new FirestorePermissionError({
-        path: eventsCollectionRef.path,
+        path: 'events',
         operation: 'list',
     } satisfies SecurityRuleContext);
     errorEmitter.emit('permission-error', permissionError);
@@ -41,6 +41,8 @@ export async function getEvents(): Promise<CalendarEvent[]> {
 
 // READ for Dashboard/Sidebar
 export async function getEventsForDashboard(count: number): Promise<CalendarEvent[]> {
+  const db = getDb();
+  const eventsCollectionRef = collection(db, 'events');
   const today = format(startOfToday(), 'yyyy-MM-dd');
   const q = query(
     eventsCollectionRef, 
@@ -51,7 +53,7 @@ export async function getEventsForDashboard(count: number): Promise<CalendarEven
   
   const querySnapshot = await getDocs(q).catch(async (serverError) => {
     const permissionError = new FirestorePermissionError({
-        path: eventsCollectionRef.path,
+        path: 'events',
         operation: 'list',
     } satisfies SecurityRuleContext);
     errorEmitter.emit('permission-error', permissionError);
@@ -62,6 +64,8 @@ export async function getEventsForDashboard(count: number): Promise<CalendarEven
 
 // CREATE
 export async function addEvent(eventData: Omit<import("/home/user/app/src/components/agenda/EventFormDialog").EventFormValues, "clientId"> & { client?: string | undefined; }): Promise<CalendarEvent> {
+  const db = getDb();
+  const eventsCollectionRef = collection(db, 'events');
   const dataToSave = {
     ...eventData,
     createdAt: serverTimestamp(),
@@ -69,7 +73,7 @@ export async function addEvent(eventData: Omit<import("/home/user/app/src/compon
   const docRef = await addDoc(eventsCollectionRef, dataToSave)
     .catch(async (serverError) => {
         const permissionError = new FirestorePermissionError({
-            path: eventsCollectionRef.path,
+            path: 'events',
             operation: 'create',
             requestResourceData: dataToSave,
         } satisfies SecurityRuleContext);
@@ -82,6 +86,7 @@ export async function addEvent(eventData: Omit<import("/home/user/app/src/compon
 
 // UPDATE
 export async function updateEvent(eventId: string, eventData: Omit<import("/home/user/app/src/components/agenda/EventFormDialog").EventFormValues, "clientId"> & { client?: string | undefined; }): Promise<CalendarEvent> {
+  const db = getDb();
   const eventDocRef = doc(db, 'events', eventId);
   const dataToUpdate = {
     ...eventData,
@@ -103,8 +108,9 @@ export async function updateEvent(eventId: string, eventData: Omit<import("/home
 
 // DELETE
 export async function deleteEvent(eventId: string): Promise<void> {
+  const db = getDb();
   const eventDocRef = doc(db, 'events', eventId);
-  deleteDoc(eventDocRef)
+  await deleteDoc(eventDocRef)
     .catch(async (serverError) => {
         const permissionError = new FirestorePermissionError({
             path: eventDocRef.path,
@@ -114,3 +120,5 @@ export async function deleteEvent(eventId: string): Promise<void> {
         throw permissionError;
     });
 }
+
+    

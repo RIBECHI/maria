@@ -1,11 +1,9 @@
 
-import { db } from '@/lib/firebase';
+import { getDb } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, type DocumentData, query, orderBy, limit, getDoc, Timestamp } from 'firebase/firestore';
 import type { Process, ProcessFormValues, TimelineEvent } from '@/components/processes/ProcessFormDialog';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
-
-const processesCollectionRef = collection(db, 'processes');
 
 // Helper para remover chaves indefinidas de um objeto, agora de forma recursiva
 const removeUndefinedKeys = (obj: any): any => {
@@ -52,10 +50,12 @@ const fromFirestore = (docSnap: DocumentData): Process => {
 
 // READ ALL
 export async function getProcesses(): Promise<Process[]> {
+  const db = getDb();
+  const processesCollectionRef = collection(db, 'processes');
   const q = query(processesCollectionRef, orderBy("createdAt", "desc"));
   const querySnapshot = await getDocs(q).catch(async (serverError) => {
     const permissionError = new FirestorePermissionError({
-        path: processesCollectionRef.path,
+        path: 'processes',
         operation: 'list',
     } satisfies SecurityRuleContext);
     errorEmitter.emit('permission-error', permissionError);
@@ -66,13 +66,15 @@ export async function getProcesses(): Promise<Process[]> {
 
 // READ RECENT
 export async function getRecentProcesses(count?: number): Promise<Process[]> {
+    const db = getDb();
+    const processesCollectionRef = collection(db, 'processes');
     const q = count 
         ? query(processesCollectionRef, orderBy("createdAt", "desc"), limit(count))
         : query(processesCollectionRef, orderBy("createdAt", "desc"));
 
     const querySnapshot = await getDocs(q).catch(async (serverError) => {
         const permissionError = new FirestorePermissionError({
-            path: processesCollectionRef.path,
+            path: 'processes',
             operation: 'list',
         } satisfies SecurityRuleContext);
         errorEmitter.emit('permission-error', permissionError);
@@ -84,6 +86,8 @@ export async function getRecentProcesses(count?: number): Promise<Process[]> {
 
 // CREATE
 export async function addProcess(processData: Omit<Process, 'id' | 'createdAt'>): Promise<Process> {
+  const db = getDb();
+  const processesCollectionRef = collection(db, 'processes');
   const cleanData = removeUndefinedKeys(processData);
   const dataToSave = {
     ...cleanData,
@@ -92,7 +96,7 @@ export async function addProcess(processData: Omit<Process, 'id' | 'createdAt'>)
   const docRef = await addDoc(processesCollectionRef, dataToSave)
     .catch(async (serverError) => {
         const permissionError = new FirestorePermissionError({
-            path: processesCollectionRef.path,
+            path: 'processes',
             operation: 'create',
             requestResourceData: dataToSave,
         } satisfies SecurityRuleContext);
@@ -105,6 +109,7 @@ export async function addProcess(processData: Omit<Process, 'id' | 'createdAt'>)
 
 // UPDATE
 export async function updateProcess(processId: string, processData: ProcessFormValues & { timeline?: TimelineEvent[] }): Promise<Process> {
+  const db = getDb();
   const processDocRef = doc(db, 'processes', processId);
   const cleanData = removeUndefinedKeys(processData);
   const dataToUpdate = {
@@ -128,8 +133,9 @@ export async function updateProcess(processId: string, processData: ProcessFormV
 
 // DELETE
 export async function deleteProcess(processId: string): Promise<void> {
+  const db = getDb();
   const processDocRef = doc(db, 'processes', processId);
-  deleteDoc(processDocRef)
+  await deleteDoc(processDocRef)
     .catch(async (serverError) => {
         const permissionError = new FirestorePermissionError({
             path: processDocRef.path,
@@ -139,3 +145,5 @@ export async function deleteProcess(processId: string): Promise<void> {
         throw permissionError;
     });
 }
+
+    

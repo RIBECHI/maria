@@ -1,12 +1,10 @@
 
-import { db, storage } from '@/lib/firebase';
+import { getDb } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDoc, query, orderBy } from 'firebase/firestore';
 import type { Document } from '@/components/documents/DocumentFormDialog';
 import type { DocumentData } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
-
-const documentsCollectionRef = collection(db, 'documents');
 
 const fromFirestore = (docSnap: DocumentData): Document => {
   const data = docSnap.data();
@@ -27,10 +25,12 @@ const fromFirestore = (docSnap: DocumentData): Document => {
 
 // READ
 export async function getDocuments(): Promise<Document[]> {
+  const db = getDb();
+  const documentsCollectionRef = collection(db, 'documents');
   const q = query(documentsCollectionRef, orderBy("createdAt", "desc"));
   const querySnapshot = await getDocs(q).catch(async (serverError) => {
     const permissionError = new FirestorePermissionError({
-        path: documentsCollectionRef.path,
+        path: 'documents',
         operation: 'list',
     } satisfies SecurityRuleContext);
     errorEmitter.emit('permission-error', permissionError);
@@ -41,6 +41,8 @@ export async function getDocuments(): Promise<Document[]> {
 
 // CREATE
 export async function addDocument(docData: { process: string; tagsString?: string | undefined; name: string; }, filePath: string): Promise<Document> {
+  const db = getDb();
+  const documentsCollectionRef = collection(db, 'documents');
   const tags = docData.tagsString ? docData.tagsString.split(',').map(t => t.trim()).filter(Boolean) : [];
   
   const dataToSave = {
@@ -55,7 +57,7 @@ export async function addDocument(docData: { process: string; tagsString?: strin
   const docRef = await addDoc(documentsCollectionRef, dataToSave)
     .catch(async (serverError) => {
         const permissionError = new FirestorePermissionError({
-            path: documentsCollectionRef.path,
+            path: 'documents',
             operation: 'create',
             requestResourceData: dataToSave,
         } satisfies SecurityRuleContext);
@@ -69,6 +71,7 @@ export async function addDocument(docData: { process: string; tagsString?: strin
 
 // UPDATE (metadata only)
 export async function updateDocument(documentId: string, docData: { process: string, tags: string[] }): Promise<Document> {
+  const db = getDb();
   const docRef = doc(db, 'documents', documentId);
   const dataToUpdate = {
     process: docData.process,
@@ -93,8 +96,9 @@ export async function updateDocument(documentId: string, docData: { process: str
 
 // DELETE
 export async function deleteDocument(document: Document): Promise<void> {
+  const db = getDb();
   const docRef = doc(db, 'documents', document.id);
-  deleteDoc(docRef)
+  await deleteDoc(docRef)
     .catch(async (serverError) => {
         const permissionError = new FirestorePermissionError({
             path: docRef.path,
@@ -112,3 +116,5 @@ export async function getDownloadUrl(filePath: string): Promise<string> {
     // Usa o proxy para obter a URL de download
     return `/v0/b/${bucketName}/o/${encodedFilePath}?alt=media`;
 }
+
+    

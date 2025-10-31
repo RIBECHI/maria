@@ -42,7 +42,7 @@ import type React from 'react';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 import { useRouter, usePathname } from 'next/navigation';
 import { onAuthStateChanged, updateProfile } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { getAuthInstance } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -190,6 +190,7 @@ function AuthWrapper({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const router = useRouter();
   const pathname = usePathname();
+  const auth = getAuthInstance();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
@@ -214,7 +215,7 @@ function AuthWrapper({ children }: { children: ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, [pathname, router, setUser]);
+  }, [pathname, router, setUser, auth]);
 
   const handleUpdateDisplayName = async () => {
     const currentUser = auth.currentUser;
@@ -296,3 +297,5 @@ export default function AppProviders({ children }: { children: ReactNode }) {
     </UserProvider>
   );
 }
+
+    
