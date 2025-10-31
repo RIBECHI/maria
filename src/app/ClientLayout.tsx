@@ -39,6 +39,7 @@ import { NotepadSheet } from '@/components/layout/NotepadSheet';
 import UpcomingEventsSidebar from '@/components/layout/UpcomingEventsSidebar';
 import ThemeToggle from '@/components/layout/ThemeToggle';
 import type React from 'react';
+import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
 const navItems = [
   { href: '/', label: 'Painel', icon: <LayoutDashboard /> },
@@ -111,6 +112,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
   return (
     <UserProvider>
+      <FirebaseErrorListener />
       <JusticeSymbolWatermark />
       <SidebarProvider defaultOpen>
         <Sidebar collapsible="icon" variant="sidebar" side="left">

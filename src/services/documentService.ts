@@ -5,6 +5,8 @@ import { db, storage } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDoc, query, orderBy } from 'firebase/firestore';
 import type { Document } from '@/components/documents/DocumentFormDialog';
 import type { DocumentData } from 'firebase/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 const documentsCollectionRef = collection(db, 'documents');
 
@@ -28,7 +30,14 @@ const fromFirestore = (docSnap: DocumentData): Document => {
 // READ
 export async function getDocuments(): Promise<Document[]> {
   const q = query(documentsCollectionRef, orderBy("createdAt", "desc"));
-  const querySnapshot = await getDocs(q);
+  const querySnapshot = await getDocs(q).catch(async (serverError) => {
+    const permissionError = new FirestorePermissionError({
+        path: documentsCollectionRef.path,
+        operation: 'list',
+    } satisfies SecurityRuleContext);
+    errorEmitter.emit('permission-error', permissionError);
+    throw permissionError;
+  });
   return querySnapshot.docs.map(fromFirestore);
 }
 
@@ -36,14 +45,25 @@ export async function getDocuments(): Promise<Document[]> {
 export async function addDocument(docData: { process: string; tagsString?: string | undefined; name: string; }, filePath: string): Promise<Document> {
   const tags = docData.tagsString ? docData.tagsString.split(',').map(t => t.trim()).filter(Boolean) : [];
   
-  const docRef = await addDoc(documentsCollectionRef, {
+  const dataToSave = {
     name: docData.name,
     process: docData.process,
     tags: tags,
     uploadDate: new Date().toISOString().split('T')[0],
     createdAt: serverTimestamp(),
     filePath: filePath,
-  });
+  };
+
+  const docRef = await addDoc(documentsCollectionRef, dataToSave)
+    .catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: documentsCollectionRef.path,
+            operation: 'create',
+            requestResourceData: dataToSave,
+        } satisfies SecurityRuleContext);
+        errorEmitter.emit('permission-error', permissionError);
+        throw permissionError;
+    });
 
   const snapshot = await getDoc(docRef);
   return fromFirestore(snapshot);
@@ -52,12 +72,22 @@ export async function addDocument(docData: { process: string; tagsString?: strin
 // UPDATE (metadata only)
 export async function updateDocument(documentId: string, docData: { process: string, tags: string[] }): Promise<Document> {
   const docRef = doc(db, 'documents', documentId);
-  
-  await updateDoc(docRef, {
+  const dataToUpdate = {
     process: docData.process,
     tags: docData.tags,
     updatedAt: serverTimestamp(),
-  });
+  };
+
+  await updateDoc(docRef, dataToUpdate)
+    .catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: docRef.path,
+            operation: 'update',
+            requestResourceData: dataToUpdate,
+        } satisfies SecurityRuleContext);
+        errorEmitter.emit('permission-error', permissionError);
+        throw permissionError;
+    });
   
   const snapshot = await getDoc(docRef);
   return fromFirestore(snapshot);
@@ -65,21 +95,16 @@ export async function updateDocument(documentId: string, docData: { process: str
 
 // DELETE
 export async function deleteDocument(document: Document): Promise<void> {
-  if (document.filePath) {
-      const bucketName = "lexmanager.appspot.com";
-      const encodedFilePath = encodeURIComponent(document.filePath);
-      
-      // Usa o proxy para deletar
-      const proxyUrl = `/v0/b/${bucketName}/o/${encodedFilePath}`;
-      
-      await fetch(proxyUrl, { method: 'DELETE' }).catch(error => {
-          console.error("Error deleting file via proxy:", error);
-          // Não joga o erro para não impedir a deleção do registro no DB
-      });
-  }
-
   const docRef = doc(db, 'documents', document.id);
-  await deleteDoc(docRef);
+  deleteDoc(docRef)
+    .catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: docRef.path,
+            operation: 'delete',
+        } satisfies SecurityRuleContext);
+        errorEmitter.emit('permission-error', permissionError);
+        throw permissionError;
+    });
 }
 
 // DOWNLOAD URL GETTER

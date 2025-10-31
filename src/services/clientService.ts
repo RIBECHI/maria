@@ -3,6 +3,8 @@ import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy, limit, type DocumentData, getDoc } from 'firebase/firestore';
 import type { Client, ClientFormValues } from '@/components/clients/ClientFormDialog';
 import { Timestamp } from 'firebase/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 const clientsCollectionRef = collection(db, 'clients');
 
@@ -28,23 +30,47 @@ const fromFirestore = (docSnap: DocumentData): Client => {
 // READ
 export async function getClients(): Promise<Client[]> {
   const q = query(clientsCollectionRef, orderBy("name", "asc"));
-  const querySnapshot = await getDocs(q);
+  const querySnapshot = await getDocs(q).catch(async (serverError) => {
+    const permissionError = new FirestorePermissionError({
+        path: clientsCollectionRef.path,
+        operation: 'list',
+    } satisfies SecurityRuleContext);
+    errorEmitter.emit('permission-error', permissionError);
+    throw permissionError;
+  });
   return querySnapshot.docs.map(fromFirestore);
 }
 
 // READ RECENT
 export async function getRecentClients(count: number = 3): Promise<Client[]> {
   const q = query(clientsCollectionRef, orderBy("createdAt", "desc"), limit(count));
-  const querySnapshot = await getDocs(q);
+  const querySnapshot = await getDocs(q).catch(async (serverError) => {
+    const permissionError = new FirestorePermissionError({
+        path: clientsCollectionRef.path,
+        operation: 'list',
+    } satisfies SecurityRuleContext);
+    errorEmitter.emit('permission-error', permissionError);
+    throw permissionError;
+  });
   return querySnapshot.docs.map(fromFirestore);
 }
 
 // CREATE
 export async function addClient(clientData: Omit<Client, 'id' | 'createdAt'>): Promise<Client> {
-    const docRef = await addDoc(clientsCollectionRef, {
+    const dataWithTimestamp = {
         ...clientData,
         createdAt: serverTimestamp(),
-    });
+    };
+    const docRef = await addDoc(clientsCollectionRef, dataWithTimestamp)
+        .catch(async (serverError) => {
+            const permissionError = new FirestorePermissionError({
+                path: clientsCollectionRef.path,
+                operation: 'create',
+                requestResourceData: dataWithTimestamp,
+            } satisfies SecurityRuleContext);
+            errorEmitter.emit('permission-error', permissionError);
+            throw permissionError;
+        });
     const snapshot = await getDoc(docRef);
     return fromFirestore(snapshot);
 }
@@ -52,13 +78,21 @@ export async function addClient(clientData: Omit<Client, 'id' | 'createdAt'>): P
 // UPDATE
 export async function updateClient(clientId: string, clientData: ClientFormValues): Promise<Client> {
     const clientDocRef = doc(db, 'clients', clientId);
-    await updateDoc(clientDocRef, {
+    const dataWithTimestamp = {
         ...clientData,
         updatedAt: serverTimestamp(),
-    });
+    };
+    await updateDoc(clientDocRef, dataWithTimestamp)
+        .catch(async (serverError) => {
+            const permissionError = new FirestorePermissionError({
+                path: clientDocRef.path,
+                operation: 'update',
+                requestResourceData: dataWithTimestamp,
+            } satisfies SecurityRuleContext);
+            errorEmitter.emit('permission-error', permissionError);
+            throw permissionError;
+        });
     
-    // Para um retorno consistente, o ideal seria refazer a busca do documento,
-    // mas para simplificar, montamos o objeto de retorno.
     const snapshot = await getDoc(clientDocRef);
     return fromFirestore(snapshot);
 }
@@ -66,5 +100,13 @@ export async function updateClient(clientId: string, clientData: ClientFormValue
 // DELETE
 export async function deleteClient(clientId: string): Promise<void> {
     const clientDocRef = doc(db, 'clients', clientId);
-    await deleteDoc(clientDocRef);
+    deleteDoc(clientDocRef)
+        .catch(async (serverError) => {
+            const permissionError = new FirestorePermissionError({
+                path: clientDocRef.path,
+                operation: 'delete',
+            } satisfies SecurityRuleContext);
+            errorEmitter.emit('permission-error', permissionError);
+            throw permissionError;
+        });
 }

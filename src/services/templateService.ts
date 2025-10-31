@@ -1,6 +1,8 @@
 
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy, getDoc, type DocumentData } from 'firebase/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 export interface DocumentTemplate extends DocumentData {
   id: string;
@@ -31,16 +33,33 @@ const fromFirestore = (docSnap: DocumentData): DocumentTemplate => {
 // READ
 export async function getTemplates(): Promise<DocumentTemplate[]> {
   const q = query(templatesCollectionRef, orderBy("name", "asc"));
-  const querySnapshot = await getDocs(q);
+  const querySnapshot = await getDocs(q).catch(async (serverError) => {
+    const permissionError = new FirestorePermissionError({
+        path: templatesCollectionRef.path,
+        operation: 'list',
+    } satisfies SecurityRuleContext);
+    errorEmitter.emit('permission-error', permissionError);
+    throw permissionError;
+  });
   return querySnapshot.docs.map(fromFirestore);
 }
 
 // CREATE
 export async function addTemplate(templateData: TemplateFormValues): Promise<DocumentTemplate> {
-    const docRef = await addDoc(templatesCollectionRef, {
+    const dataToSave = {
         ...templateData,
         createdAt: serverTimestamp(),
-    });
+    };
+    const docRef = await addDoc(templatesCollectionRef, dataToSave)
+        .catch(async (serverError) => {
+            const permissionError = new FirestorePermissionError({
+                path: templatesCollectionRef.path,
+                operation: 'create',
+                requestResourceData: dataToSave,
+            } satisfies SecurityRuleContext);
+            errorEmitter.emit('permission-error', permissionError);
+            throw permissionError;
+        });
     const snapshot = await getDoc(docRef);
     return fromFirestore(snapshot);
 }
@@ -48,10 +67,20 @@ export async function addTemplate(templateData: TemplateFormValues): Promise<Doc
 // UPDATE
 export async function updateTemplate(templateId: string, templateData: TemplateFormValues): Promise<DocumentTemplate> {
     const templateDocRef = doc(db, 'documentTemplates', templateId);
-    await updateDoc(templateDocRef, {
+    const dataToUpdate = {
         ...templateData,
         updatedAt: serverTimestamp(),
-    });
+    };
+    await updateDoc(templateDocRef, dataToUpdate)
+        .catch(async (serverError) => {
+            const permissionError = new FirestorePermissionError({
+                path: templateDocRef.path,
+                operation: 'update',
+                requestResourceData: dataToUpdate,
+            } satisfies SecurityRuleContext);
+            errorEmitter.emit('permission-error', permissionError);
+            throw permissionError;
+        });
     const snapshot = await getDoc(templateDocRef);
     return fromFirestore(snapshot);
 }
@@ -59,5 +88,13 @@ export async function updateTemplate(templateId: string, templateData: TemplateF
 // DELETE
 export async function deleteTemplate(templateId: string): Promise<void> {
     const templateDocRef = doc(db, 'documentTemplates', templateId);
-    await deleteDoc(templateDocRef);
+    deleteDoc(templateDocRef)
+        .catch(async (serverError) => {
+            const permissionError = new FirestorePermissionError({
+                path: templateDocRef.path,
+                operation: 'delete',
+            } satisfies SecurityRuleContext);
+            errorEmitter.emit('permission-error', permissionError);
+            throw permissionError;
+        });
 }
