@@ -17,22 +17,19 @@ let auth: Auth;
 let db: Firestore;
 let storage: FirebaseStorage;
 
-// This check is crucial. It ensures that Firebase is only initialized on the client-side.
-// The code inside this block will not run during server-side rendering or build time.
 if (typeof window !== 'undefined' && !getApps().length) {
-    try {
-        app = initializeApp(firebaseConfig);
-        auth = getAuth(app);
-        db = getFirestore(app);
-        storage = getStorage(app);
-    } catch (e) {
-        console.error("Failed to initialize Firebase on the client.", e);
-        // In case of an error, you might want to handle it gracefully.
-        // For now, we'll log it. The services will be undefined, which might
-        // cause subsequent errors, but it prevents the initial crash.
-    }
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = getFirestore(app);
+    storage = getStorage(app);
+} else if (getApps().length > 0) {
+    app = getApp();
+    auth = getAuth(app);
+    db = getFirestore(app);
+    storage = getStorage(app);
 }
 
-// We re-export the initialized services. They will be undefined on the server,
-// but that's okay because our components using them are now strictly client-side.
+// We re-export the initialized services.
+// They might be undefined on the initial server-side render,
+// but the AuthWrapper component ensures they are available before use on the client.
 export { app, db, storage, auth };
