@@ -12,39 +12,27 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// This function ensures Firebase is initialized only once
-const getFirebaseApp = (): FirebaseApp => {
-  if (getApps().length === 0) {
-    // This check ensures we have a valid config before initializing
-    if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
-      // In a server environment during build, these might be undefined.
-      // We throw a clear error that can be seen during development.
-      // In production (Vercel), these env vars MUST be set.
-      throw new Error("Firebase config is not valid. Make sure NEXT_PUBLIC_FIREBASE_ environment variables are set.");
-    }
-    return initializeApp(firebaseConfig);
-  } else {
-    return getApp();
-  }
-};
-
 let app: FirebaseApp;
 let auth: Auth;
 let db: Firestore;
 let storage: FirebaseStorage;
 
-// This block ensures that Firebase is ONLY initialized on the client-side
-if (typeof window !== 'undefined') {
-  try {
-    app = getFirebaseApp();
-    auth = getAuth(app);
-    db = getFirestore(app);
-    storage = getStorage(app);
-  } catch (e) {
-    console.error("Failed to initialize Firebase on the client.", e);
-    // You could potentially set these to null or handle the error gracefully
-  }
+// This check is crucial. It ensures that Firebase is only initialized on the client-side.
+// The code inside this block will not run during server-side rendering or build time.
+if (typeof window !== 'undefined' && !getApps().length) {
+    try {
+        app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        db = getFirestore(app);
+        storage = getStorage(app);
+    } catch (e) {
+        console.error("Failed to initialize Firebase on the client.", e);
+        // In case of an error, you might want to handle it gracefully.
+        // For now, we'll log it. The services will be undefined, which might
+        // cause subsequent errors, but it prevents the initial crash.
+    }
 }
 
-// @ts-ignore - These will be initialized on the client
+// We re-export the initialized services. They will be undefined on the server,
+// but that's okay because our components using them are now strictly client-side.
 export { app, db, storage, auth };

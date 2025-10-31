@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import ClientLayout from './ClientLayout'; // Import the new Client Layout
+import AppProviders from './ClientLayout'; // Renamed import
 
 export const metadata: Metadata = {
   title: 'LexManager',
@@ -23,7 +23,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#3F51B5" />
       </head>
       <body className="font-body antialiased">
-        <ClientLayout>{children}</ClientLayout>
+        <AppProviders>{children}</AppProviders>
       </body>
     </html>
   );

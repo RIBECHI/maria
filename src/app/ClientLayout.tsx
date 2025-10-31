@@ -2,7 +2,7 @@
 "use client";
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import {
   LayoutDashboard,
   Users,
@@ -15,7 +15,6 @@ import {
   FileCog,
   FileSignature,
   ListChecks,
-  LogIn,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -107,7 +106,7 @@ function PanelLeftIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-function AuthWrapper({ children }: { children: React.ReactNode }) {
+function AuthWrapper({ children }: { children: ReactNode }) {
     const { user, setUser, isLoading, setIsLoading } = useUser();
     const [isDisplayNameModalOpen, setIsDisplayNameModalOpen] = useState(false);
     const [newDisplayName, setNewDisplayName] = useState('');
@@ -207,11 +206,11 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
     );
 }
 
-
-function AppLayout({ children }: { children: React.ReactNode }) {
+function AppLayout({ children }: { children: ReactNode }) {
   const [isNotepadOpen, setIsNotepadOpen] = useState(false);
   
   useEffect(() => {
+    // Theme logic can stay here as it reads from localStorage which is client-side
     const storedTheme = localStorage.getItem("theme");
     if (storedTheme === "light") {
       document.documentElement.classList.remove("dark");
@@ -293,8 +292,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
-
-export default function ClientLayout({ children }: { children: React.ReactNode }) {
+export default function AppProviders({ children }: { children: ReactNode }) {
   return (
     <UserProvider>
       <FirebaseErrorListener />
