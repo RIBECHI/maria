@@ -53,7 +53,7 @@ export default function LoginPage() {
         description: "Bem-vindo(a) de volta!",
       });
       router.push('/');
-    } catch (error: any) => {
+    } catch (error: any) {
       console.error("Erro no login:", error);
       toast({
         title: "Erro no Login",
