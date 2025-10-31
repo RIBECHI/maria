@@ -18,17 +18,24 @@ let auth: Auth;
 let db: Firestore;
 let storage: FirebaseStorage;
 
-if (typeof window !== 'undefined' && !getApps().length) {
-    app = initializeApp(firebaseConfig);
-    auth = getAuth(app);
-    db = getFirestore(app);
-    storage = getStorage(app);
-} else if (getApps().length > 0) {
-    app = getApp();
-    auth = getAuth(app);
-    db = getFirestore(app);
-    storage = getStorage(app);
+function initializeFirebase() {
+    if (typeof window !== 'undefined') {
+        if (!getApps().length) {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            storage = getStorage(app);
+        } else {
+            app = getApp();
+            auth = getAuth(app);
+            db = getFirestore(app);
+            storage = getStorage(app);
+        }
+    }
 }
+
+// Chame a função para garantir que a inicialização ocorra no momento certo.
+initializeFirebase();
 
 // @ts-ignore
 export { app, db, storage, auth };

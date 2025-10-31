@@ -108,6 +108,7 @@ function PanelLeftIcon(props: React.SVGProps<SVGSVGElement>) {
 
 function AuthWrapper({ children }: { children: ReactNode }) {
     const { user, setUser, isLoading, setIsLoading } = useUser();
+    const [isClient, setIsClient] = useState(false);
     const [isDisplayNameModalOpen, setIsDisplayNameModalOpen] = useState(false);
     const [newDisplayName, setNewDisplayName] = useState('');
     const { toast } = useToast();
@@ -115,6 +116,13 @@ function AuthWrapper({ children }: { children: ReactNode }) {
     const pathname = usePathname();
 
     useEffect(() => {
+        setIsClient(true);
+    }, []);
+
+    useEffect(() => {
+        if (!isClient) return; // Don't run auth logic until client is hydrated
+        if (!auth) return; // Wait for firebase to initialize
+
         const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
             if (firebaseUser) {
                 const needsDisplayName = !firebaseUser.displayName;
@@ -137,7 +145,7 @@ function AuthWrapper({ children }: { children: ReactNode }) {
         });
 
         return () => unsubscribe();
-    }, [pathname, router, setIsLoading, setUser]);
+    }, [isClient, pathname, router, setIsLoading, setUser]);
 
     const handleUpdateDisplayName = async () => {
         const currentUser = auth.currentUser;
@@ -153,7 +161,8 @@ function AuthWrapper({ children }: { children: ReactNode }) {
         }
     };
 
-    if (isLoading) {
+    // Render loading skeleton on server and on initial client render to avoid hydration mismatch
+    if (isLoading || !isClient) {
          return (
             <div className="flex h-screen w-screen items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
@@ -164,8 +173,12 @@ function AuthWrapper({ children }: { children: ReactNode }) {
         );
     }
 
+    if (!user && pathname === '/login') {
+        return <>{children}</>;
+    }
+
     if (!user && pathname !== '/login') {
-        return ( // Mostra o loader enquanto redireciona
+         return ( // Still show loader while redirecting
              <div className="flex h-screen w-screen items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
                     <Logo className="h-16 w-16 text-primary" />
@@ -175,10 +188,6 @@ function AuthWrapper({ children }: { children: ReactNode }) {
         );
     }
     
-    if (!user && pathname === '/login') {
-        return <>{children}</>;
-    }
-
     if (user) {
         return (
             <>
@@ -214,7 +223,7 @@ function AuthWrapper({ children }: { children: ReactNode }) {
         );
     }
     
-    return <>{children}</>;
+    return null; // Should not be reached, but good for safety
 }
 
 
