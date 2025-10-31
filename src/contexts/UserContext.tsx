@@ -3,34 +3,60 @@
 
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 
+// Nova interface para o objeto de usuário, alinhada com o Firebase Auth
+export interface AuthUser {
+  uid: string;
+  displayName: string;
+  email: string;
+  photoURL: string;
+}
+
 interface UserContextType {
+  user: AuthUser | null;
+  setUser: (user: AuthUser | null) => void;
+  // Mantemos userName e setUserName para compatibilidade com partes do app que ainda não foram migradas
   userName: string;
   setUserName: (name: string) => void;
-  userTitle: string; // Título/cargo permanece estático por enquanto
+  userTitle: string; 
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const UserProvider = ({ children }: { children: ReactNode }) => {
-  const [userName, setUserNameState] = useState("Laura Antonelli");
-  const userTitle = "Advogada"; // Mantendo o título estático por enquanto
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [userName, setUserNameState] = useState("Advogado"); // Valor padrão
+  const userTitle = "Advogado";
 
   useEffect(() => {
-    // Carrega o nome do localStorage quando o componente é montado no cliente
-    const storedName = localStorage.getItem('userName');
-    if (storedName) {
-      setUserNameState(storedName);
+    // Quando o usuário do Firebase mudar, atualiza o 'userName' também
+    if (user) {
+      setUserNameState(user.displayName);
+    } else {
+      // Se não houver usuário, verifica o localStorage por um nome salvo (útil para o modo offline ou pré-login)
+      const storedName = localStorage.getItem('userName');
+      setUserNameState(storedName || "Advogado");
     }
-  }, []);
+  }, [user]);
 
   const setUserName = (name: string) => {
-    // Salva o nome no estado e no localStorage
     localStorage.setItem('userName', name);
     setUserNameState(name);
+    // Também atualizamos o objeto de usuário se ele existir
+    if (user) {
+      setUser({ ...user, displayName: name });
+    }
+  };
+
+  const contextValue = {
+    user,
+    setUser,
+    userName,
+    setUserName,
+    userTitle,
   };
 
   return (
-    <UserContext.Provider value={{ userName, setUserName, userTitle }}>
+    <UserContext.Provider value={contextValue}>
       {children}
     </UserContext.Provider>
   );

@@ -15,6 +15,7 @@ import {
   FileCog,
   FileSignature,
   ListChecks,
+  LogIn,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -33,13 +34,18 @@ import { Toaster } from "@/components/ui/toaster";
 import Logo from '@/components/layout/Logo';
 import NavLink from '@/components/layout/NavLink';
 import './globals.css';
-import { UserProvider } from '@/contexts/UserContext';
+import { UserProvider, useUser } from '@/contexts/UserContext';
 import UserInfo from '@/components/layout/UserInfo';
 import { NotepadSheet } from '@/components/layout/NotepadSheet';
 import UpcomingEventsSidebar from '@/components/layout/UpcomingEventsSidebar';
 import ThemeToggle from '@/components/layout/ThemeToggle';
 import type React from 'react';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
+import { useRouter, usePathname } from 'next/navigation';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { app } from '@/lib/firebase';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const navItems = [
   { href: '/', label: 'Painel', icon: <LayoutDashboard /> },
@@ -97,9 +103,59 @@ function PanelLeftIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-export default function ClientLayout({ children }: { children: React.ReactNode }) {
-  const [isNotepadOpen, setIsNotepadOpen] = useState(false);
+function AuthWrapper({ children }: { children: React.ReactNode }) {
+    const { user, setUser } = useUser();
+    const router = useRouter();
+    const pathname = usePathname();
+    const [isLoading, setIsLoading] = useState(true);
 
+    useEffect(() => {
+        const auth = getAuth(app);
+        const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+            if (firebaseUser) {
+                setUser({
+                    uid: firebaseUser.uid,
+                    displayName: firebaseUser.displayName || "Usuário",
+                    email: firebaseUser.email || "",
+                    photoURL: firebaseUser.photoURL || "",
+                });
+            } else {
+                setUser(null);
+            }
+            setIsLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, [setUser]);
+
+    useEffect(() => {
+        if (!isLoading && !user && pathname !== '/login') {
+            router.push('/login');
+        }
+    }, [isLoading, user, pathname, router]);
+
+    if (isLoading || (!user && pathname !== '/login')) {
+      return (
+        <div className="flex h-screen w-screen items-center justify-center">
+            <div className="flex flex-col items-center gap-4">
+                <Logo className="h-16 w-16 text-primary" />
+                <Skeleton className="h-4 w-48" />
+            </div>
+        </div>
+      );
+    }
+    
+    if (pathname === '/login') {
+      return <>{children}</>;
+    }
+
+    return <AppLayout>{children}</AppLayout>;
+}
+
+
+function AppLayout({ children }: { children: React.ReactNode }) {
+  const [isNotepadOpen, setIsNotepadOpen] = useState(false);
+  
   useEffect(() => {
     const storedTheme = localStorage.getItem("theme");
     if (storedTheme === "light") {
@@ -109,10 +165,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     }
   }, []);
 
-
   return (
-    <UserProvider>
-      <FirebaseErrorListener />
+    <>
       <JusticeSymbolWatermark />
       <SidebarProvider defaultOpen>
         <Sidebar collapsible="icon" variant="sidebar" side="left">
@@ -180,6 +234,16 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         </SidebarInset>
       </SidebarProvider>
       <NotepadSheet isOpen={isNotepadOpen} onOpenChange={setIsNotepadOpen} />
+    </>
+  );
+}
+
+
+export default function ClientLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <UserProvider>
+      <FirebaseErrorListener />
+      <AuthWrapper>{children}</AuthWrapper>
     </UserProvider>
   );
 }
