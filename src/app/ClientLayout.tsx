@@ -2,8 +2,7 @@
 "use client";
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { useState } from 'react';
 import {
   LayoutDashboard,
   Users,
@@ -40,7 +39,7 @@ import { NotepadSheet } from '@/components/layout/NotepadSheet';
 import UpcomingEventsSidebar from '@/components/layout/UpcomingEventsSidebar';
 import ThemeToggle from '@/components/layout/ThemeToggle';
 import type React from 'react';
-import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { AuthProvider } from '@/contexts/AuthContext';
 import FirebaseErrorListener from '@/components/layout/FirebaseErrorListener';
 import { ErrorBoundary } from '@/components/utils/ErrorBoundary';
 
@@ -179,13 +178,11 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  const isLoginPage = pathname === '/login';
-
+  // Simplificado para renderizar diretamente o layout principal, removendo toda a lógica de autenticação.
   return (
     <AuthProvider>
       <ErrorBoundary>
-        {isLoginPage ? children : <AppLayout>{children}</AppLayout>}
+        <AppLayout>{children}</AppLayout>
       </ErrorBoundary>
     </AuthProvider>
   );

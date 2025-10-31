@@ -1,56 +1,23 @@
 
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import { getAuth, onAuthStateChanged, type User } from "firebase/auth";
-import { app } from '@/lib/firebase';
-import { Skeleton } from '@/components/ui/skeleton';
+import React, { createContext, useContext, type ReactNode } from 'react';
+import type { User } from "firebase/auth";
 
 interface AuthContextType {
   currentUser: User | null;
   isLoading: boolean;
 }
 
+// Desativado: Fornece valores padrão que não acionam a lógica do Firebase.
 const AuthContext = createContext<AuthContextType>({
   currentUser: null,
-  isLoading: true,
+  isLoading: false, // Define isLoading como false para não mostrar o loader.
 });
 
-const FullPageLoader = () => (
-    <div className="flex h-screen w-full items-center justify-center bg-background">
-      <div className="flex flex-col items-center gap-4">
-        <Skeleton className="h-12 w-12 rounded-full" />
-        <div className="space-y-2">
-          <Skeleton className="h-4 w-[250px]" />
-          <Skeleton className="h-4 w-[200px]" />
-        </div>
-      </div>
-    </div>
-);
-
-
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const auth = getAuth(app);
-    const unsubscribe = onAuthStateChanged(auth, user => {
-      setCurrentUser(user);
-      setIsLoading(false);
-    });
-
-    // Cleanup subscription on unmount
-    return () => unsubscribe();
-  }, []);
-
-  const value = { currentUser, isLoading };
-
-  // Render a full-page loader while the auth state is being determined.
-  // This prevents hydration mismatches.
-  if (isLoading) {
-    return <FullPageLoader />;
-  }
+  // Desativado: Nenhuma lógica de Firebase aqui. Apenas renderiza os filhos.
+  const value = { currentUser: null, isLoading: false };
 
   return (
     <AuthContext.Provider value={value}>
