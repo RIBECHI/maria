@@ -106,130 +106,9 @@ function PanelLeftIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-function AuthWrapper({ children }: { children: ReactNode }) {
-    const { user, setUser, isLoading, setIsLoading } = useUser();
-    const [isClient, setIsClient] = useState(false);
-    const [isDisplayNameModalOpen, setIsDisplayNameModalOpen] = useState(false);
-    const [newDisplayName, setNewDisplayName] = useState('');
-    const { toast } = useToast();
-    const router = useRouter();
-    const pathname = usePathname();
-
-    useEffect(() => {
-        setIsClient(true);
-    }, []);
-
-    useEffect(() => {
-        if (!isClient) return; // Don't run auth logic until client is hydrated
-        if (!auth) return; // Wait for firebase to initialize
-
-        const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-            if (firebaseUser) {
-                const needsDisplayName = !firebaseUser.displayName;
-                if (needsDisplayName && pathname !== '/login') {
-                    setIsDisplayNameModalOpen(true);
-                }
-                setUser({
-                    uid: firebaseUser.uid,
-                    displayName: firebaseUser.displayName || "Novo Usuário",
-                    email: firebaseUser.email || "",
-                    photoURL: firebaseUser.photoURL || "",
-                });
-            } else {
-                setUser(null);
-                if (pathname !== '/login') {
-                    router.push('/login');
-                }
-            }
-            setIsLoading(false);
-        });
-
-        return () => unsubscribe();
-    }, [isClient, pathname, router, setIsLoading, setUser]);
-
-    const handleUpdateDisplayName = async () => {
-        const currentUser = auth.currentUser;
-        if (currentUser && newDisplayName.trim()) {
-            try {
-                await updateProfile(currentUser, { displayName: newDisplayName.trim() });
-                setUser({ ...user!, displayName: newDisplayName.trim() });
-                setIsDisplayNameModalOpen(false);
-                toast({ title: "Nome de exibição salvo!", description: "Seu perfil foi atualizado." });
-            } catch (error: any) {
-                toast({ title: "Erro ao salvar nome", description: error.message, variant: "destructive" });
-            }
-        }
-    };
-
-    // Render loading skeleton on server and on initial client render to avoid hydration mismatch
-    if (isLoading || !isClient) {
-         return (
-            <div className="flex h-screen w-screen items-center justify-center">
-                <div className="flex flex-col items-center gap-4">
-                    <Logo className="h-16 w-16 text-primary" />
-                    <Skeleton className="h-4 w-48" />
-                </div>
-            </div>
-        );
-    }
-
-    if (!user && pathname === '/login') {
-        return <>{children}</>;
-    }
-
-    if (!user && pathname !== '/login') {
-         return ( // Still show loader while redirecting
-             <div className="flex h-screen w-screen items-center justify-center">
-                <div className="flex flex-col items-center gap-4">
-                    <Logo className="h-16 w-16 text-primary" />
-                    <Skeleton className="h-4 w-48" />
-                </div>
-            </div>
-        );
-    }
-    
-    if (user) {
-        return (
-            <>
-                <AppLayout>{children}</AppLayout>
-                <Dialog open={isDisplayNameModalOpen} onOpenChange={setIsDisplayNameModalOpen}>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Bem-vindo(a) ao LexManager!</DialogTitle>
-                            <DialogDescription>
-                                Para personalizar sua experiência, por favor, insira como você gostaria de ser chamado(a).
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="grid gap-4 py-4">
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="displayName" className="text-right">
-                                    Nome
-                                </Label>
-                                <Input
-                                    id="displayName"
-                                    value={newDisplayName}
-                                    onChange={(e) => setNewDisplayName(e.target.value)}
-                                    className="col-span-3"
-                                    placeholder="Seu nome ou do escritório"
-                                />
-                            </div>
-                        </div>
-                        <DialogFooter>
-                            <Button onClick={handleUpdateDisplayName}>Salvar Nome</Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-            </>
-        );
-    }
-    
-    return null; // Should not be reached, but good for safety
-}
-
-
 function AppLayout({ children }: { children: ReactNode }) {
   const [isNotepadOpen, setIsNotepadOpen] = useState(false);
-  
+
   return (
     <>
       <JusticeSymbolWatermark />
@@ -302,6 +181,112 @@ function AppLayout({ children }: { children: ReactNode }) {
     </>
   );
 }
+
+function AuthWrapper({ children }: { children: ReactNode }) {
+  const { user, setUser } = useUser();
+  const [isLoading, setIsLoading] = useState(true);
+  const [isDisplayNameModalOpen, setIsDisplayNameModalOpen] = useState(false);
+  const [newDisplayName, setNewDisplayName] = useState('');
+  const { toast } = useToast();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        const needsDisplayName = !firebaseUser.displayName;
+        if (needsDisplayName && pathname !== '/login') {
+          setIsDisplayNameModalOpen(true);
+        }
+        setUser({
+          uid: firebaseUser.uid,
+          displayName: firebaseUser.displayName || "Novo Usuário",
+          email: firebaseUser.email || "",
+          photoURL: firebaseUser.photoURL || "",
+        });
+      } else {
+        setUser(null);
+        if (pathname !== '/login') {
+          router.push('/login');
+        }
+      }
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [pathname, router, setUser]);
+
+  const handleUpdateDisplayName = async () => {
+    const currentUser = auth.currentUser;
+    if (currentUser && newDisplayName.trim()) {
+      try {
+        await updateProfile(currentUser, { displayName: newDisplayName.trim() });
+        setUser({ ...user!, displayName: newDisplayName.trim() });
+        setIsDisplayNameModalOpen(false);
+        toast({ title: "Nome de exibição salvo!", description: "Seu perfil foi atualizado." });
+      } catch (error: any) {
+        toast({ title: "Erro ao salvar nome", description: error.message, variant: "destructive" });
+      }
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center">
+         <div className="flex flex-col items-center gap-4">
+            <Logo className="h-16 w-16 text-primary" />
+            <Skeleton className="h-4 w-48" />
+          </div>
+      </div>
+    );
+  }
+
+  if (!user && pathname !== '/login') {
+    return null; // Don't render anything while redirecting
+  }
+
+  if (!user && pathname === '/login') {
+    return <>{children}</>;
+  }
+
+  if (user) {
+    return (
+      <>
+        <AppLayout>{children}</AppLayout>
+        <Dialog open={isDisplayNameModalOpen} onOpenChange={setIsDisplayNameModalOpen}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Bem-vindo(a) ao LexManager!</DialogTitle>
+                    <DialogDescription>
+                        Para personalizar sua experiência, por favor, insira como você gostaria de ser chamado(a).
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="displayName" className="text-right">
+                            Nome
+                        </Label>
+                        <Input
+                            id="displayName"
+                            value={newDisplayName}
+                            onChange={(e) => setNewDisplayName(e.target.value)}
+                            className="col-span-3"
+                            placeholder="Seu nome ou do escritório"
+                        />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button onClick={handleUpdateDisplayName}>Salvar Nome</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+      </>
+    );
+  }
+
+  return null;
+}
+
 
 export default function AppProviders({ children }: { children: ReactNode }) {
   return (

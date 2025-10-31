@@ -17,7 +17,7 @@ export interface TemplateFormValues {
     content: string;
 }
 
-const getTemplatesCollectionRef = () => collection(db, 'documentTemplates');
+const templatesCollectionRef = collection(db, 'documentTemplates');
 
 const fromFirestore = (docSnap: DocumentData): DocumentTemplate => {
   const data = docSnap.data();
@@ -32,7 +32,6 @@ const fromFirestore = (docSnap: DocumentData): DocumentTemplate => {
 
 // READ
 export async function getTemplates(): Promise<DocumentTemplate[]> {
-  const templatesCollectionRef = getTemplatesCollectionRef();
   const q = query(templatesCollectionRef, orderBy("name", "asc"));
   const querySnapshot = await getDocs(q).catch(async (serverError) => {
     const permissionError = new FirestorePermissionError({
@@ -47,7 +46,6 @@ export async function getTemplates(): Promise<DocumentTemplate[]> {
 
 // CREATE
 export async function addTemplate(templateData: TemplateFormValues): Promise<DocumentTemplate> {
-    const templatesCollectionRef = getTemplatesCollectionRef();
     const dataToSave = {
         ...templateData,
         createdAt: serverTimestamp(),
