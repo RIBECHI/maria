@@ -20,33 +20,17 @@ let auth: Auth;
 let db: Firestore;
 let storage: FirebaseStorage;
 
-// This check is the key to fixing the build issue.
-// It ensures that Firebase is only initialized when the config is fully available.
-if (
-  firebaseConfig.apiKey &&
-  firebaseConfig.projectId
-) {
-  if (!getApps().length) {
+if (typeof window !== 'undefined' && !getApps().length) {
     app = initializeApp(firebaseConfig);
-  } else {
+} else if (getApps().length > 0) {
     app = getApp();
-  }
-  auth = getAuth(app);
-  db = getFirestore(app);
-  storage = getStorage(app);
-} else {
-  // If the config is not available (e.g., during build),
-  // we provide a mock/dummy initialization to prevent the app from crashing.
-  // The actual services will not be usable, but the build process can complete.
-  console.warn("Firebase config is missing or incomplete. Using dummy initialization for build process.");
-  if (!getApps().length) {
-    app = initializeApp({});
-  } else {
-    app = getApp();
-  }
-  auth = getAuth(app);
-  db = getFirestore(app);
-  storage = getStorage(app);
 }
+
+if (typeof window !== 'undefined') {
+    auth = getAuth(app!);
+    db = getFirestore(app!);
+    storage = getStorage(app!);
+}
+
 
 export { app, db, storage, auth };
