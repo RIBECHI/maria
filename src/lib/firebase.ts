@@ -32,5 +32,5 @@ if (typeof window !== 'undefined') {
   storage = getStorage(app);
 }
 
-
+// @ts-ignore - Essas variáveis serão inicializadas no cliente
 export { app, db, storage, auth };
