@@ -42,6 +42,7 @@ import ThemeToggle from '@/components/layout/ThemeToggle';
 import type React from 'react';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import FirebaseErrorListener from '@/components/layout/FirebaseErrorListener';
+import { ErrorBoundary } from '@/components/utils/ErrorBoundary';
 
 const navItems = [
   { href: '/', label: 'Painel', icon: <LayoutDashboard /> },
@@ -178,22 +179,29 @@ function ProtectedAppLayout({ children }: { children: React.ReactNode }) {
 
 
 function AppRouter({ children }: { children: React.ReactNode }) {
-  const { currentUser } = useAuth();
+  const { currentUser, isLoading } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
 
-  const isLoginPage = pathname === '/login';
-
   useEffect(() => {
-    // This effect runs after the AuthProvider has determined the auth state.
+    if (isLoading) return; // Não faça nada enquanto o estado de auth estiver carregando
+
+    const isLoginPage = pathname === '/login';
+
     if (!currentUser && !isLoginPage) {
       router.push('/login');
     } else if (currentUser && isLoginPage) {
       router.push('/');
     }
-  }, [currentUser, isLoginPage, router]);
+  }, [currentUser, isLoading, pathname, router]);
 
-  // Render based on the current auth state and route.
+  if (isLoading) {
+    // Retorna nulo, pois o AuthProvider já mostra um loader de página inteira
+    return null; 
+  }
+  
+  const isLoginPage = pathname === '/login';
+
   if (!currentUser && isLoginPage) {
     return <>{children}</>;
   }
@@ -202,15 +210,16 @@ function AppRouter({ children }: { children: React.ReactNode }) {
     return <ProtectedAppLayout>{children}</ProtectedAppLayout>;
   }
 
-  // In any other case (e.g., redirecting), render null to avoid flashes of content.
-  // The AuthProvider already shows a full-page loader, so this is safe.
+  // Para os casos de redirecionamento, retorna nulo para evitar piscar de conteúdo
   return null;
 }
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
+      <ErrorBoundary>
         <AppRouter>{children}</AppRouter>
+      </ErrorBoundary>
     </AuthProvider>
   );
 }
