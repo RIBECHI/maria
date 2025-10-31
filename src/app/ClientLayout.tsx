@@ -113,18 +113,24 @@ function AuthWrapper({ children }: { children: ReactNode }) {
     const { toast } = useToast();
     const router = useRouter();
     const pathname = usePathname();
-
-    // Se estamos na página de login, apenas renderize o conteúdo sem nenhuma lógica de auth.
-    if (pathname === '/login') {
-      return <>{children}</>;
-    }
+    const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
-        // Este useEffect só será executado para páginas protegidas
+        // This ensures the component has mounted on the client.
+        setIsClient(true);
+    }, []);
+
+
+    useEffect(() => {
+        if (!isClient) {
+            return; // Don't run auth logic on the server or during the initial static render
+        }
+
+        // Now that we're on the client, we can safely use Firebase auth
         const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
             if (firebaseUser) {
                 const needsDisplayName = !firebaseUser.displayName;
-                if (needsDisplayName) {
+                if (needsDisplayName && pathname !== '/login') {
                     setIsDisplayNameModalOpen(true);
                 }
                 setUser({
@@ -133,16 +139,18 @@ function AuthWrapper({ children }: { children: ReactNode }) {
                     email: firebaseUser.email || "",
                     photoURL: firebaseUser.photoURL || "",
                 });
+                setIsLoading(false); // Finished loading
             } else {
                 setUser(null);
-                // Se não houver usuário, redireciona para o login
-                router.push('/login');
+                setIsLoading(false); // Finished loading
+                if (pathname !== '/login') {
+                    router.push('/login');
+                }
             }
-            setIsLoading(false);
         });
 
         return () => unsubscribe();
-    }, [setUser, setIsLoading, router]);
+    }, [isClient, pathname, router, setIsLoading, setUser]);
 
     const handleUpdateDisplayName = async () => {
         const currentUser = auth.currentUser;
@@ -157,54 +165,71 @@ function AuthWrapper({ children }: { children: ReactNode }) {
             }
         }
     };
+    
+    // Always render the loading screen on the server and initial client render.
+    // This guarantees the server and client HTML match, preventing hydration errors.
+    if (isLoading || !isClient) {
+         return (
+            <div className="flex h-screen w-screen items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <Logo className="h-16 w-16 text-primary" />
+                    <Skeleton className="h-4 w-48" />
+                </div>
+            </div>
+        );
+    }
 
-    // Enquanto carrega ou se não houver usuário (e não for a página de login), mostra o loader.
-    // Esta verificação garante que a tela de carregamento só apareça em rotas protegidas.
-    if (isLoading || !user) {
-      return (
+    if (pathname === '/login') {
+        return <>{children}</>;
+    }
+
+    if (user) {
+        return (
+            <>
+                <AppLayout>{children}</AppLayout>
+                <Dialog open={isDisplayNameModalOpen} onOpenChange={setIsDisplayNameModalOpen}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Bem-vindo(a) ao LexManager!</DialogTitle>
+                            <DialogDescription>
+                                Para personalizar sua experiência, por favor, insira como você gostaria de ser chamado(a).
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="displayName" className="text-right">
+                                    Nome
+                                </Label>
+                                <Input
+                                    id="displayName"
+                                    value={newDisplayName}
+                                    onChange={(e) => setNewDisplayName(e.target.value)}
+                                    className="col-span-3"
+                                    placeholder="Seu nome ou do escritório"
+                                />
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button onClick={handleUpdateDisplayName}>Salvar Nome</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            </>
+        );
+    }
+    
+    // If no user and not on login page, the useEffect above will trigger a redirect,
+    // in the meantime, show the loader.
+    return (
         <div className="flex h-screen w-screen items-center justify-center">
             <div className="flex flex-col items-center gap-4">
                 <Logo className="h-16 w-16 text-primary" />
                 <Skeleton className="h-4 w-48" />
             </div>
         </div>
-      );
-    }
-    
-    // Se o usuário estiver logado e não for a página de login, renderiza o layout principal.
-    return (
-        <>
-            <AppLayout>{children}</AppLayout>
-            <Dialog open={isDisplayNameModalOpen} onOpenChange={setIsDisplayNameModalOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Bem-vindo(a) ao LexManager!</DialogTitle>
-                        <DialogDescription>
-                            Para personalizar sua experiência, por favor, insira como você gostaria de ser chamado(a).
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="displayName" className="text-right">
-                                Nome
-                            </Label>
-                            <Input
-                                id="displayName"
-                                value={newDisplayName}
-                                onChange={(e) => setNewDisplayName(e.target.value)}
-                                className="col-span-3"
-                                placeholder="Seu nome ou do escritório"
-                            />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button onClick={handleUpdateDisplayName}>Salvar Nome</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-        </>
     );
 }
+
 
 function AppLayout({ children }: { children: ReactNode }) {
   const [isNotepadOpen, setIsNotepadOpen] = useState(false);
