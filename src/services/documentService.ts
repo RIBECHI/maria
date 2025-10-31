@@ -6,6 +6,7 @@ import type { DocumentData } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
+const getDocumentsCollectionRef = () => collection(db, 'documents');
 
 const fromFirestore = (docSnap: DocumentData): Document => {
   const data = docSnap.data();
@@ -26,11 +27,7 @@ const fromFirestore = (docSnap: DocumentData): Document => {
 
 // READ
 export async function getDocuments(): Promise<Document[]> {
-  if (!db) {
-    console.error("Firestore DB is not initialized.");
-    return [];
-  }
-  const documentsCollectionRef = collection(db, 'documents');
+  const documentsCollectionRef = getDocumentsCollectionRef();
   const q = query(documentsCollectionRef, orderBy("createdAt", "desc"));
   const querySnapshot = await getDocs(q).catch(async (serverError) => {
     const permissionError = new FirestorePermissionError({
@@ -45,10 +42,7 @@ export async function getDocuments(): Promise<Document[]> {
 
 // CREATE
 export async function addDocument(docData: { process: string; tagsString?: string | undefined; name: string; }, filePath: string): Promise<Document> {
-  if (!db) {
-    throw new Error("Firestore DB is not initialized.");
-  }
-  const documentsCollectionRef = collection(db, 'documents');
+  const documentsCollectionRef = getDocumentsCollectionRef();
   const tags = docData.tagsString ? docData.tagsString.split(',').map(t => t.trim()).filter(Boolean) : [];
   
   const dataToSave = {
@@ -77,9 +71,6 @@ export async function addDocument(docData: { process: string; tagsString?: strin
 
 // UPDATE (metadata only)
 export async function updateDocument(documentId: string, docData: { process: string, tags: string[] }): Promise<Document> {
-  if (!db) {
-    throw new Error("Firestore DB is not initialized.");
-  }
   const docRef = doc(db, 'documents', documentId);
   const dataToUpdate = {
     process: docData.process,
@@ -104,9 +95,6 @@ export async function updateDocument(documentId: string, docData: { process: str
 
 // DELETE
 export async function deleteDocument(document: Document): Promise<void> {
-  if (!db) {
-    throw new Error("Firestore DB is not initialized.");
-  }
   const docRef = doc(db, 'documents', document.id);
   deleteDoc(docRef)
     .catch(async (serverError) => {

@@ -113,20 +113,8 @@ function AuthWrapper({ children }: { children: ReactNode }) {
     const { toast } = useToast();
     const router = useRouter();
     const pathname = usePathname();
-    const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
-        // This ensures the component has mounted on the client.
-        setIsClient(true);
-    }, []);
-
-
-    useEffect(() => {
-        if (!isClient) {
-            return; // Don't run auth logic on the server or during the initial static render
-        }
-
-        // Now that we're on the client, we can safely use Firebase auth
         const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
             if (firebaseUser) {
                 const needsDisplayName = !firebaseUser.displayName;
@@ -139,18 +127,17 @@ function AuthWrapper({ children }: { children: ReactNode }) {
                     email: firebaseUser.email || "",
                     photoURL: firebaseUser.photoURL || "",
                 });
-                setIsLoading(false); // Finished loading
             } else {
                 setUser(null);
-                setIsLoading(false); // Finished loading
                 if (pathname !== '/login') {
                     router.push('/login');
                 }
             }
+            setIsLoading(false);
         });
 
         return () => unsubscribe();
-    }, [isClient, pathname, router, setIsLoading, setUser]);
+    }, [pathname, router, setIsLoading, setUser]);
 
     const handleUpdateDisplayName = async () => {
         const currentUser = auth.currentUser;
@@ -165,10 +152,8 @@ function AuthWrapper({ children }: { children: ReactNode }) {
             }
         }
     };
-    
-    // Always render the loading screen on the server and initial client render.
-    // This guarantees the server and client HTML match, preventing hydration errors.
-    if (isLoading || !isClient) {
+
+    if (isLoading) {
          return (
             <div className="flex h-screen w-screen items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
@@ -179,7 +164,18 @@ function AuthWrapper({ children }: { children: ReactNode }) {
         );
     }
 
-    if (pathname === '/login') {
+    if (!user && pathname !== '/login') {
+        return ( // Mostra o loader enquanto redireciona
+             <div className="flex h-screen w-screen items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <Logo className="h-16 w-16 text-primary" />
+                    <Skeleton className="h-4 w-48" />
+                </div>
+            </div>
+        );
+    }
+    
+    if (!user && pathname === '/login') {
         return <>{children}</>;
     }
 
@@ -218,16 +214,7 @@ function AuthWrapper({ children }: { children: ReactNode }) {
         );
     }
     
-    // If no user and not on login page, the useEffect above will trigger a redirect,
-    // in the meantime, show the loader.
-    return (
-        <div className="flex h-screen w-screen items-center justify-center">
-            <div className="flex flex-col items-center gap-4">
-                <Logo className="h-16 w-16 text-primary" />
-                <Skeleton className="h-4 w-48" />
-            </div>
-        </div>
-    );
+    return <>{children}</>;
 }
 
 
@@ -315,5 +302,3 @@ export default function AppProviders({ children }: { children: ReactNode }) {
     </UserProvider>
   );
 }
-
-    

@@ -18,7 +18,6 @@ let auth: Auth;
 let db: Firestore;
 let storage: FirebaseStorage;
 
-// Garante que a inicialização só ocorra no lado do cliente
 if (typeof window !== 'undefined' && !getApps().length) {
     app = initializeApp(firebaseConfig);
     auth = getAuth(app);

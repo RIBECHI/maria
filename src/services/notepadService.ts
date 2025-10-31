@@ -12,13 +12,11 @@ export interface Note {
   completed?: boolean;
 }
 
+const getNotepadDocRef = () => doc(db, 'notepad', 'main');
+
 // GET
 export async function getNotes(): Promise<Note[]> {
-  if (!db) {
-    console.error("Firestore DB is not initialized.");
-    return [];
-  }
-  const notepadDocRef = doc(db, 'notepad', 'main');
+  const notepadDocRef = getNotepadDocRef();
   const docSnap = await getDoc(notepadDocRef).catch(async (serverError) => {
     const permissionError = new FirestorePermissionError({
         path: notepadDocRef.path,
@@ -43,10 +41,7 @@ export async function getNotes(): Promise<Note[]> {
 
 // SAVE
 export async function saveNotes(notes: Note[]): Promise<void> {
-  if (!db) {
-    throw new Error("Firestore DB is not initialized.");
-  }
-  const notepadDocRef = doc(db, 'notepad', 'main');
+  const notepadDocRef = getNotepadDocRef();
   // A ordenação já é feita no getNotes e ao adicionar, mas garantimos aqui antes de salvar.
   const sortedNotes = [...notes].sort((a, b) => 
     (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0)

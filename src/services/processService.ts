@@ -5,6 +5,7 @@ import type { Process, ProcessFormValues, TimelineEvent } from '@/components/pro
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
+const getProcessesCollectionRef = () => collection(db, 'processes');
 
 // Helper para remover chaves indefinidas de um objeto, agora de forma recursiva
 const removeUndefinedKeys = (obj: any): any => {
@@ -51,11 +52,7 @@ const fromFirestore = (docSnap: DocumentData): Process => {
 
 // READ ALL
 export async function getProcesses(): Promise<Process[]> {
-  if (!db) {
-    console.error("Firestore DB is not initialized.");
-    return [];
-  }
-  const processesCollectionRef = collection(db, 'processes');
+  const processesCollectionRef = getProcessesCollectionRef();
   const q = query(processesCollectionRef, orderBy("createdAt", "desc"));
   const querySnapshot = await getDocs(q).catch(async (serverError) => {
     const permissionError = new FirestorePermissionError({
@@ -70,11 +67,7 @@ export async function getProcesses(): Promise<Process[]> {
 
 // READ RECENT
 export async function getRecentProcesses(count?: number): Promise<Process[]> {
-    if (!db) {
-      console.error("Firestore DB is not initialized.");
-      return [];
-    }
-    const processesCollectionRef = collection(db, 'processes');
+    const processesCollectionRef = getProcessesCollectionRef();
     const q = count 
         ? query(processesCollectionRef, orderBy("createdAt", "desc"), limit(count))
         : query(processesCollectionRef, orderBy("createdAt", "desc"));
@@ -93,10 +86,7 @@ export async function getRecentProcesses(count?: number): Promise<Process[]> {
 
 // CREATE
 export async function addProcess(processData: Omit<Process, 'id' | 'createdAt'>): Promise<Process> {
-  if (!db) {
-    throw new Error("Firestore DB is not initialized.");
-  }
-  const processesCollectionRef = collection(db, 'processes');
+  const processesCollectionRef = getProcessesCollectionRef();
   const cleanData = removeUndefinedKeys(processData);
   const dataToSave = {
     ...cleanData,
@@ -118,9 +108,6 @@ export async function addProcess(processData: Omit<Process, 'id' | 'createdAt'>)
 
 // UPDATE
 export async function updateProcess(processId: string, processData: ProcessFormValues & { timeline?: TimelineEvent[] }): Promise<Process> {
-  if (!db) {
-    throw new Error("Firestore DB is not initialized.");
-  }
   const processDocRef = doc(db, 'processes', processId);
   const cleanData = removeUndefinedKeys(processData);
   const dataToUpdate = {
@@ -144,9 +131,6 @@ export async function updateProcess(processId: string, processData: ProcessFormV
 
 // DELETE
 export async function deleteProcess(processId: string): Promise<void> {
-  if (!db) {
-    throw new Error("Firestore DB is not initialized.");
-  }
   const processDocRef = doc(db, 'processes', processId);
   deleteDoc(processDocRef)
     .catch(async (serverError) => {

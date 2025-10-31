@@ -17,6 +17,7 @@ export interface TemplateFormValues {
     content: string;
 }
 
+const getTemplatesCollectionRef = () => collection(db, 'documentTemplates');
 
 const fromFirestore = (docSnap: DocumentData): DocumentTemplate => {
   const data = docSnap.data();
@@ -31,11 +32,7 @@ const fromFirestore = (docSnap: DocumentData): DocumentTemplate => {
 
 // READ
 export async function getTemplates(): Promise<DocumentTemplate[]> {
-  if (!db) {
-    console.error("Firestore DB is not initialized.");
-    return [];
-  }
-  const templatesCollectionRef = collection(db, 'documentTemplates');
+  const templatesCollectionRef = getTemplatesCollectionRef();
   const q = query(templatesCollectionRef, orderBy("name", "asc"));
   const querySnapshot = await getDocs(q).catch(async (serverError) => {
     const permissionError = new FirestorePermissionError({
@@ -50,10 +47,7 @@ export async function getTemplates(): Promise<DocumentTemplate[]> {
 
 // CREATE
 export async function addTemplate(templateData: TemplateFormValues): Promise<DocumentTemplate> {
-    if (!db) {
-      throw new Error("Firestore DB is not initialized.");
-    }
-    const templatesCollectionRef = collection(db, 'documentTemplates');
+    const templatesCollectionRef = getTemplatesCollectionRef();
     const dataToSave = {
         ...templateData,
         createdAt: serverTimestamp(),
@@ -74,9 +68,6 @@ export async function addTemplate(templateData: TemplateFormValues): Promise<Doc
 
 // UPDATE
 export async function updateTemplate(templateId: string, templateData: TemplateFormValues): Promise<DocumentTemplate> {
-    if (!db) {
-      throw new Error("Firestore DB is not initialized.");
-    }
     const templateDocRef = doc(db, 'documentTemplates', templateId);
     const dataToUpdate = {
         ...templateData,
@@ -98,9 +89,6 @@ export async function updateTemplate(templateId: string, templateData: TemplateF
 
 // DELETE
 export async function deleteTemplate(templateId: string): Promise<void> {
-    if (!db) {
-      throw new Error("Firestore DB is not initialized.");
-    }
     const templateDocRef = doc(db, 'documentTemplates', templateId);
     deleteDoc(templateDocRef)
         .catch(async (serverError) => {
