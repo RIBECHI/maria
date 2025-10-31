@@ -182,9 +182,14 @@ function AppRouter({ children }: { children: React.ReactNode }) {
   const { currentUser, isLoading } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    if (isLoading) return; // Não faça nada enquanto o estado de auth estiver carregando
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isClient || isLoading) return;
 
     const isLoginPage = pathname === '/login';
 
@@ -193,11 +198,11 @@ function AppRouter({ children }: { children: React.ReactNode }) {
     } else if (currentUser && isLoginPage) {
       router.push('/');
     }
-  }, [currentUser, isLoading, pathname, router]);
+  }, [currentUser, isLoading, pathname, router, isClient]);
 
-  if (isLoading) {
-    // Retorna nulo, pois o AuthProvider já mostra um loader de página inteira
-    return null; 
+  if (!isClient || isLoading) {
+    // Render nothing on the server and during initial client-side loading to prevent hydration mismatch
+    return null;
   }
   
   const isLoginPage = pathname === '/login';
@@ -209,8 +214,8 @@ function AppRouter({ children }: { children: React.ReactNode }) {
   if (currentUser && !isLoginPage) {
     return <ProtectedAppLayout>{children}</ProtectedAppLayout>;
   }
-
-  // Para os casos de redirecionamento, retorna nulo para evitar piscar de conteúdo
+  
+  // For redirection cases, returning null prevents content flashing
   return null;
 }
 
