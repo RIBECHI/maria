@@ -6,7 +6,6 @@ import type { DocumentData } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
-const documentsCollectionRef = collection(db, 'documents');
 
 const fromFirestore = (docSnap: DocumentData): Document => {
   const data = docSnap.data();
@@ -27,6 +26,7 @@ const fromFirestore = (docSnap: DocumentData): Document => {
 
 // READ
 export async function getDocuments(): Promise<Document[]> {
+  const documentsCollectionRef = collection(db, 'documents');
   const q = query(documentsCollectionRef, orderBy("createdAt", "desc"));
   const querySnapshot = await getDocs(q).catch(async (serverError) => {
     const permissionError = new FirestorePermissionError({
@@ -41,6 +41,7 @@ export async function getDocuments(): Promise<Document[]> {
 
 // CREATE
 export async function addDocument(docData: { process: string; tagsString?: string | undefined; name: string; }, filePath: string): Promise<Document> {
+  const documentsCollectionRef = collection(db, 'documents');
   const tags = docData.tagsString ? docData.tagsString.split(',').map(t => t.trim()).filter(Boolean) : [];
   
   const dataToSave = {

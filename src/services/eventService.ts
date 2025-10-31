@@ -6,7 +6,6 @@ import { startOfToday, format } from 'date-fns';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
-const eventsCollectionRef = collection(db, 'events');
 
 const fromFirestore = (docSnap: any): CalendarEvent => {
     const data = docSnap.data();
@@ -27,6 +26,7 @@ const fromFirestore = (docSnap: any): CalendarEvent => {
 
 // READ ALL
 export async function getEvents(): Promise<CalendarEvent[]> {
+  const eventsCollectionRef = collection(db, 'events');
   const q = query(eventsCollectionRef, orderBy('date', 'asc'));
   const querySnapshot = await getDocs(q).catch(async (serverError) => {
     const permissionError = new FirestorePermissionError({
@@ -41,6 +41,7 @@ export async function getEvents(): Promise<CalendarEvent[]> {
 
 // READ for Dashboard/Sidebar
 export async function getEventsForDashboard(count: number): Promise<CalendarEvent[]> {
+  const eventsCollectionRef = collection(db, 'events');
   const today = format(startOfToday(), 'yyyy-MM-dd');
   const q = query(
     eventsCollectionRef, 
@@ -62,6 +63,7 @@ export async function getEventsForDashboard(count: number): Promise<CalendarEven
 
 // CREATE
 export async function addEvent(eventData: Omit<import("/home/user/app/src/components/agenda/EventFormDialog").EventFormValues, "clientId"> & { client?: string | undefined; }): Promise<CalendarEvent> {
+  const eventsCollectionRef = collection(db, 'events');
   const dataToSave = {
     ...eventData,
     createdAt: serverTimestamp(),

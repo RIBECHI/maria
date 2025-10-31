@@ -5,7 +5,6 @@ import type { Process, ProcessFormValues, TimelineEvent } from '@/components/pro
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
-const processesCollectionRef = collection(db, 'processes');
 
 // Helper para remover chaves indefinidas de um objeto, agora de forma recursiva
 const removeUndefinedKeys = (obj: any): any => {
@@ -52,6 +51,7 @@ const fromFirestore = (docSnap: DocumentData): Process => {
 
 // READ ALL
 export async function getProcesses(): Promise<Process[]> {
+  const processesCollectionRef = collection(db, 'processes');
   const q = query(processesCollectionRef, orderBy("createdAt", "desc"));
   const querySnapshot = await getDocs(q).catch(async (serverError) => {
     const permissionError = new FirestorePermissionError({
@@ -66,6 +66,7 @@ export async function getProcesses(): Promise<Process[]> {
 
 // READ RECENT
 export async function getRecentProcesses(count?: number): Promise<Process[]> {
+    const processesCollectionRef = collection(db, 'processes');
     const q = count 
         ? query(processesCollectionRef, orderBy("createdAt", "desc"), limit(count))
         : query(processesCollectionRef, orderBy("createdAt", "desc"));
@@ -84,6 +85,7 @@ export async function getRecentProcesses(count?: number): Promise<Process[]> {
 
 // CREATE
 export async function addProcess(processData: Omit<Process, 'id' | 'createdAt'>): Promise<Process> {
+  const processesCollectionRef = collection(db, 'processes');
   const cleanData = removeUndefinedKeys(processData);
   const dataToSave = {
     ...cleanData,
