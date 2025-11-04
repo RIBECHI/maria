@@ -3,6 +3,7 @@ import { auth, db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, type DocumentData, query, orderBy, limit, getDoc, Timestamp, FirestoreError } from 'firebase/firestore';
 import type { Process, ProcessFormValues, TimelineEvent } from '@/components/processes/ProcessFormDialog';
 import { errorEmitter, FirestorePermissionError, SecurityRuleContext } from '@/lib/errors';
+import { getClients, addClient as createClient } from './clientService'; // Renomeando para evitar conflito
 
 // Helper para remover chaves indefinidas de um objeto, agora de forma recursiva
 const removeUndefinedKeys = (obj: any): any => {
@@ -80,12 +81,46 @@ export async function getRecentProcesses(count?: number): Promise<Process[]> {
     return querySnapshot.docs.map(fromFirestore);
 }
 
+// Automatic client creation logic
+async function ensureClientsExist(clientNames: string[]): Promise<void> {
+    if (clientNames.length === 0) return;
+
+    const allClients = await getClients();
+    const existingClientNames = new Set(allClients.map(c => c.name.toLowerCase()));
+    const clientsToCreate = new Set<string>();
+
+    for (const clientName of clientNames) {
+        if (!existingClientNames.has(clientName.toLowerCase())) {
+            clientsToCreate.add(clientName);
+        }
+    }
+
+    if (clientsToCreate.size === 0) {
+        return;
+    }
+
+    for (const clientName of clientsToCreate) {
+        await createClient({
+            name: clientName,
+            contact: "Contato não informado",
+            caseCount: 0,
+            lastActivity: new Date().toISOString().split('T')[0],
+        });
+    }
+}
+
 
 // CREATE
 export async function addProcess(processData: Omit<Process, 'id' | 'createdAt'>): Promise<Process> {
   if (!db) throw new Error("Firebase DB not initialized");
   const processesCollectionRef = collection(db, 'processes');
   const cleanData = removeUndefinedKeys(processData);
+  
+  // Garante que os clientes existam antes de criar o processo
+  if (cleanData.clients && cleanData.clients.length > 0) {
+    await ensureClientsExist(cleanData.clients);
+  }
+
   try {
     const docRef = await addDoc(processesCollectionRef, {
         ...cleanData,
@@ -112,6 +147,12 @@ export async function updateProcess(processId: string, processData: ProcessFormV
   if (!db) throw new Error("Firebase DB not initialized");
   const processDocRef = doc(db, 'processes', processId);
   const cleanData = removeUndefinedKeys(processData);
+
+  // Garante que os clientes existam antes de atualizar o processo
+  if (cleanData.clients && cleanData.clients.length > 0) {
+    await ensureClientsExist(cleanData.clients);
+  }
+  
   try {
     await updateDoc(processDocRef, {
         ...cleanData,
