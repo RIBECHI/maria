@@ -86,12 +86,16 @@ async function ensureClientsExist(clientNames: string[]): Promise<void> {
     if (clientNames.length === 0) return;
 
     const allClients = await getClients();
-    const existingClientNames = new Set(allClients.map(c => c.name.toLowerCase()));
+    // Normaliza os nomes existentes para minúsculas e sem espaços extras
+    const existingClientNames = new Set(allClients.map(c => c.name.toLowerCase().trim()));
     const clientsToCreate = new Set<string>();
 
     for (const clientName of clientNames) {
-        if (!existingClientNames.has(clientName.toLowerCase())) {
-            clientsToCreate.add(clientName);
+        // Normaliza o nome do novo cliente antes de verificar
+        const normalizedClientName = clientName.toLowerCase().trim();
+        if (normalizedClientName && !existingClientNames.has(normalizedClientName)) {
+            // Adiciona o nome original (com maiúsculas) para ser criado
+            clientsToCreate.add(clientName.trim());
         }
     }
 
