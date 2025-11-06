@@ -96,7 +96,7 @@ export function EventFormDialog({ isOpen, onClose, onSubmit, eventData }: EventF
     if (!selectedClientId) return [];
     const selectedClient = allClients.find(c => c.id === selectedClientId);
     if (!selectedClient) return [];
-    return allProcesses.filter(p => p.client === selectedClient.name);
+    return allProcesses.filter(p => p.clients.includes(selectedClient.name));
   }, [selectedClientId, allClients, allProcesses]);
 
 
