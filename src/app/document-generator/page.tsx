@@ -67,7 +67,7 @@ export default function DocumentGeneratorPage() {
   }, [selectedClientId, clients, processes]);
 
   const handleGenerate = () => {
-    if (!selectedProcessId || !selectedTemplateId) {
+    if (!selectedClientId || !selectedProcessId || !selectedTemplateId) {
       toast({ title: "Seleção incompleta", description: "Por favor, selecione um cliente, um processo e um modelo.", variant: "destructive" });
       return;
     }
@@ -78,16 +78,11 @@ export default function DocumentGeneratorPage() {
     try {
       const process = processes.find(p => p.id === selectedProcessId);
       const template = templates.find(t => t.id === selectedTemplateId);
-      if (!process || !template) {
-          throw new Error("Processo ou modelo não encontrado.");
-      }
+      // BUG FIX: Find the client based on the selectedClientId from the form, not the first in the process.
+      const client = clients.find(c => c.id === selectedClientId);
 
-      // Since a process can have multiple clients, we'll use the first client for template filling.
-      // This could be improved in the future to let the user choose which client to use if multiple exist.
-      const primaryClientName = process.clients[0];
-      const client = clients.find(c => c.name === primaryClientName);
-      if (!client) {
-          throw new Error(`Cliente "${primaryClientName}" não encontrado.`);
+      if (!process || !template || !client) {
+          throw new Error("Processo, modelo ou cliente selecionado não foi encontrado.");
       }
 
       let content = template.content;
