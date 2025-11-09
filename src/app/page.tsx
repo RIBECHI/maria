@@ -103,7 +103,7 @@ export default function DashboardPage() {
 
     return (
         <div className="container mx-auto p-4 md:p-6 lg:p-8">
-            <h1 className="text-4xl font-headline font-extrabold mb-8 text-primary">Painel</h1>
+            <h1 className="text-4xl font-headline font-extrabold mb-8 text-primary text-center">Painel</h1>
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {/* Próximos Prazos */}
