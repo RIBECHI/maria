@@ -161,7 +161,8 @@ const Sidebar = React.forwardRef<
   React.ComponentProps<"div"> & {
     side?: "left" | "right"
     variant?: "sidebar" | "floating" | "inset"
-    collapsible?: "offcanvas" | "icon" | "none"
+    collapsible?: "offcanvas" | "icon" | "none",
+    mobileHeader?: React.ReactNode
   }
 >(
   (
@@ -171,6 +172,7 @@ const Sidebar = React.forwardRef<
       collapsible = "offcanvas",
       className,
       children,
+      mobileHeader,
       ...props
     },
     ref
@@ -206,9 +208,11 @@ const Sidebar = React.forwardRef<
             }
             side={side}
           >
-             <SheetHeader className="sr-only">
-              <SheetTitle>Menu Principal</SheetTitle>
-            </SheetHeader>
+            {mobileHeader && (
+              <SheetHeader>
+                <SheetTitle>{mobileHeader}</SheetTitle>
+              </SheetHeader>
+            )}
             <div className="flex h-full w-full flex-col">{children}</div>
           </SheetContent>
         </Sheet>
