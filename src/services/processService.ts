@@ -66,6 +66,10 @@ export async function getProcesses(): Promise<Process[]> {
       };
       errorEmitter.emit('permission-error', new FirestorePermissionError(context));
     }
+    // Return empty array on permission error to avoid breaking UI
+    if (error instanceof FirestoreError && error.code === 'permission-denied') {
+      return [];
+    }
     throw error;
   }
 }
@@ -77,9 +81,13 @@ export async function getRecentProcesses(count?: number): Promise<Process[]> {
     const q = count 
         ? query(processesCollectionRef, orderBy("createdAt", "desc"), limit(count))
         : query(processesCollectionRef, orderBy("createdAt", "desc"));
-
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(fromFirestore);
+    try {
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(fromFirestore);
+    } catch(error) {
+        console.error("Failed to get recent processes:", error);
+        return []; // Return empty array on error
+    }
 }
 
 // Automatic client creation logic
@@ -198,5 +206,3 @@ export async function deleteProcess(processId: string): Promise<void> {
     throw error;
   }
 }
-
-    

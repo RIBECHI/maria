@@ -23,6 +23,7 @@ interface RecentActivityItem {
     text: string;
     time: string;
     icon: React.ReactNode;
+    createdAt: Date;
 }
 
 export default function DashboardPage() {
@@ -45,7 +46,7 @@ export default function DashboardPage() {
                 setUpcomingEvents(events);
 
                 // Montar Atividades Recentes
-                const processActivities = processes.map(p => ({
+                const processActivities = (processes || []).map(p => ({
                     id: p.id,
                     type: 'process' as const,
                     text: `Novo processo para ${p.clients.join(', ')}`,
@@ -53,7 +54,7 @@ export default function DashboardPage() {
                     icon: <FilePlus2 className="h-5 w-5 text-muted-foreground" />
                 }));
 
-                const clientActivities = clients.map(c => ({
+                const clientActivities = (clients || []).map(c => ({
                     id: c.id,
                     type: 'client' as const,
                     text: `Cliente ${c.name} adicionado`,
@@ -63,17 +64,17 @@ export default function DashboardPage() {
                 
                 const combinedActivities = [...processActivities, ...clientActivities];
 
-                combinedActivities.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+                combinedActivities.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
                 
                 const formattedActivities = combinedActivities.slice(0, 5).map(activity => ({
                     ...activity,
-                    time: format(activity.createdAt, 'dd/MM/yyyy', { locale: ptBR }),
+                    time: activity.createdAt ? format(activity.createdAt, 'dd/MM/yyyy', { locale: ptBR }) : 'Data indisponível',
                 }));
                 
                 setRecentActivities(formattedActivities);
 
                 // Calcular Estatísticas de Processos
-                const stats = allProcessesForStats.reduce((acc, p) => {
+                const stats = (allProcessesForStats || []).reduce((acc, p) => {
                     if (p.status === 'Em Andamento') acc.emAndamento++;
                     else if (p.status === 'Concluído') acc.concluido++;
                     else if (p.status === 'Suspenso') acc.suspenso++;
@@ -90,7 +91,8 @@ export default function DashboardPage() {
         fetchData();
     }, []);
 
-    const getActivityLink = (item: RecentActivityItem) => {
+    const getActivityLink = (item: RecentActivityItem | null) => {
+        if (!item) return '#';
         switch (item.type) {
             case 'process':
                 return '/processes';
