@@ -97,6 +97,8 @@ export default function DocumentGeneratorPage() {
       content = content.replace(/\{\{processo\.numero\}\}/g, process.processNumber || "");
       content = content.replace(/\{\{processo\.tipo\}\}/g, process.type || "");
       content = content.replace(/\{\{processo\.status\}\}/g, process.status || "");
+      content = content.replace(/\{\{processo\.comarca\}\}/g, process.comarca || "");
+      content = content.replace(/\{\{processo\.uhd\}\}/g, process.uhd?.toString() || "");
       
       setGeneratedContent(content);
       toast({ title: "Documento Gerado!", description: "O texto foi preenchido com base no modelo." });

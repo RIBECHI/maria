@@ -50,6 +50,8 @@ const availableVariables = [
     { variable: "{{processo.numero}}", description: "Número do processo" },
     { variable: "{{processo.tipo}}", description: "Tipo do processo" },
     { variable: "{{processo.status}}", description: "Status atual do processo" },
+    { variable: "{{processo.comarca}}", description: "Comarca do processo" },
+    { variable: "{{processo.uhd}}", description: "Número da UHD" },
 ];
 
 export function TemplateFormDialog({ isOpen, onClose, onSubmit, templateData }: TemplateFormDialogProps) {
