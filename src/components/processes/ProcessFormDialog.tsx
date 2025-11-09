@@ -69,6 +69,7 @@ export interface Process extends DocumentData {
   clients: string[]; // Alterado de client: string para clients: string[]
   type: string;
   status: 'Em Andamento' | 'Concluído' | 'Suspenso';
+  comarca?: string;
   nextDeadline: string; // YYYY-MM-DD or '-'
   documents: number;
   expressoGoias?: boolean;
@@ -84,6 +85,7 @@ const processFormSchema = z.object({
   processNumber: z.string().min(5, { message: "O número do processo é obrigatório e deve ter pelo menos 5 caracteres." }),
   clients: z.array(z.string()).min(1, { message: "O processo deve ter pelo menos um cliente." }),
   type: z.string().min(3, { message: "O tipo do processo deve ter pelo menos 3 caracteres." }),
+  comarca: z.string().optional(),
   status: z.enum(['Em Andamento', 'Concluído', 'Suspenso'], { required_error: "Status é obrigatório."}),
   nextDeadline: z.string().refine((val) => val === '-' || !isNaN(Date.parse(val)), { message: "Data inválida ou '-'." }),
   expressoGoias: z.boolean().optional(),
@@ -127,6 +129,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
       processNumber: "",
       clients: [],
       type: "",
+      comarca: "",
       status: "Em Andamento",
       nextDeadline: format(new Date(), 'yyyy-MM-dd'),
       expressoGoias: false,
@@ -156,6 +159,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
               processNumber: processData.processNumber,
               clients: processData.clients || (processData.client ? [processData.client] : []),
               type: processData.type,
+              comarca: processData.comarca || "",
               status: processData.status,
               nextDeadline: processData.nextDeadline === '-' ? '' : format(parseISO(processData.nextDeadline + 'T00:00:00'), 'yyyy-MM-dd'),
               expressoGoias: processData.expressoGoias || false,
@@ -169,6 +173,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
               processNumber: "",
               clients: [],
               type: "",
+              comarca: "",
               status: "Em Andamento",
               nextDeadline: format(new Date(), 'yyyy-MM-dd'),
               expressoGoias: false,
@@ -388,19 +393,34 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
                     </FormItem>
                   )}
                 />
-              <FormField
-                control={form.control}
-                name="type"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tipo de Processo</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Ex: Cível, Trabalhista, Tributário" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de Processo</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: Cível, Trabalhista, Tributário" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="comarca"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Comarca</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: Goiânia, Anápolis" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                   control={form.control}
@@ -681,3 +701,5 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
     </>
   );
 }
+
+    

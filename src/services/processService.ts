@@ -33,6 +33,7 @@ const fromFirestore = (docSnap: DocumentData): Process => {
     processNumber: data.processNumber,
     clients: data.clients || (data.client ? [data.client] : []), // Compatibilidade
     type: data.type,
+    comarca: data.comarca,
     status: data.status,
     nextDeadline: data.nextDeadline,
     documents: data.documents,
@@ -197,3 +198,5 @@ export async function deleteProcess(processId: string): Promise<void> {
     throw error;
   }
 }
+
+    
