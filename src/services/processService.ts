@@ -76,7 +76,7 @@ export async function getProcesses(): Promise<Process[]> {
 
 // READ RECENT
 export async function getRecentProcesses(count?: number): Promise<Process[]> {
-    if (!db) throw new Error("Firebase DB not initialized");
+    if (!db) return [];
     const processesCollectionRef = collection(db, 'processes');
     const q = count 
         ? query(processesCollectionRef, orderBy("createdAt", "desc"), limit(count))
@@ -156,7 +156,7 @@ export async function addProcess(processData: Omit<Process, 'id' | 'createdAt'>)
 }
 
 // UPDATE
-export async function updateProcess(processId: string, processData: ProcessFormValues & { timeline?: TimelineEvent[] }): Promise<Process> {
+export async function updateProcess(processId: string, processData: Partial<ProcessFormValues & { timeline?: TimelineEvent[] }>): Promise<Process> {
   if (!db) throw new Error("Firebase DB not initialized");
   const processDocRef = doc(db, 'processes', processId);
   const cleanData = removeUndefinedKeys(processData);

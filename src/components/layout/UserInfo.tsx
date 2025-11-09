@@ -19,7 +19,7 @@ export default function UserInfo() {
   return (
     <div className="flex items-center gap-2 p-2 group-data-[collapsible=icon]:justify-center">
       <Avatar className="h-8 w-8">
-        <AvatarImage src="https://placehold.co/40x40.png" alt="Avatar do Usuário" data-ai-hint="user avatar" />
+        <AvatarImage src="https://picsum.photos/seed/1/40/40" alt="Avatar do Usuário" data-ai-hint="user avatar" />
         <AvatarFallback>{getInitials(userName)}</AvatarFallback>
       </Avatar>
       <div className="group-data-[collapsible=icon]:hidden">
