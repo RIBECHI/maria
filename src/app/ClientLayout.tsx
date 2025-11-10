@@ -115,7 +115,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
           variant="sidebar" 
           side="left"
           mobileHeader={
-            <SheetTitle className="sr-only">Menu Principal</SheetTitle>
+            <SheetTitle>Menu Principal</SheetTitle>
           }
         >
           <SidebarHeader>
@@ -126,7 +126,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
               </span>
             </Link>
           </SidebarHeader>
-          <SidebarContent className="flex-1 min-h-0 flex flex-col">
+          <SidebarContent>
             <SidebarMenu className="flex-1">
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.label}>
@@ -152,9 +152,8 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                 <ThemeToggle />
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <Link href="/settings" passHref legacyBehavior>
+                <Link href="/settings" asChild>
                   <SidebarMenuButton
-                    as="a"
                     tooltip={{ children: 'Configurações', side: 'right', align: 'center' }}
                   >
                     <Settings />
