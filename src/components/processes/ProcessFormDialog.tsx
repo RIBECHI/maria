@@ -484,14 +484,17 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Fase do Pipeline</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ""} defaultValue={field.value || ""}>
+                        <Select 
+                          onValueChange={(value) => field.onChange(value === "unclassified" ? undefined : value)} 
+                          value={field.value ?? "unclassified"}
+                        >
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Selecione uma fase" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">Não Classificado</SelectItem>
+                            <SelectItem value="unclassified">Não Classificado</SelectItem>
                             {phases.map(phase => (
                               <SelectItem key={phase.id} value={phase.id}>{phase.name}</SelectItem>
                             ))}
@@ -745,5 +748,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
     </>
   );
 }
+
+    
 
     
