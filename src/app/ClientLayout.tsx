@@ -114,9 +114,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
           collapsible="icon" 
           variant="sidebar" 
           side="left"
-          mobileHeader={
-            <SheetTitle>Menu Principal</SheetTitle>
-          }
+          mobileHeader={<SheetTitle>Menu Principal</SheetTitle>}
         >
           <SidebarHeader>
             <Link href="/" className="flex items-center gap-2">
@@ -126,7 +124,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
               </span>
             </Link>
           </SidebarHeader>
-          <SidebarContent>
+          <SidebarContent className="flex-1 flex flex-col min-h-0">
             <SidebarMenu className="flex-1">
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.label}>
@@ -152,13 +150,15 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                 <ThemeToggle />
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <Link href="/settings" asChild>
-                  <SidebarMenuButton
-                    tooltip={{ children: 'Configurações', side: 'right', align: 'center' }}
-                  >
-                    <Settings />
-                    <span>Configurações</span>
-                  </SidebarMenuButton>
+                <Link href="/settings" passHref>
+                  <a>
+                    <SidebarMenuButton
+                      tooltip={{ children: 'Configurações', side: 'right', align: 'center' }}
+                    >
+                      <Settings />
+                      <span>Configurações</span>
+                    </SidebarMenuButton>
+                  </a>
                 </Link>
               </SidebarMenuItem>
               <SidebarMenuItem>
