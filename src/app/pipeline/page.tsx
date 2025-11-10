@@ -67,7 +67,7 @@ export default function PipelinePage() {
         setProcesses(updatedProcesses);
         
         try {
-            await updateProcess(processId, { phaseId: newPhaseId });
+            await updateProcess(processId, { phaseId: newPhaseId || undefined });
             toast({
                 title: "Processo movido!",
                 description: `O processo foi movido para a nova fase.`,

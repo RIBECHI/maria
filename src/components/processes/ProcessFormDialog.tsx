@@ -70,7 +70,7 @@ export interface Process extends DocumentData {
   clients: string[];
   type: string;
   status: 'Em Andamento' | 'Concluído' | 'Suspenso';
-  phaseId?: string;
+  phaseId?: string | undefined;
   comarca?: string;
   nextDeadline: string; // YYYY-MM-DD or '-'
   documents: number;
