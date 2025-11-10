@@ -69,6 +69,7 @@ export interface Process extends DocumentData {
   clients: string[]; // Alterado de client: string para clients: string[]
   type: string;
   status: 'Em Andamento' | 'Concluído' | 'Suspenso';
+  phaseId?: string; // ID da fase no pipeline (Kanban)
   comarca?: string;
   nextDeadline: string; // YYYY-MM-DD or '-'
   documents: number;
@@ -92,6 +93,7 @@ const processFormSchema = z.object({
   uhd: z.coerce.number().min(1, "UHD deve ser no mínimo 1").max(10, "UHD deve ser no máximo 10").optional(),
   certidao: z.boolean().optional(),
   apensos: z.array(z.string()).optional(),
+  phaseId: z.string().optional(), // Adicionado para o pipeline
 });
 
 export type ProcessFormValues = z.infer<typeof processFormSchema>;
@@ -136,6 +138,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
       uhd: undefined,
       certidao: false,
       apensos: [],
+      phaseId: undefined,
     },
   });
 
@@ -166,6 +169,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
               uhd: processData.uhd || undefined,
               certidao: processData.certidao || false,
               apensos: processData.apensos || [],
+              phaseId: processData.phaseId || undefined,
             });
             setCurrentTimeline((processData.timeline || []).sort((a, b) => parseISO(b.date).getTime() - parseISO(a.date).getTime()));
         } else {
@@ -180,6 +184,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
               uhd: undefined,
               certidao: false,
               apensos: [],
+              phaseId: undefined,
             });
             setCurrentTimeline([]);
         }

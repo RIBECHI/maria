@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import Link from 'next/link';
@@ -16,6 +15,7 @@ import {
   FileCog,
   FileSignature,
   ListChecks,
+  KanbanSquare,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -49,6 +49,7 @@ const navItems = [
   { href: '/', label: 'Painel', icon: <LayoutDashboard /> },
   { href: '/clients', label: 'Clientes', icon: <Users /> },
   { href: '/processes', label: 'Processos', icon: <Briefcase /> },
+  { href: '/pipeline', label: 'Pipeline', icon: <KanbanSquare /> },
   { href: '/tasks', label: 'Tarefas', icon: <ListChecks /> },
   { href: '/documents', label: 'Documentos', icon: <FileText /> },
   { href: '/agenda', label: 'Agenda', icon: <CalendarDays /> },
@@ -117,7 +118,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
               </span>
             </Link>
           </SidebarHeader>
-          <SidebarContent>
+          <SidebarContent className="flex flex-col min-h-0">
             <SidebarMenu className="flex-1">
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.label}>
@@ -143,15 +144,15 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                 <ThemeToggle />
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <Link href="/settings">
+                <Link href="/settings" passHref legacyBehavior>
                   <SidebarMenuButton
                     asChild
                     tooltip={{ children: 'Configurações', side: 'right', align: 'center' }}
                   >
-                    <span>
+                    <a>
                       <Settings />
                       <span>Configurações</span>
-                    </span>
+                    </a>
                   </SidebarMenuButton>
                 </Link>
               </SidebarMenuItem>
