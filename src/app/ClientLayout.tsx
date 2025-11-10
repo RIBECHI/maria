@@ -30,7 +30,7 @@ import {
   SidebarTrigger,
   SidebarSeparator,
 } from '@/components/ui/sidebar';
-import { SheetTitle } from '@/components/ui/sheet';
+import { SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Toaster } from "@/components/ui/toaster";
 import Logo from '@/components/layout/Logo';
 import NavLink from '@/components/layout/NavLink';
@@ -114,7 +114,11 @@ function AppLayout({ children }: { children: React.ReactNode }) {
           collapsible="icon" 
           variant="sidebar" 
           side="left"
-          mobileHeader={<SheetTitle>Menu Principal</SheetTitle>}
+          mobileHeader={
+            <SheetHeader>
+                <SheetTitle>Menu Principal</SheetTitle>
+            </SheetHeader>
+          }
         >
           <SidebarHeader>
             <Link href="/" className="flex items-center gap-2">
@@ -150,8 +154,9 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                 <ThemeToggle />
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <Link href="/settings" asChild>
+                <Link href="/settings" passHref legacyBehavior>
                   <SidebarMenuButton
+                    as="a"
                     tooltip={{ children: 'Configurações', side: 'right', align: 'center' }}
                   >
                     <Settings />
