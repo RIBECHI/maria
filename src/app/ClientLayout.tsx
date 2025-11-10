@@ -142,15 +142,12 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                 <ThemeToggle />
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <Link href="/settings" passHref>
+                 <Link href="/settings">
                   <SidebarMenuButton
-                    asChild
                     tooltip={{ children: 'Configurações', side: 'right', align: 'center' }}
                   >
-                    <a>
-                      <Settings />
-                      <span>Configurações</span>
-                    </a>
+                    <Settings />
+                    <span>Configurações</span>
                   </SidebarMenuButton>
                 </Link>
               </SidebarMenuItem>
@@ -166,6 +163,9 @@ function AppLayout({ children }: { children: React.ReactNode }) {
               <PanelLeftIcon className="h-5 w-5" />
               <span className="sr-only">Alternar Menu</span>
             </SidebarTrigger>
+            <div className="flex-1 text-center">
+              <h1 className="text-4xl font-headline font-extrabold text-primary">Painel</h1>
+            </div>
           </header>
           <main className="flex-1 overflow-auto">
             {children}
