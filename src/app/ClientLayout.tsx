@@ -128,8 +128,8 @@ function AppLayout({ children }: { children: React.ReactNode }) {
               </span>
             </Link>
           </SidebarHeader>
-          <SidebarContent className="flex-1 flex flex-col min-h-0">
-             <SidebarMenu className="flex-1 overflow-y-auto">
+          <SidebarContent>
+            <SidebarMenu>
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.label}>
                   <NavLink href={item.href} label={item.label} icon={item.icon} />
