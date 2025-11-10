@@ -36,9 +36,9 @@ const getStatusBadgeVariant = (status: string) => {
 
 const ProcessCard: React.FC<ProcessCardProps> = ({ process, phases, onMove, onClick }) => {
 
-    const handleMenuSelect = (e: Event, phaseId: string | null) => {
+    const handleMenuSelect = (e: Event, phaseId: string) => {
         e.preventDefault(); // Impede o clique no card de ser acionado
-        onMove(process.id, phaseId);
+        onMove(process.id, phaseId === 'unclassified' ? null : phaseId);
     };
     
     return (
@@ -84,8 +84,8 @@ const ProcessCard: React.FC<ProcessCardProps> = ({ process, phases, onMove, onCl
                         {phases.map(phase => (
                             <DropdownMenuItem
                                 key={phase.id}
-                                onSelect={(e) => handleMenuSelect(e, phase.id === 'unclassified' ? null : phase.id)}
-                                disabled={(process.phaseId || null) === (phase.id === 'unclassified' ? null : phase.id)}
+                                onSelect={(e) => handleMenuSelect(e, phase.id)}
+                                disabled={(process.phaseId || 'unclassified') === phase.id}
                             >
                                 {phase.name}
                             </DropdownMenuItem>
