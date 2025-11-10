@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -210,7 +211,7 @@ const Sidebar = React.forwardRef<
           >
             {mobileHeader && (
               <SheetHeader>
-                <SheetTitle>{mobileHeader}</SheetTitle>
+                {mobileHeader}
               </SheetHeader>
             )}
             <div className="flex h-full w-full flex-col">{children}</div>

@@ -125,7 +125,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
             </Link>
           </SidebarHeader>
           <SidebarContent className="flex-1 flex flex-col min-h-0">
-            <SidebarMenu className="flex-1">
+             <SidebarMenu className="flex-1 overflow-y-auto">
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.label}>
                   <NavLink href={item.href} label={item.label} icon={item.icon} />
@@ -150,15 +150,13 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                 <ThemeToggle />
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <Link href="/settings" passHref>
-                  <a>
-                    <SidebarMenuButton
-                      tooltip={{ children: 'Configurações', side: 'right', align: 'center' }}
-                    >
-                      <Settings />
-                      <span>Configurações</span>
-                    </SidebarMenuButton>
-                  </a>
+                <Link href="/settings" asChild>
+                  <SidebarMenuButton
+                    tooltip={{ children: 'Configurações', side: 'right', align: 'center' }}
+                  >
+                    <Settings />
+                    <span>Configurações</span>
+                  </SidebarMenuButton>
                 </Link>
               </SidebarMenuItem>
               <SidebarMenuItem>
