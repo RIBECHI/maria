@@ -5,10 +5,7 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Users, FileSignature, ImageIcon, Trash2 } from "lucide-react";
-import { getProcesses } from "@/services/processService";
-import { addClient, getClients } from "@/services/clientService";
-import { Input } from "@/components/ui/input";
+import { FileSignature, ImageIcon, KanbanSquare } from "lucide-react";
 import Link from 'next/link';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -36,7 +33,7 @@ export default function ToolsPage() {
                 <Card className="shadow-lg">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                            <FileSignature />
+                            <ImageIcon />
                             Modelo de PDF
                         </CardTitle>
                         <CardDescription>
@@ -47,7 +44,7 @@ export default function ToolsPage() {
                         <Link href="/settings/tools/pdf-template" passHref>
                              <Button>
                                 <ImageIcon className="mr-2 h-4 w-4" />
-                                Editar Modelos de PDF
+                                Editar Papel Timbrado
                             </Button>
                         </Link>
                     </CardContent>
@@ -68,6 +65,26 @@ export default function ToolsPage() {
                              <Button>
                                 <FileSignature className="mr-2 h-4 w-4" />
                                 Gerenciar Modelos
+                            </Button>
+                        </Link>
+                    </CardContent>
+                </Card>
+
+                <Card className="shadow-lg">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <KanbanSquare />
+                            Fases do Pipeline
+                        </CardTitle>
+                        <CardDescription>
+                            Personalize as colunas (fases) do seu pipeline de processos.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Link href="/settings/tools/pipeline-phases" passHref>
+                             <Button>
+                                <KanbanSquare className="mr-2 h-4 w-4" />
+                                Gerenciar Fases
                             </Button>
                         </Link>
                     </CardContent>

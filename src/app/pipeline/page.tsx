@@ -12,6 +12,7 @@ import ProcessCard from "@/components/pipeline/ProcessCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { ProcessDetailsSheet } from "@/components/processes/ProcessDetailsSheet";
+import Link from "next/link";
 
 
 export default function PipelinePage() {
@@ -53,9 +54,32 @@ export default function PipelinePage() {
         setSelectedProcess(null);
     };
     
-    // Placeholder para a próxima etapa
-    const handleAddPhase = async () => {
-        toast({ title: "Funcionalidade em breve!", description: "A criação de novas fases será adicionada na próxima etapa." });
+    const handleMoveProcess = async (processId: string, newPhaseId: string | null) => {
+        const processToMove = processes.find(p => p.id === processId);
+        if (!processToMove) return;
+
+        const originalPhaseId = processToMove.phaseId;
+
+        // Optimistic UI update
+        const updatedProcesses = processes.map(p =>
+            p.id === processId ? { ...p, phaseId: newPhaseId || undefined } : p
+        );
+        setProcesses(updatedProcesses);
+        
+        try {
+            await updateProcess(processId, { phaseId: newPhaseId });
+            toast({
+                title: "Processo movido!",
+                description: `O processo foi movido para a nova fase.`,
+            });
+        } catch (error) {
+            console.error("Failed to move process", error);
+            // Revert UI on error
+             setProcesses(processes.map(p =>
+                p.id === processId ? { ...p, phaseId: originalPhaseId } : p
+            ));
+            toast({ title: "Erro ao mover", description: "Não foi possível atualizar a fase do processo.", variant: "destructive"});
+        }
     };
 
     const handleTimelineUpdate = async (processId: string, newTimeline: any[]) => {
@@ -78,14 +102,13 @@ export default function PipelinePage() {
 
 
     const getProcessesInPhase = (phaseId: string | null) => {
-        // Se phaseId for null, pegue os processos sem phaseId ou com phaseId nulo/undefined
         if (phaseId === 'unclassified') {
             return processes.filter(p => !p.phaseId);
         }
         return processes.filter(p => p.phaseId === phaseId);
     };
 
-    const allPhases: (Phase | {id: string, name: string})[] = [{id: 'unclassified', name: 'Não Classificado'}, ...phases];
+    const allDisplayPhases: (Phase | {id: string, name: string})[] = [{id: 'unclassified', name: 'Não Classificado'}, ...phases];
 
     return (
         <>
@@ -98,9 +121,11 @@ export default function PipelinePage() {
                             <p className="text-muted-foreground">Visualize o fluxo de trabalho dos seus processos.</p>
                          </div>
                     </div>
-                    <Button onClick={handleAddPhase}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Adicionar Fase
+                    <Button asChild>
+                        <Link href="/settings/tools/pipeline-phases">
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Gerenciar Fases
+                        </Link>
                     </Button>
                 </div>
 
@@ -110,12 +135,12 @@ export default function PipelinePage() {
                             Array.from({ length: 4 }).map((_, i) => (
                                 <div key={i} className="w-80 flex-shrink-0 space-y-4">
                                     <Skeleton className="h-8 w-1/2" />
-                                    <Skeleton className="h-24 w-full" />
-                                    <Skeleton className="h-24 w-full" />
+                                    <Skeleton className="h-28 w-full" />
+                                    <Skeleton className="h-28 w-full" />
                                 </div>
                             ))
                         ) : (
-                            allPhases.map(phase => {
+                            allDisplayPhases.map(phase => {
                                 const processesInPhase = getProcessesInPhase(phase.id);
                                 return (
                                     <div key={phase.id} className="w-80 flex-shrink-0">
@@ -125,13 +150,15 @@ export default function PipelinePage() {
                                                 {processesInPhase.length}
                                             </span>
                                         </div>
-                                        <div className="space-y-4 h-full bg-muted/30 rounded-lg p-2">
+                                        <div className="space-y-4 h-full bg-muted/30 rounded-lg p-2 min-h-[100px]">
                                             {processesInPhase.length > 0 ? (
                                                 processesInPhase.map(process => (
                                                     <ProcessCard
                                                         key={process.id}
                                                         process={process}
-                                                        onClick={() => handleOpenDetails(process)}
+                                                        allPhases={phases}
+                                                        onCardClick={() => handleOpenDetails(process)}
+                                                        onMoveProcess={handleMoveProcess}
                                                     />
                                                 ))
                                             ) : (

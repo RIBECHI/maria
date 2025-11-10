@@ -53,6 +53,7 @@ import { addClient } from "@/services/clientService";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { DocumentData } from "firebase/firestore";
 import { Badge } from "@/components/ui/badge";
+import { getPhases, type Phase } from "@/services/phaseService";
 
 export interface TimelineEvent {
   id: string;
@@ -66,10 +67,10 @@ export interface TimelineEvent {
 export interface Process extends DocumentData {
   id: string;
   processNumber: string;
-  clients: string[]; // Alterado de client: string para clients: string[]
+  clients: string[];
   type: string;
   status: 'Em Andamento' | 'Concluído' | 'Suspenso';
-  phaseId?: string; // ID da fase no pipeline (Kanban)
+  phaseId?: string;
   comarca?: string;
   nextDeadline: string; // YYYY-MM-DD or '-'
   documents: number;
@@ -93,12 +94,11 @@ const processFormSchema = z.object({
   uhd: z.coerce.number().min(1, "UHD deve ser no mínimo 1").max(10, "UHD deve ser no máximo 10").optional(),
   certidao: z.boolean().optional(),
   apensos: z.array(z.string()).optional(),
-  phaseId: z.string().optional(), // Adicionado para o pipeline
+  phaseId: z.string().optional(),
 });
 
 export type ProcessFormValues = z.infer<typeof processFormSchema>;
 
-// Schema para o formulário de evento da timeline
 const timelineEventSchema = z.object({
   eventDate: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Data inválida." }),
   eventDescription: z.string().min(5, { message: "A descrição deve ter pelo menos 5 caracteres." }),
@@ -123,6 +123,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
   const [isClientSearchOpen, setIsClientSearchOpen] = React.useState(false);
   const [isNewClientDialogOpen, setIsNewClientDialogOpen] = React.useState(false);
   const [apensoInput, setApensoInput] = React.useState('');
+  const [phases, setPhases] = React.useState<Phase[]>([]);
   const { toast } = useToast();
 
   const form = useForm<ProcessFormValues>({
@@ -154,6 +155,21 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
   
   const apensos = form.watch('apensos') || [];
   const clients = form.watch('clients') || [];
+  
+  React.useEffect(() => {
+    async function loadPhases() {
+      if(isOpen) {
+        try {
+          const phasesData = await getPhases();
+          setPhases(phasesData);
+        } catch (error) {
+            console.error("Failed to load phases", error);
+            toast({ title: "Erro ao carregar fases do pipeline", variant: "destructive" });
+        }
+      }
+    }
+    loadPhases();
+  }, [isOpen, toast]);
 
   React.useEffect(() => {
      if (isOpen) {
@@ -426,7 +442,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
                   )}
                 />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <FormField
                   control={form.control}
                   name="status"
@@ -461,6 +477,29 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
                       <FormMessage />
                       </FormItem>
                   )}
+                  />
+                   <FormField
+                    control={form.control}
+                    name="phaseId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Fase do Pipeline</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione uma fase" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="unclassified">Não Classificado</SelectItem>
+                            {phases.map(phase => (
+                              <SelectItem key={phase.id} value={phase.id}>{phase.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
               </div>
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
