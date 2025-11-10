@@ -26,20 +26,17 @@ export default function NavLink({ href, label, icon }: NavLinkProps) {
 
 
   return (
-    <Link href={href} passHref legacyBehavior>
-      {/*
-        Using legacyBehavior with passHref and an 'as="a"' prop on SidebarMenuButton
-        ensures Link works correctly with custom component children that should behave like anchors.
-        SidebarMenuButton will render as an <a> tag due to as="a".
-      */}
+    <Link href={href}>
       <SidebarMenuButton
-        as="a"
+        asChild
         isActive={isActive}
         tooltip={{ children: label, side: 'right', align: 'center' }}
         onClick={handleClick}
       >
-        {icon} {/* Render the icon JSX element directly */}
-        <span>{label}</span>
+        <a>
+          {icon}
+          <span>{label}</span>
+        </a>
       </SidebarMenuButton>
     </Link>
   );
