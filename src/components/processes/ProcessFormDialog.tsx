@@ -76,7 +76,7 @@ export interface Process extends DocumentData {
   uhd?: number;
   certidao?: boolean;
   apensos?: string[];
-  timeline?: TimelineEvent[];
+  timeline: TimelineEvent[];
   createdAt?: string;
   client?: string; // Campo legado para compatibilidade
 }
