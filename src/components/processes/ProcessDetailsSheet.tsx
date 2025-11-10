@@ -34,7 +34,7 @@ import {
 import type { Process, TimelineEvent } from "./ProcessFormDialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Briefcase, Calendar, CheckCircle, Edit, Info, Loader2, PlusCircle, Trash2, XCircle } from "lucide-react";
+import { Briefcase, Calendar, CheckCircle, Edit, Info, Loader2, PlusCircle, Trash2, XCircle, Save } from "lucide-react";
 import { format, parseISO } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -79,6 +79,7 @@ interface ProcessDetailsSheetProps {
 export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUpdate, onOpenEditDialog }: ProcessDetailsSheetProps) {
   const [currentTimeline, setCurrentTimeline] = React.useState<TimelineEvent[]>([]);
   const [timelineEventToDelete, setTimelineEventToDelete] = React.useState<TimelineEvent | null>(null);
+  const [editingEventId, setEditingEventId] = React.useState<string | null>(null);
   const [isDeleteTimelineAlertOpen, setIsDeleteTimelineAlertOpen] = React.useState(false);
   const [isSaving, setIsSaving] = React.useState(false);
   const { toast } = useToast();
@@ -115,30 +116,58 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
     await onTimelineUpdate(processData.id, newTimeline);
     setCurrentTimeline(newTimeline);
   };
-
-  const handleAddTimelineEvent: SubmitHandler<TimelineEventFormValues> = async (data) => {
+  
+  const resetForm = () => {
+    timelineForm.reset({
+      eventDate: format(new Date(), 'yyyy-MM-dd'),
+      eventDescription: "",
+      eventSource: "Nota Manual",
+      isTask: false,
+    });
+    setEditingEventId(null);
+  };
+  
+  const handleTimelineSubmit: SubmitHandler<TimelineEventFormValues> = async (data) => {
     setIsSaving(true);
-    
-    const newEvent: TimelineEvent = {
-      id: `TL-${Date.now()}`,
-      date: format(parseISO(data.eventDate + 'T00:00:00'), 'yyyy-MM-dd'),
-      description: data.eventDescription,
-      source: data.eventSource,
-      isTask: data.isTask,
-      completed: data.isTask ? false : undefined,
-    };
-    
-    try {
-      // Regra: Sempre que um evento com data futura é criado na timeline (seja tarefa ou não),
-      // ele deve ser adicionado à agenda principal para visibilidade.
+    let newTimeline: TimelineEvent[];
+
+    if (editingEventId) {
+      // Logic for updating an existing event
+      newTimeline = currentTimeline.map(event => {
+        if (event.id === editingEventId) {
+          return {
+            ...event,
+            date: format(parseISO(data.eventDate + 'T00:00:00'), 'yyyy-MM-dd'),
+            description: data.eventDescription,
+            source: data.eventSource,
+            isTask: data.isTask,
+            // Preserve completed status if it's a task, otherwise remove it
+            completed: data.isTask ? event.completed ?? false : undefined,
+          };
+        }
+        return event;
+      });
+      toast({ title: "Evento da timeline atualizado!" });
+    } else {
+      // Logic for adding a new event
+      const newEvent: TimelineEvent = {
+        id: `TL-${Date.now()}`,
+        date: format(parseISO(data.eventDate + 'T00:00:00'), 'yyyy-MM-dd'),
+        description: data.eventDescription,
+        source: data.eventSource,
+        isTask: data.isTask,
+        completed: data.isTask ? false : undefined,
+      };
+      
+      newTimeline = [newEvent, ...currentTimeline];
+      
+      // Sync with main agenda if it's a future event
       const sourceLowerCase = data.eventSource.toLowerCase();
       let eventType: 'prazo' | 'audiencia' | 'consulta' | null = null;
-      
       if (sourceLowerCase === 'prazo') eventType = 'prazo';
       else if (sourceLowerCase === 'audiência') eventType = 'audiencia';
       else if (sourceLowerCase === 'nota manual' || sourceLowerCase === 'outro') eventType = 'consulta';
 
-      // Adiciona na agenda se for um tipo mapeado
       if (eventType) {
           await addEvent({
               date: newEvent.date,
@@ -152,33 +181,37 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
               description: "O compromisso agora também aparece na sua agenda principal.",
           });
       }
-  
-      const newTimeline = [newEvent, ...currentTimeline].sort((a, b) => parseISO(b.date).getTime() - parseISO(a.date).getTime());
-      
-      // Atualiza a linha do tempo do processo no banco de dados
-      await onTimelineUpdate(processData.id, newTimeline);
-  
-      // Atualiza o estado local
-      setCurrentTimeline(newTimeline); 
-      timelineForm.reset({
-        eventDate: format(new Date(), 'yyyy-MM-dd'),
-        eventDescription: "",
-        eventSource: "Nota Manual",
-        isTask: false,
-      });
       toast({ title: "Linha do tempo atualizada!" });
-  
+    }
+
+    const sortedTimeline = newTimeline.sort((a, b) => parseISO(b.date).getTime() - parseISO(a.date).getTime());
+    
+    try {
+      await onTimelineUpdate(processData.id, sortedTimeline);
+      setCurrentTimeline(sortedTimeline);
+      resetForm();
     } catch (error) {
-      console.error("Failed to add timeline event or sync with agenda:", error);
+      console.error("Failed to update timeline:", error);
       toast({
-          title: "Erro ao Salvar Evento",
-          description: "Não foi possível adicionar o evento à linha do tempo ou à agenda.",
+          title: "Erro ao Salvar",
+          description: "Não foi possível salvar a atualização da linha do tempo.",
           variant: "destructive",
       });
     } finally {
       setIsSaving(false);
     }
   };
+
+  const handleEditTimelineEvent = (event: TimelineEvent) => {
+    setEditingEventId(event.id);
+    timelineForm.reset({
+      eventDate: format(parseISO(event.date + 'T00:00:00'), 'yyyy-MM-dd'),
+      eventDescription: event.description,
+      eventSource: event.source,
+      isTask: event.isTask ?? false,
+    });
+  };
+
 
   const handleDeleteTimelineEvent = (eventId: string) => {
     const event = currentTimeline.find(e => e.id === eventId);
@@ -247,7 +280,7 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
 
                 {/* Adicionar Evento na Timeline */}
                 <div className="pt-4 border-t">
-                    <h3 className="font-semibold text-foreground mb-3">Adicionar à Linha do Tempo</h3>
+                    <h3 className="font-semibold text-foreground mb-3">{editingEventId ? "Editando Evento" : "Adicionar à Linha do Tempo"}</h3>
                     <Form {...timelineForm}>
                         <div className="space-y-3 p-4 border rounded-md bg-background">
                             <FormField
@@ -321,15 +354,22 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
                                         </FormItem>
                                     )}
                                 />
-                                <Button 
-                                    type="button" 
-                                    size="sm" 
-                                    onClick={timelineForm.handleSubmit(handleAddTimelineEvent)}
-                                    disabled={isSaving}
-                                >
-                                    {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlusCircle className="mr-2 h-4 w-4" />}
-                                    Adicionar
-                                </Button>
+                                <div className="flex gap-2">
+                                  {editingEventId && (
+                                    <Button variant="ghost" size="sm" onClick={resetForm} disabled={isSaving}>
+                                      Cancelar Edição
+                                    </Button>
+                                  )}
+                                  <Button 
+                                      type="button" 
+                                      size="sm" 
+                                      onClick={timelineForm.handleSubmit(handleTimelineSubmit)}
+                                      disabled={isSaving}
+                                  >
+                                      {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : (editingEventId ? <Save className="mr-2 h-4 w-4" /> : <PlusCircle className="mr-2 h-4 w-4" />)}
+                                      {editingEventId ? "Salvar" : "Adicionar"}
+                                  </Button>
+                                </div>
                             </div>
                         </div>
                     </Form>
@@ -370,9 +410,14 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
                                             <p className="text-sm mt-1 whitespace-pre-wrap">{event.description}</p>
                                         </div>
                                     )}
-                                    <Button variant="ghost" size="icon" className="absolute top-1 right-1 text-destructive hover:text-destructive/80 h-7 w-7 opacity-0 group-hover:opacity-100" onClick={() => handleDeleteTimelineEvent(event.id)} disabled={isSaving}>
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
+                                    <div className="absolute top-1 right-1 flex opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <Button variant="ghost" size="icon" className="text-accent-foreground hover:text-accent h-7 w-7" onClick={() => handleEditTimelineEvent(event)} disabled={isSaving}>
+                                          <Edit className="h-4 w-4" />
+                                      </Button>
+                                      <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/80 h-7 w-7" onClick={() => handleDeleteTimelineEvent(event.id)} disabled={isSaving}>
+                                          <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </div>
                                 </div>
                             </div>
                             ))}
