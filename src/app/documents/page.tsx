@@ -71,15 +71,16 @@ export default function DocumentsPage() {
         if (file) {
             toast({ title: "Aviso", description: "A substituição de arquivos não é suportada. Apenas os metadados foram atualizados." });
         }
-        const updatedDoc = await updateDocument(editingDocument.id, data);
+        const dataToUpdate = { ...data, name: editingDocument.name };
+        const updatedDoc = await updateDocument(editingDocument.id, dataToUpdate);
         setDocuments(documents.map(d => (d.id === editingDocument.id ? { ...d, ...updatedDoc } : d)));
-        toast({ title: "Documento atualizado!", description: `O documento ${data.name} foi atualizado.` });
+        toast({ title: "Documento atualizado!", description: `O documento ${dataToUpdate.name} foi atualizado.` });
       } else {
         if (!file) {
             toast({ title: "Arquivo Faltando", description: "Por favor, selecione um arquivo para carregar.", variant: "destructive"});
             return;
         }
-        const newDocument = await addDocument(data, file);
+        const newDocument = await addDocument({ ...data, name: file.name }, file);
         setDocuments(prevDocs => [newDocument, ...prevDocs]);
         toast({ title: "Documento adicionado!", description: `O documento ${newDocument.name} foi adicionado.` });
       }
