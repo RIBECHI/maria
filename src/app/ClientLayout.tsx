@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Link from 'next/link';
@@ -116,7 +117,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
               </span>
             </Link>
           </SidebarHeader>
-          <SidebarContent className="flex flex-1 flex-col p-2 min-h-0">
+          <SidebarContent>
             <SidebarMenu className="flex-1">
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.label}>
@@ -142,12 +143,15 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                 <ThemeToggle />
               </SidebarMenuItem>
               <SidebarMenuItem>
-                 <Link href="/settings">
+                <Link href="/settings">
                   <SidebarMenuButton
+                    asChild
                     tooltip={{ children: 'Configurações', side: 'right', align: 'center' }}
                   >
-                    <Settings />
-                    <span>Configurações</span>
+                    <span>
+                      <Settings />
+                      <span>Configurações</span>
+                    </span>
                   </SidebarMenuButton>
                 </Link>
               </SidebarMenuItem>

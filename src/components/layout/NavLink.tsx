@@ -25,15 +25,16 @@ export default function NavLink({ href, label, icon }: NavLinkProps) {
   };
 
   return (
-    <Link href={href} passHref legacyBehavior>
+    <Link href={href} onClick={handleClick}>
       <SidebarMenuButton
-        as="a"
+        asChild
         isActive={isActive}
         tooltip={{ children: label, side: 'right', align: 'center' }}
-        onClick={handleClick}
       >
-        {icon}
-        <span>{label}</span>
+        <span>
+          {icon}
+          <span>{label}</span>
+        </span>
       </SidebarMenuButton>
     </Link>
   );
