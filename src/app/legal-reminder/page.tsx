@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, CheckCircle, XCircle } from "lucide-react";
+import { Loader2, CheckCircle, XCircle, Edit } from "lucide-react";
 import { type LegalReminderInput, type LegalReminderOutput } from "@/ai/flows/legal-reminder";
 import { handleLegalReminder } from "./actions";
 
@@ -21,9 +21,14 @@ const FormSchema = z.object({
 
 type FormValues = z.infer<typeof FormSchema>;
 
+interface Analysis {
+  input: LegalReminderInput;
+  output: LegalReminderOutput;
+}
+
 export default function LegalReminderPage() {
   const [isLoading, setIsLoading] = useState(false);
-  const [aiResponse, setAiResponse] = useState<LegalReminderOutput | null>(null);
+  const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const form = useForm<FormValues>({
@@ -36,15 +41,22 @@ export default function LegalReminderPage() {
 
   const onSubmit: SubmitHandler<FormValues> = async (data) => {
     setIsLoading(true);
-    setAiResponse(null);
+    setAnalysis(null);
     setError(null);
     try {
       const result = await handleLegalReminder(data as LegalReminderInput);
-      setAiResponse(result);
+      setAnalysis({ input: data, output: result });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Ocorreu um erro ao processar a solicitação.");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleEdit = () => {
+    if (analysis) {
+      form.reset(analysis.input);
+      setAnalysis(null);
     }
   };
 
@@ -121,24 +133,30 @@ export default function LegalReminderPage() {
         </Alert>
       )}
 
-      {aiResponse && (
+      {analysis && (
         <Card className="mt-8 shadow-lg max-w-2xl mx-auto">
           <CardHeader>
-            <CardTitle className="text-xl font-headline flex items-center">
-              {aiResponse.isRelevant ? (
-                <CheckCircle className="h-6 w-6 mr-2 text-green-600" />
-              ) : (
-                <XCircle className="h-6 w-6 mr-2 text-red-600" />
-              )}
-              Resultado da Análise da IA
+            <CardTitle className="text-xl font-headline flex items-center justify-between">
+              <div className="flex items-center">
+                {analysis.output.isRelevant ? (
+                  <CheckCircle className="h-6 w-6 mr-2 text-green-600" />
+                ) : (
+                  <XCircle className="h-6 w-6 mr-2 text-red-600" />
+                )}
+                Resultado da Análise da IA
+              </div>
+              <Button variant="outline" size="sm" onClick={handleEdit}>
+                <Edit className="mr-2 h-4 w-4" />
+                Editar Dados
+              </Button>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className={`font-semibold text-lg ${aiResponse.isRelevant ? 'text-green-700' : 'text-red-700'}`}>
-              {aiResponse.isRelevant ? "Relevante para o caso." : "Não parece ser relevante para o caso."}
+            <p className={`font-semibold text-lg ${analysis.output.isRelevant ? 'text-green-700' : 'text-red-700'}`}>
+              {analysis.output.isRelevant ? "Relevante para o caso." : "Não parece ser relevante para o caso."}
             </p>
             <p className="mt-2 text-muted-foreground font-headline">Justificativa:</p>
-            <p className="mt-1">{aiResponse.reasoning}</p>
+            <p className="mt-1">{analysis.output.reasoning}</p>
           </CardContent>
         </Card>
       )}
