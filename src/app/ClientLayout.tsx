@@ -142,7 +142,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                 <ThemeToggle />
               </SidebarMenuItem>
               <SidebarMenuItem>
-                 <Link href="/settings" asChild>
+                 <Link href="/settings">
                   <SidebarMenuButton
                     tooltip={{ children: 'Configurações', side: 'right', align: 'center' }}
                   >
