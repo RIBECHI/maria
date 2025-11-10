@@ -1,7 +1,7 @@
 
 import { auth, db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, orderBy, limit, serverTimestamp, getDoc, FirestoreError } from 'firebase/firestore';
-import type { CalendarEvent } from '@/components/agenda/EventFormDialog';
+import type { CalendarEvent, EventFormValues } from '@/components/agenda/EventFormDialog';
 import { startOfToday, format } from 'date-fns';
 import { errorEmitter, FirestorePermissionError, SecurityRuleContext } from '@/lib/errors';
 
@@ -61,7 +61,7 @@ export async function getEventsForDashboard(count: number): Promise<CalendarEven
 }
 
 // CREATE
-export async function addEvent(eventData: Omit<import("/home/user/app/src/components/agenda/EventFormDialog").EventFormValues, "clientId"> & { client?: string | undefined; }): Promise<CalendarEvent> {
+export async function addEvent(eventData: Omit<EventFormValues, "clientId"> & { client?: string | undefined; }): Promise<CalendarEvent> {
   if (!db) throw new Error("Firebase DB not initialized");
   const eventsCollectionRef = collection(db, 'events');
   try {
@@ -86,7 +86,7 @@ export async function addEvent(eventData: Omit<import("/home/user/app/src/compon
 }
 
 // UPDATE
-export async function updateEvent(eventId: string, eventData: Omit<import("/home/user/app/src/components/agenda/EventFormDialog").EventFormValues, "clientId"> & { client?: string | undefined; }): Promise<CalendarEvent> {
+export async function updateEvent(eventId: string, eventData: Omit<EventFormValues, "clientId"> & { client?: string | undefined; }): Promise<CalendarEvent> {
   if (!db) throw new Error("Firebase DB not initialized");
   const eventDocRef = doc(db, 'events', eventId);
   try {
