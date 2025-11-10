@@ -1,7 +1,8 @@
+
 "use client";
 
 import Link from 'next/link';
-import * as React from 'react';
+import { useState } from 'react';
 import {
   LayoutDashboard,
   Users,
@@ -11,6 +12,9 @@ import {
   Settings,
   CalendarDays,
   Notebook,
+  FileCog,
+  FileSignature,
+  ListChecks,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -23,6 +27,7 @@ import {
   SidebarFooter,
   SidebarInset,
   SidebarTrigger,
+  SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { Toaster } from "@/components/ui/toaster";
 import Logo from '@/components/layout/Logo';
@@ -31,14 +36,24 @@ import './globals.css';
 import { UserProvider } from '@/contexts/UserContext';
 import UserInfo from '@/components/layout/UserInfo';
 import { NotepadSheet } from '@/components/layout/NotepadSheet';
+import UpcomingEventsSidebar from '@/components/layout/UpcomingEventsSidebar';
+import ThemeToggle from '@/components/layout/ThemeToggle';
+import type React from 'react';
+import { AuthProvider, AuthWrapper } from '@/contexts/AuthContext';
+import FirebaseErrorListener from '@/components/layout/FirebaseErrorListener';
+import { ErrorBoundary } from '@/components/utils/ErrorBoundary';
+import { usePathname } from 'next/navigation';
 
 const navItems = [
   { href: '/', label: 'Painel', icon: <LayoutDashboard /> },
   { href: '/clients', label: 'Clientes', icon: <Users /> },
   { href: '/processes', label: 'Processos', icon: <Briefcase /> },
+  { href: '/tasks', label: 'Tarefas', icon: <ListChecks /> },
   { href: '/documents', label: 'Documentos', icon: <FileText /> },
   { href: '/agenda', label: 'Agenda', icon: <CalendarDays /> },
   { href: '/legal-reminder', label: 'Lembrete Legal', icon: <Lightbulb /> },
+  { href: '/document-generator', label: 'Gerador de Documentos', icon: <FileSignature /> },
+  { href: '/pdf-tools', label: 'Ferramentas PDF', icon: <FileCog /> },
 ];
 
 function JusticeSymbolWatermark() {
@@ -85,9 +100,9 @@ function PanelLeftIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-export default function ClientLayout({ children }: { children: React.ReactNode }) {
-  const [isNotepadOpen, setIsNotepadOpen] = React.useState(false);
-
+function AppLayout({ children }: { children: React.ReactNode }) {
+  const [isNotepadOpen, setIsNotepadOpen] = useState(false);
+  
   return (
     <UserProvider>
       <JusticeSymbolWatermark />
@@ -118,9 +133,14 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
                   </SidebarMenuButton>
                 </SidebarMenuItem>
             </SidebarMenu>
+            <SidebarSeparator className="my-2" />
+            <UpcomingEventsSidebar />
           </SidebarContent>
           <SidebarFooter className="p-2 border-t border-sidebar-border">
             <SidebarMenu>
+              <SidebarMenuItem>
+                <ThemeToggle />
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <Link href="/settings" passHref legacyBehavior>
                   <SidebarMenuButton
@@ -149,9 +169,29 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
             {children}
           </main>
           <Toaster />
+          <FirebaseErrorListener />
         </SidebarInset>
       </SidebarProvider>
       <NotepadSheet isOpen={isNotepadOpen} onOpenChange={setIsNotepadOpen} />
     </UserProvider>
+  );
+}
+
+
+export default function ClientLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+
+  return (
+    <AuthProvider>
+      <ErrorBoundary>
+        <AuthWrapper>
+            {pathname === '/login' ? (
+                children
+            ) : (
+                <AppLayout>{children}</AppLayout>
+            )}
+        </AuthWrapper>
+      </ErrorBoundary>
+    </AuthProvider>
   );
 }

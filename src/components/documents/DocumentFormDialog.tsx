@@ -17,6 +17,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription as FormDescriptionUI,
   FormField,
   FormItem,
   FormLabel,
@@ -24,21 +25,27 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Search } from "lucide-react";
+import { Loader2, Search, FileUp } from "lucide-react";
 import { ProcessSearchDialog } from "@/components/processes/ProcessSearchDialog";
+import type { DocumentData } from "firebase/firestore";
 
-export interface Document {
+export interface Document extends DocumentData {
   id: string;
   name: string;
   process: string; // ID do processo
   tags: string[];
   uploadDate: string;
+  createdAt?: string;
+  fileUrl: string;
+  filePath: string;
 }
 
 const documentFormSchema = z.object({
-  name: z.string().min(3, { message: "O nome do arquivo deve ter pelo menos 3 caracteres." }),
-  process: z.string().min(3, { message: "O processo vinculado deve ter pelo menos 3 caracteres." }),
-  tagsString: z.string().optional(), // Tags como string separada por vírgulas
+  process: z.string().min(3, { message: "O processo vinculado é obrigatório." }),
+  tagsString: z.string().optional(),
+  file: z.any()
+    .refine((files) => files?.length == 1, "Arquivo é obrigatório.")
+    .refine((files) => files?.[0]?.size <= 5000000, `Tamanho máximo do arquivo é 5MB.`)
 });
 
 export type DocumentFormValues = z.infer<typeof documentFormSchema>;
@@ -46,7 +53,7 @@ export type DocumentFormValues = z.infer<typeof documentFormSchema>;
 interface DocumentFormDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: DocumentFormValues) => void;
+  onSubmit: (data: DocumentFormValues, file?: File) => Promise<void>;
   documentData?: Document;
 }
 
@@ -57,25 +64,29 @@ export function DocumentFormDialog({ isOpen, onClose, onSubmit, documentData }: 
   const form = useForm<DocumentFormValues>({
     resolver: zodResolver(documentFormSchema),
     defaultValues: {
-      name: "",
       process: "",
       tagsString: "",
+      file: undefined,
     },
   });
+
+  const fileRef = form.register("file");
 
   React.useEffect(() => {
     if (isOpen) {
       if (documentData) {
+        // Modo edição: resetar com dados existentes, mas desabilitar mudança de arquivo
         form.reset({
-          name: documentData.name,
           process: documentData.process,
           tagsString: documentData.tags.join(", "),
+          file: undefined,
         });
       } else {
+        // Modo criação
         form.reset({
-          name: "",
           process: "",
           tagsString: "",
+          file: undefined,
         });
       }
     }
@@ -83,8 +94,9 @@ export function DocumentFormDialog({ isOpen, onClose, onSubmit, documentData }: 
 
   const handleFormSubmit: SubmitHandler<DocumentFormValues> = async (data) => {
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 700));
-    onSubmit(data);
+    const file = data.file?.[0];
+    const submitData = { ...data, name: file?.name || documentData?.name };
+    await onSubmit(submitData, file);
     setIsLoading(false);
   };
 
@@ -102,28 +114,32 @@ export function DocumentFormDialog({ isOpen, onClose, onSubmit, documentData }: 
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(open) => !open && handleDialogClose()}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{documentData ? "Editar Documento" : "Carregar Novo Documento"}</DialogTitle>
+            <DialogTitle>{documentData ? "Editar Metadados do Documento" : "Carregar Novo Documento"}</DialogTitle>
             <DialogDescription>
-              {documentData ? "Altere os metadados do documento abaixo." : "Preencha os metadados do novo documento."}
+              {documentData ? "Altere os metadados do documento abaixo. A substituição do arquivo não é permitida." : "Preencha os metadados e selecione o arquivo para upload."}
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 py-4">
-              <FormField
+               <FormField
                 control={form.control}
-                name="name"
+                name="file"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nome do Arquivo</FormLabel>
+                    <FormLabel>Arquivo</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ex: Peticao_Inicial_Caso_XYZ.pdf" {...field} />
+                       <Input type="file" {...fileRef} disabled={!!documentData} />
                     </FormControl>
+                    <FormDescriptionUI>
+                      {documentData ? `Arquivo carregado: ${documentData.name}` : 'Tamanho máximo: 5MB.'}
+                    </FormDescriptionUI>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="process"
@@ -172,7 +188,10 @@ export function DocumentFormDialog({ isOpen, onClose, onSubmit, documentData }: 
                       Salvando...
                     </>
                   ) : (
-                    documentData ? "Salvar Alterações" : "Adicionar Documento"
+                    <>
+                     {documentData ? null : <FileUp className="mr-2 h-4 w-4" /> }
+                     {documentData ? "Salvar Alterações" : "Carregar e Salvar"}
+                    </>
                   )}
                 </Button>
               </DialogFooter>

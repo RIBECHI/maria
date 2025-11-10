@@ -25,21 +25,25 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
+import type { DocumentData } from "firebase/firestore";
 
-export interface Client {
+export interface Client extends DocumentData {
   id: string;
   name: string;
   contact: string;
+  cpf?: string;
   caseCount: number;
   lastActivity: string;
-  city?: string;
+  address?: string;
   notes?: string;
+  createdAt?: string; // Can be a string (ISO date) or undefined
 }
 
 const clientFormSchema = z.object({
   name: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres." }),
   contact: z.string().min(10, { message: "O contato deve ter pelo menos 10 caracteres (email ou telefone)." }),
-  city: z.string().optional(),
+  cpf: z.string().optional(),
+  address: z.string().optional(),
   notes: z.string().optional(),
 });
 
@@ -60,7 +64,8 @@ export function ClientFormDialog({ isOpen, onClose, onSubmit, clientData }: Clie
     defaultValues: {
       name: "",
       contact: "",
-      city: "",
+      cpf: "",
+      address: "",
       notes: "",
     },
   });
@@ -70,14 +75,16 @@ export function ClientFormDialog({ isOpen, onClose, onSubmit, clientData }: Clie
       form.reset({
         name: clientData.name,
         contact: clientData.contact,
-        city: clientData.city || "",
+        cpf: clientData.cpf || "",
+        address: clientData.address || "",
         notes: clientData.notes || "",
       });
     } else {
       form.reset({
         name: "",
         contact: "",
-        city: "",
+        cpf: "",
+        address: "",
         notes: "",
       });
     }
@@ -85,16 +92,12 @@ export function ClientFormDialog({ isOpen, onClose, onSubmit, clientData }: Clie
 
   const handleFormSubmit: SubmitHandler<ClientFormValues> = async (data) => {
     setIsLoading(true);
-    // Simular uma chamada de API
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    onSubmit(data);
+    await onSubmit(data); // A lógica de submissão agora é assíncrona
     setIsLoading(false);
-    form.reset(); // Limpa o formulário após o envio
   };
   
   const handleDialogClose = () => {
     if (!isLoading) {
-      form.reset(); // Limpa o formulário ao fechar se não estiver carregando
       onClose();
     }
   };
@@ -124,27 +127,42 @@ export function ClientFormDialog({ isOpen, onClose, onSubmit, clientData }: Clie
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="contact"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Contato (Email / Telefone)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: joao.silva@email.com ou (11) 99999-9999" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+               <FormField
+                control={form.control}
+                name="cpf"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CPF/CNPJ</FormLabel>
+                    <FormControl>
+                      <Input placeholder="000.000.000-00" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="contact"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Contato (Email / Telefone)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="(11) 99999-9999" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
              <FormField
               control={form.control}
-              name="city"
+              name="address"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Cidade</FormLabel>
+                  <FormLabel>Endereço</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: Goiânia - GO" {...field} />
+                    <Input placeholder="Ex: Rua, Número, Bairro, Cidade - UF" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -174,7 +192,7 @@ export function ClientFormDialog({ isOpen, onClose, onSubmit, clientData }: Clie
                     Salvando...
                   </>
                 ) : (
-                  "Salvar Cliente"
+                  clientData ? "Salvar Alterações" : "Salvar Cliente"
                 )}
               </Button>
             </DialogFooter>

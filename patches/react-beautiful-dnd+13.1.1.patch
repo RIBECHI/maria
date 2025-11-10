@@ -1,0 +1,14 @@
+diff --git a/node_modules/react-beautiful-dnd/dist/react-beautiful-dnd.esm.js b/node_modules/react-beautiful-dnd/dist/react-beautiful-dnd.esm.js
+index 5240213..504fe3c 100644
+--- a/node_modules/react-beautiful-dnd/dist/react-beautiful-dnd.esm.js
++++ b/node_modules/react-beautiful-dnd/dist/react-beautiful-dnd.esm.js
+@@ -5836,7 +5836,7 @@ var Droppable = function (_PureComponent) {
+       var _this$props = this.props,
+           children = _this$props.children,
+           droppableId = _this$props.droppableId,
+-          isDropDisabled = _this$props.isDropDisabled,
++          isDropDisabled = _this$props.isDropDisabled || false,
+           type = _this$props.type,
+           ignoreContainerClipping = _this$props.ignoreContainerClipping,
+           renderClone = _this$props.renderClone,
+

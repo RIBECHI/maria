@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from 'react';
@@ -21,15 +22,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-
-const initialEvents: CalendarEvent[] = [
-  { id: '1', date: '2024-08-15', type: 'prazo', description: 'Entrega de petição inicial - Processo Alpha', process: 'PROC001', client: 'Empresa Alpha Ltda.' },
-  { id: '2', date: '2024-08-15', type: 'consulta', description: 'Reunião com Sr. João Silva sobre novo caso', time: '14:00', client: 'João Silva' },
-  { id: '3', date: '2024-08-22', type: 'audiencia', description: 'Audiência de conciliação - Caso Beta', time: '10:30', process: 'PROC002', client: 'Construtora Beta S.A.' },
-  { id: '4', date: '2024-08-22', type: 'prazo', description: 'Prazo final para contestação - Processo Gamma', process: 'PROC003', client: 'Maria Oliveira' },
-  { id: '5', date: '2024-09-01', type: 'prazo', description: 'Pagamento de custas - Processo Delta', process: 'PROC004', client: 'Empresa Delta' },
-  { id: '6', date: '2024-09-05', type: 'consulta', description: 'Consulta sobre direito imobiliário com Família Z', time: '16:00', client: 'Família Z'},
-];
+import { getEvents, addEvent, updateEvent, deleteEvent } from "@/services/eventService";
+import { Skeleton } from "@/components/ui/skeleton";
+import { getProcesses } from '@/services/processService';
+import type { Process } from '@/components/processes/ProcessFormDialog';
 
 const getEventTypeDetails = (type: CalendarEvent['type']) => {
   switch (type) {
@@ -47,12 +43,40 @@ const getEventTypeDetails = (type: CalendarEvent['type']) => {
 
 export default function AgendaPage() {
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(new Date());
-  const [events, setEvents] = React.useState<CalendarEvent[]>(initialEvents);
+  const [events, setEvents] = React.useState<CalendarEvent[]>([]);
+  const [processes, setProcesses] = React.useState<Process[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
   const [isFormDialogOpen, setIsFormDialogOpen] = React.useState(false);
   const [editingEvent, setEditingEvent] = React.useState<CalendarEvent | undefined>(undefined);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const [eventToDelete, setEventToDelete] = React.useState<CalendarEvent | null>(null);
   const { toast } = useToast();
+  
+  const fetchData = React.useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [eventsFromDb, processesFromDb] = await Promise.all([
+        getEvents(),
+        getProcesses()
+      ]);
+      setEvents(eventsFromDb);
+      setProcesses(processesFromDb);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      toast({
+        title: "Erro ao buscar dados",
+        description: "Não foi possível carregar a agenda. Tente novamente mais tarde.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  React.useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
 
   const handleOpenFormDialog = (event?: CalendarEvent) => {
     setEditingEvent(event);
@@ -64,22 +88,21 @@ export default function AgendaPage() {
     setIsFormDialogOpen(false);
   };
 
-  const handleSubmitEventForm = (data: EventFormValues) => {
-    if (editingEvent) {
-      setEvents(events.map(e => 
-        e.id === editingEvent.id ? { ...editingEvent, ...data, date: data.date } : e // Ensure date is properly updated
-      ));
-      toast({ title: "Evento atualizado!", description: `O evento "${data.description}" foi atualizado.` });
-    } else {
-      const newEvent: CalendarEvent = {
-        id: `EVT${String(events.length + 1).padStart(3, '0')}`,
-        ...data,
-        date: data.date, // Ensure date is properly set
-      };
-      setEvents([...events, newEvent]);
-      toast({ title: "Evento adicionado!", description: `O evento "${newEvent.description}" foi adicionado.` });
+  const handleSubmitEventForm = async (data: EventFormValues) => {
+    try {
+      if (editingEvent) {
+        await updateEvent(editingEvent.id, data);
+        toast({ title: "Evento atualizado!", description: `O evento "${data.description}" foi atualizado.` });
+      } else {
+        await addEvent(data);
+        toast({ title: "Evento adicionado!", description: `O evento foi adicionado.` });
+      }
+      handleCloseFormDialog();
+      fetchData(); // Re-fetch para garantir consistência
+    } catch(error) {
+      console.error("Failed to save event:", error);
+      toast({ title: "Erro ao salvar", description: "Não foi possível salvar o evento.", variant: "destructive" });
     }
-    handleCloseFormDialog();
   };
 
   const handleDeleteConfirmation = (event: CalendarEvent) => {
@@ -87,13 +110,25 @@ export default function AgendaPage() {
     setIsDeleteDialogOpen(true);
   };
 
-  const confirmDeleteEvent = () => {
+  const confirmDeleteEvent = async () => {
     if (eventToDelete) {
-      setEvents(events.filter(e => e.id !== eventToDelete.id));
-      toast({ title: "Evento excluído!", description: `O evento "${eventToDelete.description}" foi excluído.`});
-      setEventToDelete(null);
+      try {
+        await deleteEvent(eventToDelete.id);
+        setEvents(events.filter(e => e.id !== eventToDelete.id));
+        toast({ title: "Evento excluído!", description: `O evento "${eventToDelete.description}" foi excluído.`});
+      } catch (error) {
+        console.error("Failed to delete event:", error);
+        toast({ title: "Erro ao excluir", description: "Não foi possível excluir o evento.", variant: "destructive" });
+      } finally {
+        setEventToDelete(null);
+        setIsDeleteDialogOpen(false);
+      }
     }
-    setIsDeleteDialogOpen(false);
+  };
+
+  const getProcessNumberById = (processId: string) => {
+    const process = processes.find(p => p.id === processId);
+    return process?.processNumber || processId; // Retorna o ID se não encontrar
   };
 
   const eventsForSelectedDate = selectedDate
@@ -112,7 +147,7 @@ export default function AgendaPage() {
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-headline font-bold text-primary">Agenda</h1>
+        <h1 className="text-4xl font-headline font-extrabold text-primary">Agenda</h1>
         <Button onClick={() => handleOpenFormDialog()}>
           <PlusCircle className="mr-2 h-5 w-5" /> Adicionar Evento
         </Button>
@@ -121,7 +156,7 @@ export default function AgendaPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2 shadow-lg">
           <CardHeader>
-            <CardTitle className="text-xl font-headline">Calendário</CardTitle>
+            <CardTitle>Calendário</CardTitle>
           </CardHeader>
           <CardContent className="flex justify-center">
             <Calendar
@@ -140,7 +175,7 @@ export default function AgendaPage() {
 
         <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle className="text-xl font-headline">
+            <CardTitle>
               {selectedDate ? `Eventos de ${format(selectedDate, 'PPP', { locale: ptBR })}` : 'Eventos'}
             </CardTitle>
             <CardDescription>
@@ -148,12 +183,17 @@ export default function AgendaPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {eventsForSelectedDate.length > 0 ? (
+            {isLoading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-16 w-full" />
+                  <Skeleton className="h-16 w-full" />
+                </div>
+            ) : eventsForSelectedDate.length > 0 ? (
               <List>
                 {eventsForSelectedDate.map(event => {
                   const eventTypeDetails = getEventTypeDetails(event.type);
                   return (
-                    <ListItem key={event.id} className="mb-3 p-3 border rounded-md shadow-sm hover:bg-muted/50 group">
+                    <ListItem key={event.id} onClick={() => handleOpenFormDialog(event)} className="mb-3 p-3 border rounded-md shadow-sm hover:bg-muted/50 group cursor-pointer">
                       <div className="flex items-start space-x-3">
                         <span className={`p-2 rounded-full ${eventTypeDetails.color}`}>
                           {eventTypeDetails.icon}
@@ -165,13 +205,13 @@ export default function AgendaPage() {
                           </div>
                           <p className="font-medium">{event.description}</p>
                           {event.client && <p className="text-sm text-muted-foreground">Cliente: {event.client}</p>}
-                          {event.process && <p className="text-sm text-muted-foreground">Processo: {event.process}</p>}
+                          {event.process && <p className="text-sm text-muted-foreground">Processo: {getProcessNumberById(event.process)}</p>}
                         </div>
                         <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button variant="ghost" size="icon" className="hover:text-accent" onClick={() => handleOpenFormDialog(event)}>
+                            <Button variant="ghost" size="icon" className="hover:text-accent" onClick={(e) => { e.stopPropagation(); handleOpenFormDialog(event); }}>
                                 <Edit3 className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="hover:text-destructive" onClick={() => handleDeleteConfirmation(event)}>
+                            <Button variant="ghost" size="icon" className="hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleDeleteConfirmation(event); }}>
                                 <Trash2 className="h-4 w-4" />
                             </Button>
                         </div>
@@ -189,16 +229,21 @@ export default function AgendaPage() {
 
        <Card className="mt-8 shadow-lg">
         <CardHeader>
-          <CardTitle className="text-xl font-headline">Próximos Eventos</CardTitle>
+          <CardTitle>Próximos Eventos</CardTitle>
           <CardDescription>Visão geral dos seus próximos compromissos.</CardDescription>
         </CardHeader>
         <CardContent>
-          {upcomingEvents.length > 0 ? (
+          {isLoading ? (
+             <div className="space-y-3">
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-16 w-full" />
+              </div>
+          ) : upcomingEvents.length > 0 ? (
             <List>
               {upcomingEvents.map(event => {
                 const eventTypeDetails = getEventTypeDetails(event.type);
                 return (
-                  <ListItem key={event.id} className="mb-3 p-3 border rounded-md shadow-sm hover:bg-muted/50 group">
+                  <ListItem key={event.id} onClick={() => handleOpenFormDialog(event)} className="mb-3 p-3 border rounded-md shadow-sm hover:bg-muted/50 group cursor-pointer">
                     <div className="flex items-start space-x-3">
                       <span className={`p-2 rounded-full ${eventTypeDetails.color}`}>
                         {eventTypeDetails.icon}
@@ -211,13 +256,13 @@ export default function AgendaPage() {
                         </div>
                         <p className="font-medium">{event.description}</p>
                         {event.client && <p className="text-sm text-muted-foreground">Cliente: {event.client}</p>}
-                        {event.process && <p className="text-sm text-muted-foreground">Processo: {event.process}</p>}
+                        {event.process && <p className="text-sm text-muted-foreground">Processo: {getProcessNumberById(event.process)}</p>}
                       </div>
                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button variant="ghost" size="icon" className="hover:text-accent" onClick={() => handleOpenFormDialog(event)}>
+                            <Button variant="ghost" size="icon" className="hover:text-accent" onClick={(e) => { e.stopPropagation(); handleOpenFormDialog(event); }}>
                                 <Edit3 className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="hover:text-destructive" onClick={() => handleDeleteConfirmation(event)}>
+                            <Button variant="ghost" size="icon" className="hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleDeleteConfirmation(event); }}>
                                 <Trash2 className="h-4 w-4" />
                             </Button>
                         </div>
@@ -258,3 +303,5 @@ export default function AgendaPage() {
     </div>
   );
 }
+
+    

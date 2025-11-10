@@ -14,18 +14,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { List, ListItem } from "@/components/ui/list";
-import type { Process } from "./ProcessFormDialog"; // Reutilizando a tipagem
-
-// Lista de processos de exemplo para prototipagem.
-// Em um aplicativo real, isso viria de um estado global, API, etc.
-const initialProcesses: Process[] = [
-  { id: "PROC001", client: "Empresa Alpha Ltda.", type: "Cível", status: "Em Andamento", nextDeadline: "2024-08-15", documents: 5 },
-  { id: "PROC002", client: "João Silva", type: "Trabalhista", status: "Concluído", nextDeadline: "-", documents: 3 },
-  { id: "PROC003", client: "Maria Oliveira", type: "Tributário", status: "Suspenso", nextDeadline: "2024-09-01", documents: 8 },
-  { id: "PROC004", client: "Construtora Beta S.A.", type: "Administrativo", status: "Em Andamento", nextDeadline: "2024-07-30", documents: 2 },
-  { id: "PROC005", client: "Empresa Alpha Ltda.", type: "Contratual", status: "Em Andamento", nextDeadline: "2024-10-10", documents: 1 },
-];
-
+import type { Process } from "./ProcessFormDialog";
+import { getProcesses } from "@/services/processService";
+import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ProcessSearchDialogProps {
   isOpen: boolean;
@@ -35,15 +27,40 @@ interface ProcessSearchDialogProps {
 
 export function ProcessSearchDialog({ isOpen, onClose, onProcessSelected }: ProcessSearchDialogProps) {
   const [searchTerm, setSearchTerm] = React.useState("");
+  const [processes, setProcesses] = React.useState<Process[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const { toast } = useToast();
 
-  const filteredProcesses = initialProcesses.filter(proc =>
-    proc.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    proc.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    proc.type.toLowerCase().includes(searchTerm.toLowerCase())
+  React.useEffect(() => {
+    if (isOpen) {
+      const fetchProcesses = async () => {
+        setIsLoading(true);
+        try {
+          const procsFromDb = await getProcesses();
+          setProcesses(procsFromDb);
+        } catch (error) {
+          console.error("Error fetching processes for search:", error);
+          toast({
+            title: "Erro ao buscar processos",
+            description: "Não foi possível carregar a lista para busca.",
+            variant: "destructive",
+          });
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      fetchProcesses();
+    }
+  }, [isOpen, toast]);
+
+  const filteredProcesses = processes.filter(proc =>
+    (proc.processNumber && proc.processNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (proc.client && proc.client.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (proc.type && proc.type.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const handleSelectProcess = (processId: string) => {
-    onProcessSelected(processId);
+  const handleSelectProcess = (processNumber: string) => {
+    onProcessSelected(processNumber);
     onClose();
   };
 
@@ -53,7 +70,7 @@ export function ProcessSearchDialog({ isOpen, onClose, onProcessSelected }: Proc
         <DialogHeader>
           <DialogTitle>Buscar Processo</DialogTitle>
           <DialogDescription>
-            Digite para buscar um processo por ID, cliente ou tipo, ou selecione um da lista.
+            Digite para buscar um processo por Nº, cliente ou tipo, ou selecione um da lista.
           </DialogDescription>
         </DialogHeader>
         <Input
@@ -65,18 +82,27 @@ export function ProcessSearchDialog({ isOpen, onClose, onProcessSelected }: Proc
         />
         <ScrollArea className="h-[300px] w-full">
           <List>
-            {filteredProcesses.length > 0 ? (
+            {isLoading ? (
+               Array.from({ length: 3 }).map((_, i) => (
+                <ListItem key={i} className="p-2">
+                    <div className="flex flex-col gap-2">
+                        <Skeleton className="h-4 w-48" />
+                        <Skeleton className="h-3 w-64" />
+                    </div>
+                </ListItem>
+              ))
+            ) : filteredProcesses.length > 0 ? (
               filteredProcesses.map((proc) => (
                 <ListItem key={proc.id} className="p-0">
                   <Button
                     variant="ghost"
                     className="w-full justify-start p-2 h-auto"
-                    onClick={() => handleSelectProcess(proc.id)}
+                    onClick={() => handleSelectProcess(proc.processNumber)}
                   >
-                    <div className="flex flex-col items-start">
-                       <span className="font-medium">{proc.id} - {proc.type}</span>
+                    <div className="flex flex-col items-start text-left">
+                       <span className="font-medium">{proc.processNumber}</span>
                        <span className="text-xs text-muted-foreground">Cliente: {proc.client}</span>
-                       <span className="text-xs text-muted-foreground">Status: {proc.status}</span>
+                       <span className="text-xs text-muted-foreground">Tipo: {proc.type} | Status: {proc.status}</span>
                     </div>
                   </Button>
                 </ListItem>
