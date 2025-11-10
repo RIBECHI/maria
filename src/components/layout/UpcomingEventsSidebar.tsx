@@ -34,7 +34,7 @@ export default function UpcomingEventsSidebar() {
 
     return (
         <div className="flex flex-col h-full overflow-hidden">
-             <SidebarGroupLabel className="flex items-center gap-2">
+             <SidebarGroupLabel className="flex items-center gap-2 text-sidebar-foreground font-semibold">
                 <CalendarDays className="h-4 w-4" />
                 <span>Próximos Prazos</span>
             </SidebarGroupLabel>
