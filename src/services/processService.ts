@@ -10,10 +10,11 @@ const removeUndefinedKeys = (obj: any): any => {
   if (Array.isArray(obj)) {
     return obj.map(item => removeUndefinedKeys(item));
   }
+  // A verificação foi ajustada para não remover 'null'
   if (obj !== null && typeof obj === 'object') {
     const newObj: { [key: string]: any } = {};
     for (const key in obj) {
-      if (obj.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
         const value = obj[key];
         if (value !== undefined) {
           newObj[key] = removeUndefinedKeys(value);
@@ -25,6 +26,7 @@ const removeUndefinedKeys = (obj: any): any => {
   return obj;
 };
 
+
 // Helper para converter dados do Firestore
 const fromFirestore = (docSnap: DocumentData): Process => {
   const data = docSnap.data();
@@ -35,6 +37,7 @@ const fromFirestore = (docSnap: DocumentData): Process => {
     type: data.type,
     comarca: data.comarca,
     status: data.status,
+    phaseId: data.phaseId,
     nextDeadline: data.nextDeadline,
     documents: data.documents,
     expressoGoias: data.expressoGoias,
