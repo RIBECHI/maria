@@ -3,14 +3,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import type React from 'react'; // Import React for React.ReactNode
+import type React from 'react'; 
 import { SidebarMenuButton } from '@/components/ui/sidebar';
 import { useSidebar } from '@/components/ui/sidebar';
 
 type NavLinkProps = {
   href: string;
   label: string;
-  icon: React.ReactNode; // Icon is now a ReactNode (JSX element)
+  icon: React.ReactNode; 
 };
 
 export default function NavLink({ href, label, icon }: NavLinkProps) {
@@ -24,9 +24,8 @@ export default function NavLink({ href, label, icon }: NavLinkProps) {
     }
   };
 
-
   return (
-    <Link href={href}>
+    <Link href={href} passHref>
       <SidebarMenuButton
         asChild
         isActive={isActive}
