@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -55,7 +56,7 @@ export function ProcessSearchDialog({ isOpen, onClose, onProcessSelected }: Proc
 
   const filteredProcesses = processes.filter(proc =>
     (proc.processNumber && proc.processNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (proc.client && proc.client.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (proc.clients && proc.clients.some(client => client.toLowerCase().includes(searchTerm.toLowerCase()))) ||
     (proc.type && proc.type.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
@@ -101,8 +102,8 @@ export function ProcessSearchDialog({ isOpen, onClose, onProcessSelected }: Proc
                   >
                     <div className="flex flex-col items-start text-left">
                        <span className="font-medium">{proc.processNumber}</span>
-                       <span className="text-xs text-muted-foreground">Cliente: {proc.client}</span>
-                       <span className="text-xs text-muted-foreground">Tipo: {proc.type} | Status: {proc.status}</span>
+                       <span className="text-xs text-muted-foreground">Cliente: {proc.clients.join(', ')}</span>
+                       <span className="text-xs text-muted-foreground">Tipo: {proc.type} | Fase: {proc.phaseName}</span>
                     </div>
                   </Button>
                 </ListItem>

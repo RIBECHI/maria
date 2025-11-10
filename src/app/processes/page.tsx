@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -34,20 +35,19 @@ import { parseISO } from "date-fns";
 import { ProcessDetailsSheet } from "@/components/processes/ProcessDetailsSheet";
 
 
-const getStatusBadgeVariant = (status: string) => {
-  switch (status) {
-    case "Em Andamento": return "default";
-    case "Concluído": return "secondary"; 
-    case "Suspenso": return "outline";
-    default: return "outline";
-  }
-}
+const getPhaseBadgeVariant = (phaseName?: string) => {
+  if (!phaseName) return "outline";
+  const lowerCaseName = phaseName.toLowerCase();
+  if (lowerCaseName.includes('concluído')) return 'secondary';
+  if (lowerCaseName.includes('suspenso') || lowerCaseName.includes('aguardando')) return 'outline';
+  return 'default';
+};
 
-type StatusFilter = 'Todos' | 'Em Andamento' | 'Concluído' | 'Suspenso';
+type SortOrder = "createdAt" | "clientName" | "updatedAt";
 
 function ProcessesPageComponent() {
   const searchParams = useSearchParams()
-  const initialStatus = searchParams.get('status') as StatusFilter | null;
+  const initialStatus = searchParams.get('status') as string | null;
 
   const [processes, setProcesses] = React.useState<Process[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -56,8 +56,7 @@ function ProcessesPageComponent() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const [processToDelete, setProcessToDelete] = React.useState<Process | null>(null);
   const [searchTerm, setSearchTerm] = React.useState("");
-  const [sortOrder, setSortOrder] = React.useState<"createdAt" | "clientName" | "updatedAt">("createdAt");
-  const [statusFilter, setStatusFilter] = React.useState<StatusFilter>(initialStatus || 'Todos');
+  const [sortOrder, setSortOrder] = React.useState<SortOrder>("createdAt");
   const [isDetailsSheetOpen, setIsDetailsSheetOpen] = React.useState(false);
   const [selectedProcessForDetails, setSelectedProcessForDetails] = React.useState<Process | null>(null);
   const { toast } = useToast();
@@ -82,13 +81,6 @@ function ProcessesPageComponent() {
   React.useEffect(() => {
     fetchProcesses();
   }, [fetchProcesses]);
-  
-  React.useEffect(() => {
-    if (initialStatus) {
-      setStatusFilter(initialStatus);
-    }
-  }, [initialStatus]);
-
 
   const handleOpenFormDialog = (proc?: Process) => {
     setEditingProcess(proc);
@@ -164,7 +156,7 @@ function ProcessesPageComponent() {
     const processToUpdate = processes.find(p => p.id === processId);
     if (processToUpdate) {
         try {
-            const updatedProcess = await updateProcess(processId, { ...processToUpdate, timeline: newTimeline });
+            const updatedProcess = await updateProcess(processId, { timeline: newTimeline });
             
             // Atualiza o estado local para refletir a mudança imediatamente
             const updatedProcesses = processes.map(p => p.id === processId ? updatedProcess : p);
@@ -185,17 +177,14 @@ function ProcessesPageComponent() {
 
   const sortedAndFilteredProcesses = React.useMemo(() => {
     let filtered = processes;
-
-    if (statusFilter !== 'Todos') {
-      filtered = filtered.filter(proc => proc.status === statusFilter);
-    }
     
     if (searchTerm) {
         filtered = filtered.filter(proc =>
             (proc.processNumber && proc.processNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
             (proc.clients && proc.clients.some(c => c.toLowerCase().includes(searchTerm.toLowerCase()))) ||
             (proc.type && proc.type.toLowerCase().includes(searchTerm.toLowerCase())) ||
-            (proc.apensos && proc.apensos.some(a => a.toLowerCase().includes(searchTerm.toLowerCase())))
+            (proc.apensos && proc.apensos.some(a => a.toLowerCase().includes(searchTerm.toLowerCase()))) ||
+            (proc.phaseName && proc.phaseName.toLowerCase().includes(searchTerm.toLowerCase()))
         );
     }
 
@@ -216,7 +205,7 @@ function ProcessesPageComponent() {
             return dateB - dateA;
         });
     }
-  }, [processes, searchTerm, sortOrder, statusFilter]);
+  }, [processes, searchTerm, sortOrder]);
 
 
   return (
@@ -232,24 +221,13 @@ function ProcessesPageComponent() {
         <div className="flex items-center gap-2 flex-1 min-w-[250px] max-w-sm">
           <Search className="h-5 w-5 text-muted-foreground" />
           <Input
-            placeholder="Buscar processos por Nº, apenso, cliente ou tipo..."
+            placeholder="Buscar por Nº, cliente, tipo, fase..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <div className="flex items-center gap-4">
-         <Select onValueChange={(value: StatusFilter) => setStatusFilter(value)} value={statusFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filtrar por status..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Todos">Todos os Status</SelectItem>
-              <SelectItem value="Em Andamento">Em Andamento</SelectItem>
-              <SelectItem value="Concluído">Concluído</SelectItem>
-              <SelectItem value="Suspenso">Suspenso</SelectItem>
-            </SelectContent>
-          </Select>
-         <Select onValueChange={(value: "createdAt" | "clientName" | "updatedAt") => setSortOrder(value)} defaultValue={sortOrder}>
+         <Select onValueChange={(value: SortOrder) => setSortOrder(value)} defaultValue={sortOrder}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Ordenar por..." />
           </SelectTrigger>
@@ -274,7 +252,7 @@ function ProcessesPageComponent() {
                 <TableHead>Apenso</TableHead>
                 <TableHead>Cliente(s)</TableHead>
                 <TableHead>Tipo</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Fase do Pipeline</TableHead>
                 <TableHead>Próximo Prazo</TableHead>
                 <TableHead className="text-center">UHD</TableHead>
                 <TableHead className="text-center">Certidão</TableHead>
@@ -310,7 +288,7 @@ function ProcessesPageComponent() {
                     <TableCell>{(process.clients || [process.client]).join(', ')}</TableCell>
                     <TableCell>{process.type}</TableCell>
                     <TableCell>
-                      <Badge variant={getStatusBadgeVariant(process.status) as any}>{process.status}</Badge>
+                      <Badge variant={getPhaseBadgeVariant(process.phaseName)}>{process.phaseName}</Badge>
                     </TableCell>
                     <TableCell>{process.nextDeadline}</TableCell>
                     <TableCell className="text-center">{process.uhd}</TableCell>

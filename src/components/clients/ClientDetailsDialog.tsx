@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -25,14 +26,13 @@ interface ClientDetailsDialogProps {
   allProcesses: Process[];
 }
 
-const getStatusBadgeVariant = (status: string) => {
-  switch (status) {
-    case "Em Andamento": return "default";
-    case "Concluído": return "secondary"; 
-    case "Suspenso": return "outline";
-    default: return "outline";
-  }
-}
+const getPhaseBadgeVariant = (phaseName?: string) => {
+  if (!phaseName) return "outline";
+  const lowerCaseName = phaseName.toLowerCase();
+  if (lowerCaseName.includes('concluído')) return 'secondary';
+  if (lowerCaseName.includes('suspenso') || lowerCaseName.includes('aguardando')) return 'outline';
+  return 'default';
+};
 
 export function ClientDetailsDialog({ isOpen, onClose, clientData, allProcesses }: ClientDetailsDialogProps) {
   if (!clientData) {
@@ -107,7 +107,7 @@ export function ClientDetailsDialog({ isOpen, onClose, clientData, allProcesses 
                                 <div className="p-2 rounded-md hover:bg-muted/60 transition-colors cursor-pointer w-full">
                                     <div className="flex justify-between items-center">
                                         <span className="font-medium">{proc.processNumber} - {proc.type}</span>
-                                        <Badge variant={getStatusBadgeVariant(proc.status) as any}>{proc.status}</Badge>
+                                        <Badge variant={getPhaseBadgeVariant(proc.phaseName)}>{proc.phaseName}</Badge>
                                     </div>
                                 </div>
                             </Link>

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from 'react';
@@ -25,13 +26,11 @@ interface ProcessCardProps {
     onClick: () => void;
 }
 
-const getStatusBadgeVariant = (status: string) => {
-  switch (status) {
-    case "Em Andamento": return "default";
-    case "Concluído": return "secondary"; 
-    case "Suspenso": return "outline";
-    default: return "outline";
-  }
+const getPhaseBadgeVariant = (phaseName: string) => {
+  const lowerCaseName = phaseName.toLowerCase();
+  if (lowerCaseName.includes('concluído')) return 'secondary';
+  if (lowerCaseName.includes('suspenso') || lowerCaseName.includes('aguardando')) return 'outline';
+  return 'default';
 }
 
 const ProcessCard: React.FC<ProcessCardProps> = ({ process, phases, onMove, onClick }) => {
@@ -51,7 +50,7 @@ const ProcessCard: React.FC<ProcessCardProps> = ({ process, phases, onMove, onCl
                     <CardTitle className="text-base font-bold text-primary truncate">
                         {process.processNumber}
                     </CardTitle>
-                    <Badge variant={getStatusBadgeVariant(process.status) as any} className="ml-2 shrink-0">{process.status}</Badge>
+                    <Badge variant={getPhaseBadgeVariant(process.phaseName || '')} className="ml-2 shrink-0">{process.phaseName}</Badge>
                 </div>
                 <CardDescription className="text-xs truncate">{process.type}</CardDescription>
             </CardHeader>

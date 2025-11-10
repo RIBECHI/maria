@@ -1,9 +1,11 @@
 
+
 import { auth, db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, type DocumentData, query, orderBy, limit, getDoc, Timestamp, FirestoreError } from 'firebase/firestore';
 import type { Process, ProcessFormValues, TimelineEvent } from '@/components/processes/ProcessFormDialog';
 import { errorEmitter, FirestorePermissionError, SecurityRuleContext } from '@/lib/errors';
 import { getClients, addClient as createClient } from './clientService'; // Renomeando para evitar conflito
+import { getPhases } from './phaseService';
 
 // Helper para remover chaves indefinidas de um objeto, agora de forma recursiva
 const removeUndefinedKeys = (obj: any): any => {
@@ -29,16 +31,18 @@ const removeUndefinedKeys = (obj: any): any => {
 
 
 // Helper para converter dados do Firestore
-const fromFirestore = (docSnap: DocumentData): Process => {
+const fromFirestore = (docSnap: DocumentData, phases: any[]): Process => {
   const data = docSnap.data();
+  const phase = phases.find(p => p.id === data.phaseId);
+
   const process: Process = {
     id: docSnap.id,
     processNumber: data.processNumber,
     clients: data.clients || (data.client ? [data.client] : []), // Compatibilidade
     type: data.type,
     comarca: data.comarca,
-    status: data.status,
     phaseId: data.phaseId,
+    phaseName: phase ? phase.name : "Não Classificado",
     nextDeadline: data.nextDeadline,
     documents: data.documents,
     expressoGoias: data.expressoGoias,
@@ -56,13 +60,12 @@ const fromFirestore = (docSnap: DocumentData): Process => {
 // READ ALL
 export async function getProcesses(): Promise<Process[]> {
   if (!db) throw new Error("Firebase DB not initialized");
-  const processesCollectionRef = collection(db, 'processes');
-  const q = query(processesCollectionRef, orderBy("createdAt", "desc"));
-  try {
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(fromFirestore);
-  } catch (error) {
-    if (error instanceof FirestoreError && error.code === 'permission-denied') {
+  
+  const [phasesSnapshot, processesSnapshot] = await Promise.all([
+      getPhases(),
+      getDocs(query(collection(db, 'processes'), orderBy("createdAt", "desc")))
+  ]).catch(error => {
+     if (error instanceof FirestoreError && error.code === 'permission-denied') {
       const context: SecurityRuleContext = {
         path: 'processes',
         operation: 'list',
@@ -70,24 +73,18 @@ export async function getProcesses(): Promise<Process[]> {
       };
       errorEmitter.emit('permission-error', new FirestorePermissionError(context));
     }
-    // Return empty array on permission error to avoid breaking UI
-    if (error instanceof FirestoreError && error.code === 'permission-denied') {
-      return [];
-    }
     throw error;
-  }
+  });
+
+  return processesSnapshot.docs.map(doc => fromFirestore(doc, phasesSnapshot));
 }
 
 // READ RECENT
 export async function getRecentProcesses(count?: number): Promise<Process[]> {
     if (!db) return [];
-    const processesCollectionRef = collection(db, 'processes');
-    const q = count 
-        ? query(processesCollectionRef, orderBy("createdAt", "desc"), limit(count))
-        : query(processesCollectionRef, orderBy("createdAt", "desc"));
     try {
-        const querySnapshot = await getDocs(q);
-        return querySnapshot.docs.map(fromFirestore);
+        const allProcesses = await getProcesses(); // Reutiliza a função principal que já ordena
+        return count ? allProcesses.slice(0, count) : allProcesses;
     } catch(error) {
         console.error("Failed to get recent processes:", error);
         return []; // Return empty array on error
@@ -128,7 +125,7 @@ async function ensureClientsExist(clientNames: string[]): Promise<void> {
 
 
 // CREATE
-export async function addProcess(processData: Omit<Process, 'id' | 'createdAt'>): Promise<Process> {
+export async function addProcess(processData: Omit<Process, 'id' | 'createdAt' | 'phaseName'>): Promise<Process> {
   if (!db) throw new Error("Firebase DB not initialized");
   const processesCollectionRef = collection(db, 'processes');
   const cleanData = removeUndefinedKeys(processData);
@@ -144,7 +141,8 @@ export async function addProcess(processData: Omit<Process, 'id' | 'createdAt'>)
         createdAt: serverTimestamp(),
     });
     const snapshot = await getDoc(docRef);
-    return fromFirestore(snapshot);
+    const phases = await getPhases();
+    return fromFirestore(snapshot, phases);
   } catch (error) {
     if (error instanceof FirestoreError && error.code === 'permission-denied') {
         const context: SecurityRuleContext = {
@@ -176,8 +174,8 @@ export async function updateProcess(processId: string, processData: Partial<Proc
         updatedAt: serverTimestamp(),
     });
 
-    const snapshot = await getDoc(processDocRef);
-    return fromFirestore(snapshot);
+    const [snapshot, phases] = await Promise.all([getDoc(processDocRef), getPhases()]);
+    return fromFirestore(snapshot, phases);
   } catch (error) {
     if (error instanceof FirestoreError && error.code === 'permission-denied') {
         const context: SecurityRuleContext = {
@@ -210,5 +208,3 @@ export async function deleteProcess(processId: string): Promise<void> {
     throw error;
   }
 }
-
-    

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -69,8 +70,8 @@ export interface Process extends DocumentData {
   processNumber: string;
   clients: string[];
   type: string;
-  status: 'Em Andamento' | 'Concluído' | 'Suspenso';
   phaseId?: string | null;
+  phaseName?: string;
   comarca?: string;
   nextDeadline: string; // YYYY-MM-DD or '-'
   documents: number;
@@ -88,7 +89,6 @@ const processFormSchema = z.object({
   clients: z.array(z.string()).min(1, { message: "O processo deve ter pelo menos um cliente." }),
   type: z.string().min(3, { message: "O tipo do processo deve ter pelo menos 3 caracteres." }),
   comarca: z.string().optional(),
-  status: z.enum(['Em Andamento', 'Concluído', 'Suspenso'], { required_error: "Status é obrigatório."}),
   nextDeadline: z.string().refine((val) => val === '-' || !isNaN(Date.parse(val)), { message: "Data inválida ou '-'." }),
   expressoGoias: z.boolean().optional(),
   uhd: z.coerce.number().min(1, "UHD deve ser no mínimo 1").max(10, "UHD deve ser no máximo 10").optional(),
@@ -133,7 +133,6 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
       clients: [],
       type: "",
       comarca: "",
-      status: "Em Andamento",
       nextDeadline: format(new Date(), 'yyyy-MM-dd'),
       expressoGoias: false,
       uhd: undefined,
@@ -161,7 +160,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
       if(isOpen) {
         try {
           const phasesData = await getPhases();
-          setPhases(phasesData);
+          setPhases(phasesData.sort((a,b) => a.order - b.order));
         } catch (error) {
             console.error("Failed to load phases", error);
             toast({ title: "Erro ao carregar fases do pipeline", variant: "destructive" });
@@ -179,7 +178,6 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
               clients: processData.clients || (processData.client ? [processData.client] : []),
               type: processData.type,
               comarca: processData.comarca || "",
-              status: processData.status,
               nextDeadline: processData.nextDeadline === '-' ? '' : format(parseISO(processData.nextDeadline + 'T00:00:00'), 'yyyy-MM-dd'),
               expressoGoias: processData.expressoGoias || false,
               uhd: processData.uhd || undefined,
@@ -194,7 +192,6 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
               clients: [],
               type: "",
               comarca: "",
-              status: "Em Andamento",
               nextDeadline: format(new Date(), 'yyyy-MM-dd'),
               expressoGoias: false,
               uhd: undefined,
@@ -442,29 +439,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
                   )}
                 />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                      <FormItem>
-                      <FormLabel>Status</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                          <SelectTrigger>
-                              <SelectValue placeholder="Selecione o status" />
-                          </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                          <SelectItem value="Em Andamento">Em Andamento</SelectItem>
-                          <SelectItem value="Concluído">Concluído</SelectItem>
-                          <SelectItem value="Suspenso">Suspenso</SelectItem>
-                          </SelectContent>
-                      </Select>
-                      <FormMessage />
-                      </FormItem>
-                  )}
-                  />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                   control={form.control}
                   name="nextDeadline"
@@ -486,11 +461,11 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
                         <FormLabel>Fase do Pipeline</FormLabel>
                         <Select 
                           onValueChange={(value) => field.onChange(value === "unclassified" ? undefined : value)} 
-                          value={field.value ?? "unclassified"}
+                          value={field.value ?? undefined}
                         >
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Selecione uma fase" />
+                              <SelectValue placeholder="Não Classificado" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -748,7 +723,3 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
     </>
   );
 }
-
-    
-
-    

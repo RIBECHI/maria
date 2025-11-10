@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Link from 'next/link';
@@ -16,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import type { CalendarEvent } from '@/components/agenda/EventFormDialog';
 import type { Process } from '@/components/processes/ProcessFormDialog';
 import type { Client } from '@/components/clients/ClientFormDialog';
+import { getPhases } from '@/services/phaseService';
 
 interface RecentActivityItem {
     id: string;
@@ -29,24 +31,27 @@ interface RecentActivityItem {
 export default function DashboardPage() {
     const [upcomingEvents, setUpcomingEvents] = React.useState<CalendarEvent[]>([]);
     const [recentActivities, setRecentActivities] = React.useState<RecentActivityItem[]>([]);
-    const [processStats, setProcessStats] = React.useState<{ emAndamento: number; concluido: number; suspenso: number } | null>(null);
+    const [processStats, setProcessStats] = React.useState<Record<string, number>>({});
+    const [phases, setPhases] = React.useState<{id: string, name: string}[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
 
     React.useEffect(() => {
         async function fetchData() {
             setIsLoading(true);
             try {
-                const [events, processes, clients, allProcessesForStats] = await Promise.all([
+                const [events, recentProcs, recentClients, allProcesses, allPhases] = await Promise.all([
                     getEventsForDashboard(5),
                     getRecentProcesses(3),
                     getRecentClients(2),
-                    getProcesses(), // Busca todos para estatísticas
+                    getProcesses(),
+                    getPhases(),
                 ]);
 
                 setUpcomingEvents(events);
+                setPhases(allPhases);
 
                 // Montar Atividades Recentes
-                const processActivities = (processes || []).map(p => ({
+                const processActivities = (recentProcs || []).map(p => ({
                     id: p.id,
                     type: 'process' as const,
                     text: `Novo processo para ${p.clients.join(', ')}`,
@@ -54,7 +59,7 @@ export default function DashboardPage() {
                     icon: <FilePlus2 className="h-5 w-5 text-muted-foreground" />
                 }));
 
-                const clientActivities = (clients || []).map(c => ({
+                const clientActivities = (recentClients || []).map(c => ({
                     id: c.id,
                     type: 'client' as const,
                     text: `Cliente ${c.name} adicionado`,
@@ -73,13 +78,15 @@ export default function DashboardPage() {
                 
                 setRecentActivities(formattedActivities);
 
-                // Calcular Estatísticas de Processos
-                const stats = (allProcessesForStats || []).reduce((acc, p) => {
-                    if (p.status === 'Em Andamento') acc.emAndamento++;
-                    else if (p.status === 'Concluído') acc.concluido++;
-                    else if (p.status === 'Suspenso') acc.suspenso++;
+                // Calcular Estatísticas de Processos por Fase
+                const stats = (allProcesses || []).reduce((acc, p) => {
+                    const phaseName = p.phaseName || 'Não Classificado';
+                    if (!acc[phaseName]) {
+                        acc[phaseName] = 0;
+                    }
+                    acc[phaseName]++;
                     return acc;
-                }, { emAndamento: 0, concluido: 0, suspenso: 0 });
+                }, {} as Record<string, number>);
                 setProcessStats(stats);
 
             } catch (error) {
@@ -101,6 +108,13 @@ export default function DashboardPage() {
             default:
                 return '#';
         }
+    };
+    
+    const getPhaseIcon = (phaseName: string) => {
+        const lowerCaseName = phaseName.toLowerCase();
+        if (lowerCaseName.includes('concluído')) return <CheckSquare className="h-4 w-4 text-green-600" />;
+        if (lowerCaseName.includes('suspenso') || lowerCaseName.includes('aguardando')) return <Hourglass className="h-4 w-4 text-yellow-500" />;
+        return <Briefcase className="h-4 w-4 text-blue-500" />;
     };
 
     return (
@@ -186,35 +200,32 @@ export default function DashboardPage() {
                                 <Skeleton className="h-6 w-2/4" />
                                 <Skeleton className="h-6 w-1/4" />
                             </div>
-                        ) : processStats ? (
+                        ) : Object.keys(processStats).length > 0 ? (
                             <List>
-                                <ListItem className="p-0 border-b-0">
-                                    <Link href="/processes?status=Em Andamento" className="flex items-center justify-between w-full p-2 rounded-md hover:bg-muted/50 transition-colors">
-                                        <div className="flex items-center gap-2">
-                                            <Hourglass className="h-4 w-4 text-blue-500" />
-                                            <span>Em Andamento</span>
-                                        </div>
-                                        <span className="font-bold text-lg">{processStats.emAndamento}</span>
-                                    </Link>
-                                </ListItem>
-                                <ListItem className="p-0 border-b-0">
-                                    <Link href="/processes?status=Concluído" className="flex items-center justify-between w-full p-2 rounded-md hover:bg-muted/50 transition-colors">
-                                        <div className="flex items-center gap-2">
-                                            <CheckSquare className="h-4 w-4 text-green-600" />
-                                            <span>Concluídos</span>
-                                        </div>
-                                        <span className="font-bold text-lg">{processStats.concluido}</span>
-                                    </Link>
-                                </ListItem>
-                                <ListItem className="p-0 border-b-0">
-                                     <Link href="/processes?status=Suspenso" className="flex items-center justify-between w-full p-2 rounded-md hover:bg-muted/50 transition-colors">
-                                        <div className="flex items-center gap-2">
-                                            <Briefcase className="h-4 w-4 text-yellow-500" />
-                                            <span>Suspensos</span>
-                                        </div>
-                                        <span className="font-bold text-lg">{processStats.suspenso}</span>
-                                    </Link>
-                                </ListItem>
+                                {phases.map(phase => (
+                                    processStats[phase.name] > 0 && (
+                                        <ListItem key={phase.id} className="p-0 border-b-0">
+                                            <Link href={`/processes?phase=${phase.name}`} className="flex items-center justify-between w-full p-2 rounded-md hover:bg-muted/50 transition-colors">
+                                                <div className="flex items-center gap-2">
+                                                    {getPhaseIcon(phase.name)}
+                                                    <span>{phase.name}</span>
+                                                </div>
+                                                <span className="font-bold text-lg">{processStats[phase.name]}</span>
+                                            </Link>
+                                        </ListItem>
+                                    )
+                                ))}
+                                {processStats['Não Classificado'] > 0 && (
+                                     <ListItem className="p-0 border-b-0">
+                                        <Link href="/processes?phase=Não Classificado" className="flex items-center justify-between w-full p-2 rounded-md hover:bg-muted/50 transition-colors">
+                                            <div className="flex items-center gap-2">
+                                                <Briefcase className="h-4 w-4 text-gray-500" />
+                                                <span>Não Classificado</span>
+                                            </div>
+                                            <span className="font-bold text-lg">{processStats['Não Classificado']}</span>
+                                        </Link>
+                                    </ListItem>
+                                )}
                             </List>
                         ) : (
                             <p className="text-sm text-muted-foreground pt-2">Não foi possível carregar as estatísticas.</p>

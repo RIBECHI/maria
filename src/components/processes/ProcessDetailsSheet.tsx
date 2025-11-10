@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -51,13 +52,12 @@ import { addEvent } from "@/services/eventService";
 import { Checkbox } from "../ui/checkbox";
   
 
-const getStatusBadgeVariant = (status: string) => {
-  switch (status) {
-    case "Em Andamento": return "default";
-    case "Concluído": return "secondary"; 
-    case "Suspenso": return "outline";
-    default: return "outline";
-  }
+const getPhaseBadgeVariant = (phaseName?: string) => {
+  if (!phaseName) return "outline";
+  const lowerCaseName = phaseName.toLowerCase();
+  if (lowerCaseName.includes('concluído')) return 'secondary';
+  if (lowerCaseName.includes('suspenso') || lowerCaseName.includes('aguardando')) return 'outline';
+  return 'default';
 };
 
 const timelineEventSchema = z.object({
@@ -263,7 +263,7 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
                         <span>{processData.type}</span>
                     </div>
                     <div className="flex items-center gap-2 text-foreground">
-                         <Badge variant={getStatusBadgeVariant(processData.status) as any}>{processData.status}</Badge>
+                         <Badge variant={getPhaseBadgeVariant(processData.phaseName)}>{processData.phaseName}</Badge>
                     </div>
                      <div className="flex items-center gap-2 text-foreground">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
