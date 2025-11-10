@@ -64,7 +64,7 @@ export default function DocumentsPage() {
     setIsFormDialogOpen(false);
   };
 
-  const handleSubmitDocumentForm = async (data: DocumentFormValues, file?: File) => {
+  const handleSubmitDocumentForm = async (data: Partial<DocumentFormValues>, file?: File) => {
     try {
       if (editingDocument) {
         // A lógica de atualização de arquivo não é suportada nesta versão, apenas metadados
@@ -72,7 +72,7 @@ export default function DocumentsPage() {
             toast({ title: "Aviso", description: "A substituição de arquivos não é suportada. Apenas os metadados foram atualizados." });
         }
         const dataToUpdate = { ...data, name: editingDocument.name };
-        const updatedDoc = await updateDocument(editingDocument.id, dataToUpdate);
+        const updatedDoc = await updateDocument(editingDocument.id, dataToUpdate as DocumentFormValues & { name: string });
         setDocuments(documents.map(d => (d.id === editingDocument.id ? { ...d, ...updatedDoc } : d)));
         toast({ title: "Documento atualizado!", description: `O documento ${dataToUpdate.name} foi atualizado.` });
       } else {
@@ -80,7 +80,7 @@ export default function DocumentsPage() {
             toast({ title: "Arquivo Faltando", description: "Por favor, selecione um arquivo para carregar.", variant: "destructive"});
             return;
         }
-        const newDocument = await addDocument({ ...data, name: file.name }, file);
+        const newDocument = await addDocument({ ...data, name: file.name } as DocumentFormValues & { name: string }, file);
         setDocuments(prevDocs => [newDocument, ...prevDocs]);
         toast({ title: "Documento adicionado!", description: `O documento ${newDocument.name} foi adicionado.` });
       }
