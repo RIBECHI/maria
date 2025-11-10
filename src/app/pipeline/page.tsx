@@ -139,7 +139,7 @@ export default function PipelinePage() {
                             ))
                         ) : (
                             allDisplayPhases.map(phase => {
-                                const processesInPhase = getProcessesInPhase(phase.id === 'unclassified' ? null : phase.id);
+                                const processesInPhase = getProcessesInPhase(phase.id);
                                 return (
                                     <div key={phase.id} className="w-80 flex-shrink-0">
                                         <div className="flex justify-between items-center mb-4">
