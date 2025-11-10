@@ -23,6 +23,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import type { Phase } from "@/services/phaseService";
 
@@ -30,6 +37,7 @@ const formSchema = z.object({
   name: z
     .string()
     .min(3, { message: "O nome da fase deve ter pelo menos 3 caracteres." }),
+  order: z.coerce.number().min(1, "A posição deve ser pelo menos 1."),
 });
 
 export type PhaseFormValues = z.infer<typeof formSchema>;
@@ -39,6 +47,7 @@ interface PhaseFormDialogProps {
   onClose: () => void;
   onSubmit: (data: PhaseFormValues) => Promise<void>;
   phaseData?: Phase;
+  existingPhases?: Phase[];
 }
 
 export function PhaseFormDialog({
@@ -46,25 +55,32 @@ export function PhaseFormDialog({
   onClose,
   onSubmit,
   phaseData,
+  existingPhases = [],
 }: PhaseFormDialogProps) {
   const [isLoading, setIsLoading] = React.useState(false);
+  
+  const isEditing = !!phaseData;
 
   const form = useForm<PhaseFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
+      order: 1,
     },
   });
 
   React.useEffect(() => {
     if (isOpen) {
       if (phaseData) {
-        form.reset(phaseData);
+        form.reset({
+          name: phaseData.name,
+          order: phaseData.order,
+        });
       } else {
-        form.reset({ name: "" });
+        form.reset({ name: "", order: existingPhases.length + 1 });
       }
     }
-  }, [phaseData, form, isOpen]);
+  }, [phaseData, form, isOpen, existingPhases]);
 
   const handleFormSubmit: SubmitHandler<PhaseFormValues> = async (data) => {
     setIsLoading(true);
@@ -78,6 +94,9 @@ export function PhaseFormDialog({
     }
   };
 
+  const maxOrder = existingPhases.length + (isEditing ? 0 : 1);
+  const positionOptions = Array.from({ length: maxOrder }, (_, i) => i + 1);
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleDialogClose()}>
       <DialogContent className="sm:max-w-md">
@@ -87,8 +106,8 @@ export function PhaseFormDialog({
           </DialogTitle>
           <DialogDescription>
             {phaseData
-              ? "Altere o nome da sua fase do pipeline."
-              : "Crie uma nova coluna para o seu pipeline de processos."}
+              ? "Altere o nome ou a ordem da sua fase do pipeline."
+              : "Crie uma nova coluna e escolha sua posição no pipeline."}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -106,6 +125,31 @@ export function PhaseFormDialog({
                     <Input placeholder="Ex: Análise Inicial" {...field} />
                   </FormControl>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="order"
+              render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Posição</FormLabel>
+                    <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value.toString()}>
+                        <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Selecione a posição" />
+                            </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            {positionOptions.map(pos => (
+                                <SelectItem key={pos} value={pos.toString()}>
+                                    Posição {pos}
+                                    {isEditing && phaseData?.order === pos && " (Atual)"}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
                 </FormItem>
               )}
             />

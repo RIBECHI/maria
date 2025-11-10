@@ -13,6 +13,7 @@ import {
   getDoc,
   type DocumentData,
   FirestoreError,
+  writeBatch,
 } from 'firebase/firestore';
 import { errorEmitter, FirestorePermissionError, type SecurityRuleContext } from '@/lib/errors';
 
@@ -52,11 +53,16 @@ export async function getPhases(): Promise<Phase[]> {
             { name: "Concluído", order: 5 },
         ];
         const addedPhases: Phase[] = [];
+        const batch = writeBatch(db);
+        
         for (const phase of defaultPhases) {
-            const newPhase = await addPhase(phase);
-            addedPhases.push(newPhase);
+             const docRef = doc(collection(db, PHASES_COLLECTION));
+             batch.set(docRef, { ...phase, createdAt: serverTimestamp() });
+             addedPhases.push({ ...phase, id: docRef.id, createdAt: new Date().toISOString() });
         }
-        return addedPhases;
+        await batch.commit();
+        
+        return addedPhases.sort((a,b) => a.order - b.order);
     }
     return querySnapshot.docs.map(fromFirestore);
   } catch (error) {
@@ -73,7 +79,7 @@ export async function getPhases(): Promise<Phase[]> {
 }
 
 // CREATE
-export async function addPhase(phaseData: Omit<Phase, 'id' | 'createdAt'>): Promise<Phase> {
+export async function addPhase(phaseData: Partial<Omit<Phase, 'id' | 'createdAt'>>): Promise<Phase> {
   if (!db) throw new Error('Firebase DB not initialized');
   const phasesCollectionRef = collection(db, PHASES_COLLECTION);
   const dataToSave = {

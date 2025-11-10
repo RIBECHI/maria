@@ -87,16 +87,47 @@ export default function PipelinePhasesPage() {
   const handleSubmit = async (data: PhaseFormValues) => {
     try {
       if (editingPhase) {
-        await updatePhase(editingPhase.id, data);
+        // Edit logic
+        const originalOrder = editingPhase.order;
+        const newOrder = data.order;
+        if (originalOrder !== newOrder) {
+            const phasesToUpdate: { id: string; order: number }[] = [];
+            
+            // Find the phase that currently has the newOrder
+            const phaseAtNewOrder = phases.find(p => p.order === newOrder && p.id !== editingPhase.id);
+            if (phaseAtNewOrder) {
+                phasesToUpdate.push({ id: phaseAtNewOrder.id, order: originalOrder });
+            }
+
+            // Update the editing phase
+            await updatePhase(editingPhase.id, data);
+            
+            // Update the other phase
+            for (const p of phasesToUpdate) {
+                await updatePhase(p.id, { order: p.order });
+            }
+
+        } else {
+             await updatePhase(editingPhase.id, data);
+        }
+
         toast({
           title: "Fase atualizada!",
           description: "Suas alterações foram salvas.",
         });
+
       } else {
-        await addPhase({
-            ...data,
-            order: phases.length > 0 ? Math.max(...phases.map(p => p.order)) + 1 : 1,
-        });
+        // Create logic
+        const newOrder = data.order;
+        const phasesToShift = phases.filter(p => p.order >= newOrder);
+
+        // Shift existing phases
+        for (const phase of phasesToShift) {
+            await updatePhase(phase.id, { order: phase.order + 1 });
+        }
+
+        // Add the new phase
+        await addPhase(data);
         toast({
           title: "Fase criada!",
           description: "A nova fase já está disponível no pipeline.",
@@ -123,11 +154,18 @@ export default function PipelinePhasesPage() {
     if (phaseToDelete) {
       try {
         await deletePhase(phaseToDelete.id);
-        setPhases((prev) => prev.filter((t) => t.id !== phaseToDelete.id));
+        
+        // Re-order phases that were after the deleted one
+        const phasesToShift = phases.filter(p => p.order > phaseToDelete.order);
+        for(const phase of phasesToShift) {
+            await updatePhase(phase.id, { order: phase.order - 1 });
+        }
+
         toast({
           title: "Fase excluída!",
           description: `A fase "${phaseToDelete.name}" foi removida.`,
         });
+        fetchPhases(); // Re-fetch to see updated order
       } catch (error) {
         console.error("Failed to delete phase:", error);
         toast({
@@ -157,7 +195,7 @@ export default function PipelinePhasesPage() {
         <CardHeader>
           <CardTitle>Gerenciar Fases</CardTitle>
           <CardDescription>
-            Crie, edite e exclua as fases (colunas) do seu pipeline.
+            Crie, edite e reordene as fases (colunas) do seu pipeline.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -224,6 +262,7 @@ export default function PipelinePhasesPage() {
         onClose={handleCloseForm}
         onSubmit={handleSubmit}
         phaseData={editingPhase}
+        existingPhases={phases}
       />
 
       {phaseToDelete && (
