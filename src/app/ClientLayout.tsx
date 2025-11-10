@@ -41,7 +41,7 @@ import ThemeToggle from '@/components/layout/ThemeToggle';
 import type React from 'react';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 import { useRouter, usePathname } from 'next/navigation';
-import { onAuthStateChanged, updateProfile } from 'firebase/auth';
+import { onAuthStateChanged, updateProfile, type Auth } from 'firebase/auth';
 import { getAuthInstance } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -148,13 +148,15 @@ function AppLayout({ children }: { children: ReactNode }) {
                 <ThemeToggle />
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <Link href="/settings" passHref legacyBehavior>
+                <Link href="/settings" passHref>
                   <SidebarMenuButton
-                    as="a"
+                    asChild
                     tooltip={{ children: 'Configurações', side: 'right', align: 'center' }}
                   >
-                    <Settings />
-                    <span>Configurações</span>
+                    <>
+                      <Settings />
+                      <span>Configurações</span>
+                    </>
                   </SidebarMenuButton>
                 </Link>
               </SidebarMenuItem>
@@ -190,9 +192,15 @@ function AuthWrapper({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const router = useRouter();
   const pathname = usePathname();
-  const auth = getAuthInstance();
+  const [auth, setAuth] = useState<Auth | null>(null);
 
   useEffect(() => {
+    // Lazily get the auth instance only on the client side
+    setAuth(getAuthInstance());
+  }, []);
+
+  useEffect(() => {
+    if (!auth) return;
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
         const needsDisplayName = !firebaseUser.displayName;
@@ -215,9 +223,10 @@ function AuthWrapper({ children }: { children: ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, [pathname, router, setUser, auth]);
+  }, [auth, pathname, router, setUser]);
 
   const handleUpdateDisplayName = async () => {
+    if (!auth) return;
     const currentUser = auth.currentUser;
     if (currentUser && newDisplayName.trim()) {
       try {
@@ -297,5 +306,3 @@ export default function AppProviders({ children }: { children: ReactNode }) {
     </UserProvider>
   );
 }
-
-    

@@ -13,31 +13,31 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Singleton pattern to initialize Firebase app only once
-function getFirebaseApp(): FirebaseApp {
-  if (!getApps().length) {
+// Singleton pattern to initialize Firebase app only once, and only on the client
+function initializeFirebaseApp(): FirebaseApp | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  if (getApps().length === 0) {
+    if (Object.values(firebaseConfig).some(value => !value)) {
+        console.error("Firebase config is incomplete. Firebase App could not be initialized.");
+        return null;
+    }
     return initializeApp(firebaseConfig);
   }
   return getApp();
 }
 
-export function getDb(): Firestore {
-  return getFirestore(getFirebaseApp());
-}
+const app = initializeFirebaseApp();
 
-export function getAuthInstance(): Auth {
-  return getAuth(getFirebaseApp());
-}
+// Correctly export services, which will be null on the server.
+export const db: Firestore | null = app ? getFirestore(app) : null;
+export const auth: Auth | null = app ? getAuth(app) : null;
+export const storage: FirebaseStorage | null = app ? getStorage(app) : null;
 
-export function getStorageInstance(): FirebaseStorage {
-  return getStorage(getFirebaseApp());
-}
+// Re-exporting for compatibility with existing imports
+export const getDb = () => db;
+export const getAuthInstance = () => auth;
+export const getStorageInstance = () => storage;
 
-// Exporting the app instance for any other potential direct use
-export const app = getFirebaseApp();
-// Exporting services for compatibility with existing code that might still import them directly
-export const db = getDb();
-export const auth = getAuthInstance();
-export const storage = getStorageInstance();
-
-    
+export { app };
