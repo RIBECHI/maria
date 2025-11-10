@@ -100,7 +100,7 @@ export function TemplateFormDialog({ isOpen, onClose, onSubmit, templateData }: 
     <Dialog open={isOpen} onOpenChange={(open) => { if(!open) handleDialogClose(); }}>
       <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col" onPointerDownOutside={(e) => e.preventDefault()}>
         <DialogHeader>
-          <DialogTitle>{templateData ? "Editar Modelo" : "Criar Novo Modelo"}</DialogTitle>
+          <DialogTitle className="text-primary">{templateData ? "Editar Modelo" : "Criar Novo Modelo"}</DialogTitle>
           <DialogDescription>
             {templateData ? "Altere o nome e o conteúdo do seu modelo." : "Crie um novo modelo de texto para usar no gerador de documentos."}
           </DialogDescription>
