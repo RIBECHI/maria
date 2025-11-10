@@ -154,7 +154,7 @@ export default function ClientsPage() {
       {/* Tabela para Desktop */}
       <Card className="shadow-lg hidden md:block">
         <CardHeader>
-          <CardTitle>Lista de Clientes</CardTitle>
+          <CardTitle className="text-[#808000]">Lista de Clientes</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -311,3 +311,5 @@ export default function ClientsPage() {
     </div>
   );
 }
+
+    
