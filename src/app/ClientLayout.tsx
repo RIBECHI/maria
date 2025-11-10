@@ -116,7 +116,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
               </span>
             </Link>
           </SidebarHeader>
-          <SidebarContent className="flex flex-col p-2">
+          <SidebarContent className="flex flex-1 flex-col p-2 min-h-0">
             <SidebarMenu className="flex-1">
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.label}>
