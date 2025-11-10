@@ -99,6 +99,32 @@ export default function PipelinePage() {
             }
         }
     };
+    
+    const handleMoveProcess = async (processId: string, newPhaseId: string | null) => {
+        const originalProcesses = [...processes];
+        const processToMove = processes.find(p => p.id === processId);
+        
+        if (!processToMove || processToMove.phaseId === newPhaseId) return;
+
+        // Optimistic UI update
+        const updatedProcesses = processes.map(p => 
+            p.id === processId ? { ...p, phaseId: newPhaseId ?? undefined } : p
+        );
+        setProcesses(updatedProcesses);
+        
+        try {
+            await updateProcess(processId, { phaseId: newPhaseId === null ? undefined : newPhaseId });
+            toast({
+                title: "Processo movido!",
+                description: `O processo foi movido para a nova fase.`,
+            });
+        } catch (error) {
+            console.error("Failed to move process:", error);
+            // Revert on error
+            setProcesses(originalProcesses);
+            toast({ title: "Erro ao mover processo", description: "Não foi possível atualizar a fase do processo.", variant: "destructive" });
+        }
+    };
 
 
     const getProcessesInPhase = (phaseId: string | null) => {
@@ -156,9 +182,9 @@ export default function PipelinePage() {
                                                     <ProcessCard
                                                         key={process.id}
                                                         process={process}
-                                                        allPhases={phases}
-                                                        onCardClick={() => handleOpenDetails(process)}
-                                                        onMoveProcess={handleMoveProcess}
+                                                        phases={allPhases}
+                                                        onMove={handleMoveProcess}
+                                                        onClick={() => handleOpenDetails(process)}
                                                     />
                                                 ))
                                             ) : (

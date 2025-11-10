@@ -2,13 +2,23 @@
 "use client";
 
 import * as React from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import type { Process } from '@/components/processes/ProcessFormDialog';
-import type { Phase } from '@/services/phaseService';
-import { Calendar, MoreVertical, User } from 'lucide-react';
+import { Calendar, User } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from '@/components/ui/button';
+import type { Phase } from '@/services/phaseService';
+
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -21,9 +31,7 @@ import { Button } from '../ui/button';
 
 interface ProcessCardProps {
     process: Process;
-    allPhases: Phase[];
-    onCardClick: () => void;
-    onMoveProcess: (processId: string, newPhaseId: string | null) => void;
+    onClick: () => void;
 }
 
 const getStatusBadgeVariant = (status: string) => {
@@ -35,21 +43,15 @@ const getStatusBadgeVariant = (status: string) => {
   }
 }
 
-const ProcessCard: React.FC<ProcessCardProps> = ({ process, allPhases, onCardClick, onMoveProcess }) => {
-    
-    const handleMoveClick = (e: React.MouseEvent, newPhaseId: string | null) => {
-        e.stopPropagation(); // Evita que o onCardClick seja disparado
-        onMoveProcess(process.id, newPhaseId);
-    };
-    
+const ProcessCard: React.FC<ProcessCardProps> = ({ process, onClick }) => {
     return (
         <Card
-            className="shadow-sm hover:shadow-md hover:border-primary/50 transition-all cursor-pointer bg-card group"
-            onClick={onCardClick}
+            className="shadow-sm hover:shadow-md hover:border-primary/50 transition-all cursor-pointer bg-card"
+            onClick={onClick}
         >
             <CardHeader className="p-3 pb-2">
                 <div className="flex justify-between items-start">
-                    <CardTitle className="text-base font-bold text-primary truncate pr-2">
+                    <CardTitle className="text-base font-bold text-primary truncate">
                         {process.processNumber}
                     </CardTitle>
                     <DropdownMenu>
@@ -100,6 +102,28 @@ const ProcessCard: React.FC<ProcessCardProps> = ({ process, allPhases, onCardCli
                     )}
                 </div>
             </CardContent>
+            <CardFooter className="p-2 pt-0 justify-end">
+                 <DropdownMenu>
+                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 focus:opacity-100">
+                           <MoreHorizontal className="h-5 w-5"/>
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenuLabel className="flex items-center gap-2"><MoveRight className="h-4 w-4"/> Mover Para</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {phases.map(phase => (
+                            <DropdownMenuItem
+                                key={phase.id}
+                                onSelect={(e) => handleMenuSelect(e, phase.id === 'unclassified' ? null : phase.id)}
+                                disabled={(process.phaseId || null) === (phase.id === 'unclassified' ? null : phase.id)}
+                            >
+                                {phase.name}
+                            </DropdownMenuItem>
+                        ))}
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </CardFooter>
         </Card>
     );
 }
