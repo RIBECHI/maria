@@ -40,20 +40,28 @@ export interface Document extends DocumentData {
   filePath: string;
 }
 
-const documentFormSchema = z.object({
+const documentFormSchemaBase = z.object({
   process: z.string().min(3, { message: "O processo vinculado é obrigatório." }),
   tagsString: z.string().optional(),
+});
+
+const documentFormSchemaCreate = documentFormSchemaBase.extend({
   file: z.any()
-    .refine((files) => files?.length == 1, "Arquivo é obrigatório.")
+    .refine((files) => files?.length === 1, "O arquivo é obrigatório.")
     .refine((files) => files?.[0]?.size <= 5000000, `Tamanho máximo do arquivo é 5MB.`)
 });
 
-export type DocumentFormValues = z.infer<typeof documentFormSchema>;
+const documentFormSchemaEdit = documentFormSchemaBase.extend({
+    file: z.any().optional(),
+});
+
+
+export type DocumentFormValues = z.infer<typeof documentFormSchemaCreate>;
 
 interface DocumentFormDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: DocumentFormValues, file?: File) => Promise<void>;
+  onSubmit: (data: Partial<DocumentFormValues>, file?: File) => Promise<void>;
   documentData?: Document;
 }
 
@@ -62,7 +70,7 @@ export function DocumentFormDialog({ isOpen, onClose, onSubmit, documentData }: 
   const [isProcessSearchOpen, setIsProcessSearchOpen] = React.useState(false);
 
   const form = useForm<DocumentFormValues>({
-    resolver: zodResolver(documentFormSchema),
+    resolver: zodResolver(documentData ? documentFormSchemaEdit : documentFormSchemaCreate),
     defaultValues: {
       process: "",
       tagsString: "",
@@ -74,29 +82,18 @@ export function DocumentFormDialog({ isOpen, onClose, onSubmit, documentData }: 
 
   React.useEffect(() => {
     if (isOpen) {
-      if (documentData) {
-        // Modo edição: resetar com dados existentes, mas desabilitar mudança de arquivo
-        form.reset({
-          process: documentData.process,
-          tagsString: documentData.tags.join(", "),
-          file: undefined,
-        });
-      } else {
-        // Modo criação
-        form.reset({
-          process: "",
-          tagsString: "",
-          file: undefined,
-        });
-      }
+      form.reset({
+        process: documentData?.process ?? "",
+        tagsString: documentData?.tags.join(", ") ?? "",
+        file: undefined,
+      });
     }
   }, [documentData, form, isOpen]);
 
   const handleFormSubmit: SubmitHandler<DocumentFormValues> = async (data) => {
     setIsLoading(true);
     const file = data.file?.[0];
-    const submitData = { ...data, name: file?.name || documentData?.name };
-    await onSubmit(submitData, file);
+    await onSubmit({ ...data, name: file?.name }, file);
     setIsLoading(false);
   };
 
