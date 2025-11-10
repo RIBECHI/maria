@@ -5,7 +5,7 @@ import * as React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import type { Process } from '@/components/processes/ProcessFormDialog';
-import { Calendar, User } from 'lucide-react';
+import { Calendar, User, MoreHorizontal, MoveRight } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
@@ -17,20 +17,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from '@/components/ui/button';
-import type { Phase } from '@/services/phaseService';
-
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from '../ui/button';
 
 interface ProcessCardProps {
     process: Process;
+    phases: { id: string; name: string }[];
+    onMove: (processId: string, newPhaseId: string | null) => void;
     onClick: () => void;
 }
 
@@ -43,10 +34,16 @@ const getStatusBadgeVariant = (status: string) => {
   }
 }
 
-const ProcessCard: React.FC<ProcessCardProps> = ({ process, onClick }) => {
+const ProcessCard: React.FC<ProcessCardProps> = ({ process, phases, onMove, onClick }) => {
+
+    const handleMenuSelect = (e: Event, phaseId: string | null) => {
+        e.preventDefault(); // Impede o clique no card de ser acionado
+        onMove(process.id, phaseId);
+    };
+    
     return (
         <Card
-            className="shadow-sm hover:shadow-md hover:border-primary/50 transition-all cursor-pointer bg-card"
+            className="shadow-sm hover:shadow-md hover:border-primary/50 transition-all cursor-pointer bg-card group"
             onClick={onClick}
         >
             <CardHeader className="p-3 pb-2">
@@ -54,35 +51,7 @@ const ProcessCard: React.FC<ProcessCardProps> = ({ process, onClick }) => {
                     <CardTitle className="text-base font-bold text-primary truncate">
                         {process.processNumber}
                     </CardTitle>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-6 w-6 opacity-50 group-hover:opacity-100 transition-opacity -mr-1 -mt-1"
-                                onClick={(e) => e.stopPropagation()} // Impede o clique no card
-                            >
-                                <MoreVertical className="h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                            <DropdownMenuLabel>Mover Para</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            {allPhases.map(phase => (
-                                <DropdownMenuItem 
-                                    key={phase.id} 
-                                    onClick={(e) => handleMoveClick(e, phase.id)}
-                                    disabled={process.phaseId === phase.id}
-                                >
-                                    {phase.name}
-                                </DropdownMenuItem>
-                            ))}
-                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={(e) => handleMoveClick(e, null)} disabled={!process.phaseId}>
-                                Não Classificado
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                    <Badge variant={getStatusBadgeVariant(process.status) as any} className="ml-2 shrink-0">{process.status}</Badge>
                 </div>
                 <CardDescription className="text-xs truncate">{process.type}</CardDescription>
             </CardHeader>
