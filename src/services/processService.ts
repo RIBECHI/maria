@@ -10,12 +10,13 @@ const removeUndefinedKeys = (obj: any): any => {
   if (Array.isArray(obj)) {
     return obj.map(item => removeUndefinedKeys(item));
   }
-  // A verificação foi ajustada para não remover 'null'
+  
   if (obj !== null && typeof obj === 'object') {
     const newObj: { [key: string]: any } = {};
     for (const key in obj) {
       if (Object.prototype.hasOwnProperty.call(obj, key)) {
         const value = obj[key];
+        // Mantém a chave se o valor não for `undefined`. Isso preserva `null`, 0, false, etc.
         if (value !== undefined) {
           newObj[key] = removeUndefinedKeys(value);
         }

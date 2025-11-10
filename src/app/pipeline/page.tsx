@@ -77,7 +77,7 @@ export default function PipelinePage() {
         const processToMove = processes.find(p => p.id === processId);
         
         if (!processToMove || processToMove.phaseId === newPhaseId) return;
-
+    
         // Optimistic UI update
         const updatedProcesses = processes.map(p => 
             p.id === processId ? { ...p, phaseId: newPhaseId ?? undefined } : p
@@ -85,7 +85,8 @@ export default function PipelinePage() {
         setProcesses(updatedProcesses);
         
         try {
-            await updateProcess(processId, { phaseId: newPhaseId === null ? undefined : newPhaseId });
+            // Firestore update: pass null to clear the field.
+            await updateProcess(processId, { phaseId: newPhaseId });
             toast({
                 title: "Processo movido!",
                 description: `O processo foi movido para a nova fase.`,
@@ -101,7 +102,8 @@ export default function PipelinePage() {
 
     const getProcessesInPhase = (phaseId: string | null) => {
         if (phaseId === 'unclassified') {
-            return processes.filter(p => !p.phaseId);
+             // Correctly filter for processes with null or undefined phaseId
+            return processes.filter(p => p.phaseId === null || p.phaseId === undefined);
         }
         return processes.filter(p => p.phaseId === phaseId);
     };
