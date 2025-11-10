@@ -41,6 +41,7 @@ export interface Document extends DocumentData {
 }
 
 const documentFormSchemaBase = z.object({
+  name: z.string().optional(),
   process: z.string().min(3, { message: "O processo vinculado é obrigatório." }),
   tagsString: z.string().optional(),
 });
