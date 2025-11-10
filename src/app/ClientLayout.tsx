@@ -155,13 +155,14 @@ function AppLayout({ children }: { children: React.ReactNode }) {
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <Link href="/settings" passHref legacyBehavior>
-                  <SidebarMenuButton
-                    as="a"
-                    tooltip={{ children: 'Configurações', side: 'right', align: 'center' }}
-                  >
-                    <Settings />
-                    <span>Configurações</span>
-                  </SidebarMenuButton>
+                  <a className="flex w-full">
+                    <SidebarMenuButton
+                      tooltip={{ children: 'Configurações', side: 'right', align: 'center' }}
+                    >
+                      <Settings />
+                      <span>Configurações</span>
+                    </SidebarMenuButton>
+                  </a>
                 </Link>
               </SidebarMenuItem>
               <SidebarMenuItem>
