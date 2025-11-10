@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { getProcesses, updateProcess } from "@/services/processService";
-import { getPhases, addPhase, type Phase } from "@/services/phaseService";
+import { getPhases, type Phase } from "@/services/phaseService";
 import type { Process } from "@/components/processes/ProcessFormDialog";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, KanbanSquare } from "lucide-react";
@@ -52,34 +52,6 @@ export default function PipelinePage() {
     const handleCloseDetails = () => {
         setIsSheetOpen(false);
         setSelectedProcess(null);
-    };
-    
-    const handleMoveProcess = async (processId: string, newPhaseId: string | null) => {
-        const processToMove = processes.find(p => p.id === processId);
-        if (!processToMove) return;
-
-        const originalPhaseId = processToMove.phaseId;
-
-        // Optimistic UI update
-        const updatedProcesses = processes.map(p =>
-            p.id === processId ? { ...p, phaseId: newPhaseId || undefined } : p
-        );
-        setProcesses(updatedProcesses);
-        
-        try {
-            await updateProcess(processId, { phaseId: newPhaseId || undefined });
-            toast({
-                title: "Processo movido!",
-                description: `O processo foi movido para a nova fase.`,
-            });
-        } catch (error) {
-            console.error("Failed to move process", error);
-            // Revert UI on error
-             setProcesses(processes.map(p =>
-                p.id === processId ? { ...p, phaseId: originalPhaseId } : p
-            ));
-            toast({ title: "Erro ao mover", description: "Não foi possível atualizar a fase do processo.", variant: "destructive"});
-        }
     };
 
     const handleTimelineUpdate = async (processId: string, newTimeline: any[]) => {
@@ -167,7 +139,7 @@ export default function PipelinePage() {
                             ))
                         ) : (
                             allDisplayPhases.map(phase => {
-                                const processesInPhase = getProcessesInPhase(phase.id);
+                                const processesInPhase = getProcessesInPhase(phase.id === 'unclassified' ? null : phase.id);
                                 return (
                                     <div key={phase.id} className="w-80 flex-shrink-0">
                                         <div className="flex justify-between items-center mb-4">
@@ -176,13 +148,13 @@ export default function PipelinePage() {
                                                 {processesInPhase.length}
                                             </span>
                                         </div>
-                                        <div className="space-y-4 h-full bg-muted/30 rounded-lg p-2 min-h-[100px]">
+                                        <div className="space-y-4 bg-muted/30 rounded-lg p-2 min-h-[100px]">
                                             {processesInPhase.length > 0 ? (
                                                 processesInPhase.map(process => (
                                                     <ProcessCard
                                                         key={process.id}
                                                         process={process}
-                                                        phases={allPhases}
+                                                        phases={allDisplayPhases.map(p => ({ id: p.id, name: p.name }))}
                                                         onMove={handleMoveProcess}
                                                         onClick={() => handleOpenDetails(process)}
                                                     />
