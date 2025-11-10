@@ -70,7 +70,7 @@ export interface Process extends DocumentData {
   clients: string[];
   type: string;
   status: 'Em Andamento' | 'Concluído' | 'Suspenso';
-  phaseId?: string | undefined;
+  phaseId?: string | null;
   comarca?: string;
   nextDeadline: string; // YYYY-MM-DD or '-'
   documents: number;
@@ -94,7 +94,7 @@ const processFormSchema = z.object({
   uhd: z.coerce.number().min(1, "UHD deve ser no mínimo 1").max(10, "UHD deve ser no máximo 10").optional(),
   certidao: z.boolean().optional(),
   apensos: z.array(z.string()).optional(),
-  phaseId: z.string().optional(),
+  phaseId: z.string().nullable().optional(),
 });
 
 export type ProcessFormValues = z.infer<typeof processFormSchema>;
@@ -484,14 +484,14 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Fase do Pipeline</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value || ""} defaultValue={field.value || ""}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Selecione uma fase" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="unclassified">Não Classificado</SelectItem>
+                            <SelectItem value="">Não Classificado</SelectItem>
                             {phases.map(phase => (
                               <SelectItem key={phase.id} value={phase.id}>{phase.name}</SelectItem>
                             ))}
