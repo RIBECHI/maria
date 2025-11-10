@@ -30,6 +30,7 @@ import {
   SidebarTrigger,
   SidebarSeparator,
 } from '@/components/ui/sidebar';
+import { SheetTitle } from '@/components/ui/sheet';
 import { Toaster } from "@/components/ui/toaster";
 import Logo from '@/components/layout/Logo';
 import NavLink from '@/components/layout/NavLink';
@@ -109,8 +110,15 @@ function AppLayout({ children }: { children: React.ReactNode }) {
     <UserProvider>
       <JusticeSymbolWatermark />
       <SidebarProvider defaultOpen>
-        <Sidebar collapsible="icon" variant="sidebar" side="left">
-          <SidebarHeader className="h-16 flex items-center p-4 border-b border-sidebar-border">
+        <Sidebar 
+          collapsible="icon" 
+          variant="sidebar" 
+          side="left"
+          mobileHeader={
+            <SheetTitle className="sr-only">Menu Principal</SheetTitle>
+          }
+        >
+          <SidebarHeader>
             <Link href="/" className="flex items-center gap-2">
               <Logo className="h-8 w-8 text-primary" />
               <span className="text-xl font-headline font-semibold text-sidebar-foreground group-data-[collapsible=icon]:hidden">
@@ -118,7 +126,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
               </span>
             </Link>
           </SidebarHeader>
-          <SidebarContent className="flex flex-col min-h-0">
+          <SidebarContent className="flex-1 min-h-0 flex flex-col">
             <SidebarMenu className="flex-1">
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.label}>
@@ -146,13 +154,11 @@ function AppLayout({ children }: { children: React.ReactNode }) {
               <SidebarMenuItem>
                 <Link href="/settings" passHref legacyBehavior>
                   <SidebarMenuButton
-                    asChild
+                    as="a"
                     tooltip={{ children: 'Configurações', side: 'right', align: 'center' }}
                   >
-                    <a>
-                      <Settings />
-                      <span>Configurações</span>
-                    </a>
+                    <Settings />
+                    <span>Configurações</span>
                   </SidebarMenuButton>
                 </Link>
               </SidebarMenuItem>
