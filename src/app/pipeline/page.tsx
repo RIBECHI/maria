@@ -152,23 +152,23 @@ export default function PipelinePage() {
                                                 </span>
                                             </div>
                                             <div className="flex-1 min-h-0 overflow-y-auto bg-muted/30 rounded-lg p-2 pr-3 -mr-1">
-                                            <div className="space-y-4">
-                                                {processesInPhase.length > 0 ? (
-                                                    processesInPhase.map(process => (
-                                                        <ProcessCard
-                                                            key={process.id}
-                                                            process={process}
-                                                            phases={allDisplayPhases.map(p => ({ id: p.id, name: p.name }))}
-                                                            onMove={handleMoveProcess}
-                                                            onClick={() => handleOpenDetails(process)}
-                                                        />
-                                                    ))
-                                                ) : (
-                                                    <div className="text-center text-sm text-muted-foreground py-10">
-                                                        Nenhum processo nesta fase.
-                                                    </div>
-                                                )}
-                                            </div>
+                                                <div className="space-y-4">
+                                                    {processesInPhase.length > 0 ? (
+                                                        processesInPhase.map(process => (
+                                                            <ProcessCard
+                                                                key={process.id}
+                                                                process={process}
+                                                                phases={allDisplayPhases.map(p => ({ id: p.id, name: p.name }))}
+                                                                onMove={handleMoveProcess}
+                                                                onClick={() => handleOpenDetails(process)}
+                                                            />
+                                                        ))
+                                                    ) : (
+                                                        <div className="text-center text-sm text-muted-foreground py-10">
+                                                            Nenhum processo nesta fase.
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     );
