@@ -47,16 +47,16 @@ import { ErrorBoundary } from '@/components/utils/ErrorBoundary';
 import { usePathname } from 'next/navigation';
 
 const navItems = [
-  { href: '/', label: 'Painel', icon: <LayoutDashboard /> },
-  { href: '/clients', label: 'Clientes', icon: <Users /> },
-  { href: '/processes', label: 'Processos', icon: <Briefcase /> },
-  { href: '/pipeline', label: 'Pipeline', icon: <KanbanSquare /> },
-  { href: '/tasks', label: 'Tarefas', icon: <ListChecks /> },
-  { href: '/documents', label: 'Documentos', icon: <FileText /> },
-  { href: '/agenda', label: 'Agenda', icon: <CalendarDays /> },
-  { href: '/legal-reminder', label: 'Lembrete Legal', icon: <Lightbulb /> },
-  { href: '/document-generator', label: 'Gerador de Documentos', icon: <FileSignature /> },
-  { href: '/pdf-tools', label: 'Ferramentas PDF', icon: <FileCog /> },
+  { href: '/', label: 'Painel', icon: <LayoutDashboard className="text-sky-400" /> },
+  { href: '/clients', label: 'Clientes', icon: <Users className="text-orange-400" /> },
+  { href: '/processes', label: 'Processos', icon: <Briefcase className="text-lime-400" /> },
+  { href: '/pipeline', label: 'Pipeline', icon: <KanbanSquare className="text-amber-400" /> },
+  { href: '/tasks', label: 'Tarefas', icon: <ListChecks className="text-teal-400" /> },
+  { href: '/documents', label: 'Documentos', icon: <FileText className="text-rose-400" /> },
+  { href: '/agenda', label: 'Agenda', icon: <CalendarDays className="text-violet-400" /> },
+  { href: '/legal-reminder', label: 'Lembrete Legal', icon: <Lightbulb className="text-yellow-400" /> },
+  { href: '/document-generator', label: 'Gerador de Documentos', icon: <FileSignature className="text-cyan-400" /> },
+  { href: '/pdf-tools', label: 'Ferramentas PDF', icon: <FileCog className="text-emerald-400" /> },
 ];
 
 function JusticeSymbolWatermark() {
