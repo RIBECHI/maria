@@ -129,53 +129,55 @@ export default function PipelinePage() {
                     </Button>
                 </div>
 
-                <ScrollArea className="flex-grow">
-                    <div className="flex h-full gap-6 pb-4">
-                        {isLoading ? (
-                            Array.from({ length: 4 }).map((_, i) => (
-                                <div key={i} className="w-80 flex-shrink-0 space-y-4">
-                                    <Skeleton className="h-8 w-1/2" />
-                                    <Skeleton className="h-28 w-full" />
-                                    <Skeleton className="h-28 w-full" />
-                                </div>
-                            ))
-                        ) : (
-                            allDisplayPhases.map(phase => {
-                                const processesInPhase = getProcessesInPhase(phase.id);
-                                return (
-                                    <div key={phase.id} className="w-80 flex-shrink-0 flex flex-col">
-                                        <div className="flex justify-between items-center mb-4 flex-shrink-0">
-                                            <h2 className="font-semibold text-lg text-foreground">{phase.name}</h2>
-                                            <span className="text-sm font-bold text-muted-foreground bg-muted/50 px-2 py-1 rounded-md">
-                                                {processesInPhase.length}
-                                            </span>
-                                        </div>
-                                        <div className="flex-1 overflow-y-auto bg-muted/30 rounded-lg p-2 pr-3 -mr-1">
-                                          <div className="space-y-4 min-h-[100px]">
-                                              {processesInPhase.length > 0 ? (
-                                                  processesInPhase.map(process => (
-                                                      <ProcessCard
-                                                          key={process.id}
-                                                          process={process}
-                                                          phases={allDisplayPhases.map(p => ({ id: p.id, name: p.name }))}
-                                                          onMove={handleMoveProcess}
-                                                          onClick={() => handleOpenDetails(process)}
-                                                      />
-                                                  ))
-                                              ) : (
-                                                  <div className="text-center text-sm text-muted-foreground py-10">
-                                                      Nenhum processo nesta fase.
-                                                  </div>
-                                              )}
-                                          </div>
-                                        </div>
+                <div className="flex-1 min-h-0">
+                    <ScrollArea className="h-full w-full">
+                        <div className="flex h-full gap-6 pb-4">
+                            {isLoading ? (
+                                Array.from({ length: 4 }).map((_, i) => (
+                                    <div key={i} className="w-80 flex-shrink-0 space-y-4">
+                                        <Skeleton className="h-8 w-1/2" />
+                                        <Skeleton className="h-28 w-full" />
+                                        <Skeleton className="h-28 w-full" />
                                     </div>
-                                );
-                            })
-                        )}
-                    </div>
-                    <ScrollBar orientation="horizontal" />
-                </ScrollArea>
+                                ))
+                            ) : (
+                                allDisplayPhases.map(phase => {
+                                    const processesInPhase = getProcessesInPhase(phase.id);
+                                    return (
+                                        <div key={phase.id} className="w-80 flex-shrink-0 flex flex-col h-full">
+                                            <div className="flex justify-between items-center mb-4 flex-shrink-0">
+                                                <h2 className="font-semibold text-lg text-foreground">{phase.name}</h2>
+                                                <span className="text-sm font-bold text-muted-foreground bg-muted/50 px-2 py-1 rounded-md">
+                                                    {processesInPhase.length}
+                                                </span>
+                                            </div>
+                                            <div className="flex-1 min-h-0 overflow-y-auto bg-muted/30 rounded-lg p-2 pr-3 -mr-1">
+                                            <div className="space-y-4">
+                                                {processesInPhase.length > 0 ? (
+                                                    processesInPhase.map(process => (
+                                                        <ProcessCard
+                                                            key={process.id}
+                                                            process={process}
+                                                            phases={allDisplayPhases.map(p => ({ id: p.id, name: p.name }))}
+                                                            onMove={handleMoveProcess}
+                                                            onClick={() => handleOpenDetails(process)}
+                                                        />
+                                                    ))
+                                                ) : (
+                                                    <div className="text-center text-sm text-muted-foreground py-10">
+                                                        Nenhum processo nesta fase.
+                                                    </div>
+                                                )}
+                                            </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+                        <ScrollBar orientation="horizontal" />
+                    </ScrollArea>
+                </div>
             </div>
             <ProcessDetailsSheet 
                 isOpen={isSheetOpen}
