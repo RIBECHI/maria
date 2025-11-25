@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, Edit, FolderOpen, Trash2, Search, CheckCircle, XCircle, Eye } from "lucide-react";
+import { PlusCircle, Edit, FolderOpen, Trash2, Search, CheckCircle, XCircle, Eye, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/select";
 import { parseISO } from "date-fns";
 import { ProcessDetailsSheet } from "@/components/processes/ProcessDetailsSheet";
+import { getPhases, type Phase } from "@/services/phaseService";
 
 
 const getPhaseBadgeVariant = (phaseName?: string) => {
@@ -47,9 +48,10 @@ type SortOrder = "createdAt" | "clientName" | "updatedAt";
 
 function ProcessesPageComponent() {
   const searchParams = useSearchParams()
-  const initialStatus = searchParams.get('status') as string | null;
+  const initialPhase = searchParams.get('phase') as string | null;
 
   const [processes, setProcesses] = React.useState<Process[]>([]);
+  const [phases, setPhases] = React.useState<Phase[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isFormDialogOpen, setIsFormDialogOpen] = React.useState(false);
   const [editingProcess, setEditingProcess] = React.useState<Process | undefined>(undefined);
@@ -57,20 +59,25 @@ function ProcessesPageComponent() {
   const [processToDelete, setProcessToDelete] = React.useState<Process | null>(null);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [sortOrder, setSortOrder] = React.useState<SortOrder>("createdAt");
+  const [phaseFilter, setPhaseFilter] = React.useState(initialPhase || "all");
   const [isDetailsSheetOpen, setIsDetailsSheetOpen] = React.useState(false);
   const [selectedProcessForDetails, setSelectedProcessForDetails] = React.useState<Process | null>(null);
   const { toast } = useToast();
 
-  const fetchProcesses = React.useCallback(async () => {
+  const fetchData = React.useCallback(async () => {
     setIsLoading(true);
     try {
-      const processesFromDb = await getProcesses();
+      const [processesFromDb, phasesFromDb] = await Promise.all([
+          getProcesses(),
+          getPhases()
+      ]);
       setProcesses(processesFromDb);
+      setPhases(phasesFromDb);
     } catch (error) {
-      console.error("Error fetching processes:", error);
+      console.error("Error fetching data:", error);
       toast({
-        title: "Erro ao buscar processos",
-        description: "Não foi possível carregar a lista de processos. Tente novamente mais tarde.",
+        title: "Erro ao buscar dados",
+        description: "Não foi possível carregar a lista de processos e fases. Tente novamente mais tarde.",
         variant: "destructive",
       });
     } finally {
@@ -79,8 +86,8 @@ function ProcessesPageComponent() {
   }, [toast]);
 
   React.useEffect(() => {
-    fetchProcesses();
-  }, [fetchProcesses]);
+    fetchData();
+  }, [fetchData]);
 
   const handleOpenFormDialog = (proc?: Process) => {
     setEditingProcess(proc);
@@ -119,7 +126,7 @@ function ProcessesPageComponent() {
         toast({ title: "Processo adicionado!", description: `Novo processo para ${data.clients.join(', ')} foi adicionado.` });
       }
       handleCloseFormDialog();
-      fetchProcesses();
+      fetchData();
     } catch (error) {
       console.error("Failed to save process:", error);
       toast({ title: "Erro ao salvar", description: "Não foi possível salvar o processo.", variant: "destructive" });
@@ -136,7 +143,7 @@ function ProcessesPageComponent() {
       try {
         await deleteProcess(processToDelete.id);
         setProcesses(processes.filter(p => p.id !== processToDelete.id));
-        toast({ title: "Processo excluído!", description: `O processo ${processToDelete.id} foi excluído.`});
+        toast({ title: "Processo excluído!", description: `O processo ${processToDelete.processNumber} foi excluído.`});
       } catch (error) {
         console.error("Failed to delete process:", error);
         toast({ title: "Erro ao excluir", description: "Não foi possível excluir o processo.", variant: "destructive" });
@@ -178,6 +185,10 @@ function ProcessesPageComponent() {
   const sortedAndFilteredProcesses = React.useMemo(() => {
     let filtered = processes;
     
+    if (phaseFilter && phaseFilter !== 'all') {
+        filtered = filtered.filter(proc => (proc.phaseName || 'Não Classificado') === phaseFilter);
+    }
+    
     if (searchTerm) {
         filtered = filtered.filter(proc =>
             (proc.processNumber && proc.processNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -205,7 +216,7 @@ function ProcessesPageComponent() {
             return dateB - dateA;
         });
     }
-  }, [processes, searchTerm, sortOrder]);
+  }, [processes, searchTerm, sortOrder, phaseFilter]);
 
 
   return (
@@ -227,6 +238,18 @@ function ProcessesPageComponent() {
           />
         </div>
         <div className="flex items-center gap-4">
+         <Select onValueChange={(value) => setPhaseFilter(value)} value={phaseFilter}>
+            <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Filtrar por fase..." />
+            </SelectTrigger>
+            <SelectContent>
+                <SelectItem value="all">Todas as Fases</SelectItem>
+                <SelectItem value="Não Classificado">Não Classificado</SelectItem>
+                {phases.map(phase => (
+                    <SelectItem key={phase.id} value={phase.name}>{phase.name}</SelectItem>
+                ))}
+            </SelectContent>
+         </Select>
          <Select onValueChange={(value: SortOrder) => setSortOrder(value)} defaultValue={sortOrder}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Ordenar por..." />
@@ -285,7 +308,7 @@ function ProcessesPageComponent() {
                         {process.apensos?.map(apenso => <Badge key={apenso} variant="secondary">{apenso}</Badge>)}
                       </div>
                     </TableCell>
-                    <TableCell>{(process.clients || [process.client]).join(', ')}</TableCell>
+                    <TableCell>{(process.clients || []).join(', ')}</TableCell>
                     <TableCell>{process.type}</TableCell>
                     <TableCell>
                       <Badge variant={getPhaseBadgeVariant(process.phaseName)}>{process.phaseName}</Badge>
@@ -355,7 +378,7 @@ function ProcessesPageComponent() {
             <AlertDialogHeader>
               <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
               <AlertDialogDescription>
-                Tem certeza que deseja excluir o processo "{processToDelete.processNumber} - {(processToDelete.clients || [processToDelete.client]).join(', ')}"? Esta ação não poderá ser desfeita.
+                Tem certeza que deseja excluir o processo "{processToDelete.processNumber} - {(processToDelete.clients || []).join(', ')}"? Esta ação não poderá ser desfeita.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
