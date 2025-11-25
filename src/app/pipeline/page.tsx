@@ -112,7 +112,7 @@ export default function PipelinePage() {
 
     return (
         <>
-            <div className="h-full flex flex-col p-4 md:p-6 lg:p-8">
+            <div className="h-full flex flex-col p-4 md:p-6 lg:p-8 overflow-hidden">
                 <div className="flex items-center justify-between mb-6 flex-shrink-0">
                     <div className="flex items-center gap-3">
                          <KanbanSquare className="h-9 w-9 text-primary"/>
@@ -130,7 +130,7 @@ export default function PipelinePage() {
                 </div>
 
                 <ScrollArea className="flex-1 -mx-4">
-                    <div className="flex gap-6 px-4 pb-4">
+                    <div className="flex gap-6 px-4 pb-4 h-full">
                         {isLoading ? (
                             Array.from({ length: 4 }).map((_, i) => (
                                 <div key={i} className="w-80 flex-shrink-0 space-y-4">
@@ -143,30 +143,32 @@ export default function PipelinePage() {
                             allDisplayPhases.map(phase => {
                                 const processesInPhase = getProcessesInPhase(phase.id);
                                 return (
-                                    <div key={phase.id} className="w-80 flex-shrink-0">
-                                        <div className="flex justify-between items-center mb-4">
+                                    <div key={phase.id} className="w-80 flex-shrink-0 flex flex-col h-full">
+                                        <div className="flex justify-between items-center mb-4 flex-shrink-0">
                                             <h2 className="font-semibold text-lg text-foreground">{phase.name}</h2>
                                             <span className="text-sm font-bold text-muted-foreground bg-muted/50 px-2 py-1 rounded-md">
                                                 {processesInPhase.length}
                                             </span>
                                         </div>
-                                        <div className="space-y-4 bg-muted/30 rounded-lg p-2 min-h-[100px]">
-                                            {processesInPhase.length > 0 ? (
-                                                processesInPhase.map(process => (
-                                                    <ProcessCard
-                                                        key={process.id}
-                                                        process={process}
-                                                        phases={allDisplayPhases.map(p => ({ id: p.id, name: p.name }))}
-                                                        onMove={handleMoveProcess}
-                                                        onClick={() => handleOpenDetails(process)}
-                                                    />
-                                                ))
-                                            ) : (
-                                                <div className="text-center text-sm text-muted-foreground py-10">
-                                                    Nenhum processo nesta fase.
-                                                </div>
-                                            )}
-                                        </div>
+                                        <ScrollArea className="flex-1 bg-muted/30 rounded-lg -mx-2 px-2">
+                                          <div className="space-y-4 py-2 min-h-[100px]">
+                                              {processesInPhase.length > 0 ? (
+                                                  processesInPhase.map(process => (
+                                                      <ProcessCard
+                                                          key={process.id}
+                                                          process={process}
+                                                          phases={allDisplayPhases.map(p => ({ id: p.id, name: p.name }))}
+                                                          onMove={handleMoveProcess}
+                                                          onClick={() => handleOpenDetails(process)}
+                                                      />
+                                                  ))
+                                              ) : (
+                                                  <div className="text-center text-sm text-muted-foreground py-10">
+                                                      Nenhum processo nesta fase.
+                                                  </div>
+                                              )}
+                                          </div>
+                                        </ScrollArea>
                                     </div>
                                 );
                             })
