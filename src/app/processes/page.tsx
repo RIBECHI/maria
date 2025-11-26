@@ -77,7 +77,7 @@ function ProcessesPageComponent() {
       console.error("Error fetching data:", error);
       toast({
         title: "Erro ao buscar dados",
-        description: "Não foi possível carregar a lista de processos e fases. Tente novamente mais tarde.",
+        description: "Não foi possível carregar la lista de processos e fases. Tente novamente mais tarde.",
         variant: "destructive",
       });
     } finally {
@@ -396,6 +396,7 @@ function ProcessesPageComponent() {
         processData={selectedProcessForDetails}
         onTimelineUpdate={handleTimelineUpdate}
         onOpenEditDialog={handleOpenFormDialog}
+        onApensoClick={handleApensoClick}
       />
 
       {processToDelete && (

@@ -35,7 +35,7 @@ import {
 import type { Process, TimelineEvent } from "./ProcessFormDialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Briefcase, Calendar, CheckCircle, Edit, Info, Loader2, PlusCircle, Trash2, XCircle, Save } from "lucide-react";
+import { Briefcase, Calendar, CheckCircle, Edit, Info, Loader2, PlusCircle, Trash2, XCircle, Save, Link2 } from "lucide-react";
 import { format, parseISO } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -50,6 +50,7 @@ import {
   } from "@/components/ui/alert-dialog";
 import { addEvent } from "@/services/eventService";
 import { Checkbox } from "../ui/checkbox";
+import { getProcesses } from "@/services/processService";
   
 
 const getPhaseBadgeVariant = (phaseName?: string) => {
@@ -74,14 +75,17 @@ interface ProcessDetailsSheetProps {
   processData: Process | null;
   onTimelineUpdate: (processId: string, newTimeline: TimelineEvent[]) => Promise<void>;
   onOpenEditDialog: (process: Process) => void;
+  onApensoClick?: (apensoNumber: string) => void;
 }
 
-export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUpdate, onOpenEditDialog }: ProcessDetailsSheetProps) {
+export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUpdate, onOpenEditDialog, onApensoClick }: ProcessDetailsSheetProps) {
   const [currentTimeline, setCurrentTimeline] = React.useState<TimelineEvent[]>([]);
   const [timelineEventToDelete, setTimelineEventToDelete] = React.useState<TimelineEvent | null>(null);
   const [editingEventId, setEditingEventId] = React.useState<string | null>(null);
   const [isDeleteTimelineAlertOpen, setIsDeleteTimelineAlertOpen] = React.useState(false);
   const [isSaving, setIsSaving] = React.useState(false);
+  const [allProcesses, setAllProcesses] = React.useState<Process[]>([]);
+
   const { toast } = useToast();
 
   const timelineForm = useForm<TimelineEventFormValues>({
@@ -93,6 +97,13 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
       isTask: false,
     },
   });
+
+  React.useEffect(() => {
+    if (isOpen) {
+        // Busca todos os processos para poder navegar para os apensos
+        getProcesses().then(setAllProcesses);
+    }
+}, [isOpen]);
 
   React.useEffect(() => {
     if (processData) {
@@ -238,6 +249,26 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
     onOpenEditDialog(processData);
   }
 
+  const handleInternalApensoClick = (apensoNumber: string) => {
+    if (onApensoClick) {
+        onApensoClick(apensoNumber);
+    } else {
+        const apensoProcess = allProcesses.find(p => p.processNumber === apensoNumber);
+        if (apensoProcess) {
+            // Se a função não foi passada, recria a lógica localmente
+            // (Isso é um fallback, o ideal é a página pai controlar)
+            // Esta parte é complexa de gerenciar sem props drilling,
+            // então usamos o onOpenEditDialog como um exemplo de ação.
+            onOpenEditDialog(apensoProcess);
+        } else {
+            toast({
+                title: "Processo Apenso Não Encontrado",
+                variant: "destructive"
+            });
+        }
+    }
+  };
+
   return (
     <>
       <Sheet open={isOpen} onOpenChange={onClose}>
@@ -252,7 +283,7 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
             {/* Detalhes do Processo */}
             <div className="space-y-4 py-4">
                 <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                    <div className="flex items-center gap-2 text-foreground">
+                    <div className="flex items-center gap-2 text-foreground col-span-2">
                         <Briefcase className="h-4 w-4 text-muted-foreground" />
                         <strong>Cliente(s):</strong>
                         <span className="truncate">{(processData.clients || []).join(', ')}</span>
@@ -262,7 +293,7 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
                         <strong>Tipo:</strong>
                         <span>{processData.type}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-foreground">
+                     <div className="flex items-center gap-2 text-foreground">
                          <Badge variant={getPhaseBadgeVariant(processData.phaseName)}>{processData.phaseName}</Badge>
                     </div>
                      <div className="flex items-center gap-2 text-foreground">
@@ -277,6 +308,30 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
                         </div>
                     )}
                 </div>
+
+                {/* Seção de Apensos */}
+                {processData.apensos && processData.apensos.length > 0 && (
+                    <div className="pt-4 border-t">
+                        <h4 className="font-semibold mb-2 flex items-center gap-2">
+                            <Link2 className="h-4 w-4 text-muted-foreground" />
+                            Processos Apensos
+                        </h4>
+                        <div className="flex flex-wrap gap-2">
+                            {processData.apensos.map(apenso => (
+                                <Button
+                                    key={apenso}
+                                    variant="secondary"
+                                    size="sm"
+                                    className="h-auto px-2 py-0.5"
+                                    onClick={() => handleInternalApensoClick(apenso)}
+                                >
+                                    {apenso}
+                                </Button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
 
                 {/* Adicionar Evento na Timeline */}
                 <div className="pt-4 border-t">
