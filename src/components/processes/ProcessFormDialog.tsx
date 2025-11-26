@@ -323,7 +323,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
           </DialogHeader>
           <ScrollArea className="pr-6 -mr-6 max-h-[calc(85vh-150px)]">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 py-4 pr-1">
+            <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-3 py-4 pr-1">
               <FormField
                 control={form.control}
                 name="processNumber"
@@ -344,7 +344,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
                     <FormItem>
                       <FormLabel>Clientes</FormLabel>
                       <div className="flex items-center gap-2">
-                         <div className="flex flex-wrap gap-2 p-2 border rounded-md min-h-10 w-full bg-background">
+                         <div className="flex flex-wrap gap-2 p-2 border rounded-md min-h-[36px] w-full bg-background items-center">
                               {clients.length > 0 ? (
                                   clients.map((client) => (
                                   <Badge key={client} variant="default" className="flex items-center gap-1">
@@ -381,7 +381,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
                     </FormItem>
                   )}
                 />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <FormField
                   control={form.control}
                   name="type"
@@ -409,7 +409,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
                   )}
                 />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <FormField
                   control={form.control}
                   name="nextDeadline"
@@ -434,7 +434,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
                           value={field.value ?? undefined}
                         >
                           <FormControl>
-                            <SelectTrigger>
+                            <SelectTrigger className="h-9">
                               <SelectValue placeholder="Não Classificado" />
                             </SelectTrigger>
                           </FormControl>
@@ -450,7 +450,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
                     )}
                   />
               </div>
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <FormField
                       control={form.control}
                       name="uhd"
@@ -468,7 +468,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
                       control={form.control}
                       name="certidao"
                       render={({ field }) => (
-                          <FormItem className="flex flex-row items-end space-x-3 rounded-md border p-3 h-[72px]">
+                          <FormItem className="flex flex-row items-center space-x-3 rounded-md border p-3 h-9 mt-auto">
                           <FormControl>
                               <Checkbox
                               checked={field.value}
@@ -477,7 +477,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
                               />
                           </FormControl>
                           <div className="space-y-1 leading-none">
-                              <FormLabel htmlFor="certidao">
+                              <FormLabel htmlFor="certidao" className="font-normal">
                                   Certidão
                               </FormLabel>
                               <FormMessage />
@@ -493,7 +493,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
                         <FormItem>
                             <FormLabel>Processos Apensos (Opcional)</FormLabel>
                             <div className="flex items-center gap-2">
-                                <div className="flex flex-wrap gap-2 p-2 border rounded-md min-h-10 w-full bg-background">
+                                <div className="flex flex-wrap gap-2 p-2 border rounded-md min-h-[36px] w-full bg-background items-center">
                                     {apensos.length > 0 ? (
                                         apensos.map((apenso) => (
                                             <Badge key={apenso} variant="secondary" className="flex items-center gap-1">
@@ -593,7 +593,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
                               <FormLabel className="text-sm">Origem</FormLabel>
                               <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
-                                  <SelectTrigger>
+                                  <SelectTrigger className="h-9">
                                     <SelectValue placeholder="Selecione a origem" />
                                   </SelectTrigger>
                                 </FormControl>
