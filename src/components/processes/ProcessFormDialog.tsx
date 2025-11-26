@@ -516,6 +516,15 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
                                 >
                                     <Search className="h-4 w-4" />
                                 </Button>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => toast({ title: "Função em desenvolvimento", description: "Para criar um novo apenso, salve este processo, crie o novo na tela principal e depois edite este para vinculá-lo."})}
+                                  aria-label="Criar novo processo como apenso"
+                                >
+                                  <PlusCircle className="h-4 w-4" />
+                                </Button>
                             </div>
                             <FormDescriptionUI>Vincule outros processos a este.</FormDescriptionUI>
                             <FormMessage />
