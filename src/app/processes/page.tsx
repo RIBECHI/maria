@@ -302,7 +302,7 @@ function ProcessesPageComponent() {
               ) : sortedAndFilteredProcesses.length > 0 ? (
                 sortedAndFilteredProcesses.map((process) => (
                   <TableRow key={process.id} className="hover:bg-muted/50 cursor-pointer" onClick={() => handleOpenDetailsSheet(process)}>
-                    <TableCell className="font-medium">{process.processNumber}</TableCell>
+                    <TableCell className="font-medium text-lime-500">{process.processNumber}</TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
                         {process.apensos?.map(apenso => <Badge key={apenso} variant="secondary">{apenso}</Badge>)}
