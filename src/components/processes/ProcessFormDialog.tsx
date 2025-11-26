@@ -314,14 +314,14 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(open) => !open && handleDialogClose()}>
-        <DialogContent className="sm:max-w-5xl max-h-[90vh]">
+        <DialogContent className="sm:max-w-6xl max-h-[95vh]">
           <DialogHeader>
             <DialogTitle className="text-primary">{processData ? "Editar Processo" : "Adicionar Novo Processo"}</DialogTitle>
             <DialogDescription>
               {processData ? "Altere os dados do processo abaixo." : "Preencha os dados para cadastrar um novo processo."}
             </DialogDescription>
           </DialogHeader>
-          <ScrollArea className="pr-6 -mr-6 max-h-[calc(80vh-150px)]">
+          <ScrollArea className="pr-6 -mr-6 max-h-[calc(85vh-150px)]">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 py-4 pr-1">
               <FormField
