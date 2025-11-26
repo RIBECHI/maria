@@ -314,7 +314,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(open) => !open && handleDialogClose()}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh]">
+        <DialogContent className="sm:max-w-5xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle className="text-primary">{processData ? "Editar Processo" : "Adicionar Novo Processo"}</DialogTitle>
             <DialogDescription>
