@@ -182,6 +182,19 @@ function ProcessesPageComponent() {
     }
 };
 
+ const handleApensoClick = (apensoNumber: string) => {
+    const apensoProcess = processes.find(p => p.processNumber === apensoNumber);
+    if (apensoProcess) {
+      handleOpenDetailsSheet(apensoProcess);
+    } else {
+      toast({
+        title: "Processo Apenso Não Encontrado",
+        description: `O processo com o número ${apensoNumber} não foi encontrado na lista. Cadastre-o como um processo principal para ver seus detalhes.`,
+        variant: "destructive",
+      });
+    }
+  };
+
   const sortedAndFilteredProcesses = React.useMemo(() => {
     let filtered = processes;
     
@@ -305,7 +318,20 @@ function ProcessesPageComponent() {
                     <TableCell className="font-medium text-lime-500">{process.processNumber}</TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
-                        {process.apensos?.map(apenso => <Badge key={apenso} variant="secondary">{apenso}</Badge>)}
+                        {process.apensos?.map(apenso => (
+                            <Button
+                                key={apenso}
+                                variant="secondary"
+                                size="sm"
+                                className="h-auto px-2 py-0.5"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleApensoClick(apenso);
+                                }}
+                            >
+                                {apenso}
+                            </Button>
+                        ))}
                       </div>
                     </TableCell>
                     <TableCell>{(process.clients || []).join(', ')}</TableCell>
