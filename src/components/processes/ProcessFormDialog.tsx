@@ -55,6 +55,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import type { DocumentData } from "firebase/firestore";
 import { Badge } from "@/components/ui/badge";
 import { getPhases, type Phase } from "@/services/phaseService";
+import { ProcessSearchDialog } from "./ProcessSearchDialog";
 
 export interface TimelineEvent {
   id: string;
@@ -121,8 +122,8 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
   const [timelineEventToDelete, setTimelineEventToDelete] = React.useState<TimelineEvent | null>(null);
   const [isDeleteTimelineAlertOpen, setIsDeleteTimelineAlertOpen] = React.useState(false);
   const [isClientSearchOpen, setIsClientSearchOpen] = React.useState(false);
+  const [isProcessSearchOpen, setIsProcessSearchOpen] = React.useState(false);
   const [isNewClientDialogOpen, setIsNewClientDialogOpen] = React.useState(false);
-  const [apensoInput, setApensoInput] = React.useState('');
   const [phases, setPhases] = React.useState<Phase[]>([]);
   const { toast } = useToast();
 
@@ -276,6 +277,13 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
     setIsClientSearchOpen(false);
   };
 
+  const handleApensoSelected = (processNumber: string) => {
+    if (!apensos.includes(processNumber)) {
+        form.setValue("apensos", [...apensos, processNumber]);
+    }
+    setIsProcessSearchOpen(false);
+  };
+
   const handleAddNewClient = async (data: ClientFormValues) => {
     try {
         const newClient = await addClient({
@@ -293,18 +301,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
           toast({ title: "Erro ao salvar", description: "Não foi possível salvar o cliente.", variant: "destructive" });
       }
   };
-
-  const handleApensoKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault();
-      const newApenso = apensoInput.trim();
-      if (newApenso && !apensos.includes(newApenso)) {
-        form.setValue('apensos', [...apensos, newApenso]);
-      }
-      setApensoInput('');
-    }
-  };
-
+  
   const removeApenso = (apensoToRemove: string) => {
     form.setValue('apensos', apensos.filter(apenso => apenso !== apensoToRemove));
   };
@@ -327,46 +324,19 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
           <ScrollArea className="pr-6 -mr-6 max-h-[calc(80vh-150px)]">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 py-4 pr-1">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="processNumber"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Número do Processo</FormLabel>
-                        <FormControl>
-                          <Input placeholder="0000000-00.0000.0.00.0000" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+              <FormField
+                control={form.control}
+                name="processNumber"
+                render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Apensos (Opcional)</FormLabel>
+                    <FormLabel>Número do Processo</FormLabel>
                     <FormControl>
-                      <div className="flex flex-col">
-                        <Input 
-                          placeholder="Digite o nº do processo e tecle Enter" 
-                          value={apensoInput}
-                          onChange={e => setApensoInput(e.target.value)}
-                          onKeyDown={handleApensoKeyDown}
-                        />
-                         <FormDescriptionUI>Adicione múltiplos processos externos.</FormDescriptionUI>
-                      </div>
+                      <Input placeholder="0000000-00.0000.0.00.0000" {...field} />
                     </FormControl>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {apensos.map((apenso) => (
-                        <Badge key={apenso} variant="secondary" className="flex items-center gap-1">
-                          {apenso}
-                          <button type="button" onClick={() => removeApenso(apenso)} className="rounded-full hover:bg-destructive/20">
-                            <X className="h-3 w-3" />
-                          </button>
-                        </Badge>
-                      ))}
-                    </div>
-                     <FormMessage />
+                    <FormMessage />
                   </FormItem>
-              </div>
+                )}
+              />
                <FormField
                   control={form.control}
                   name="clients"
@@ -516,6 +486,42 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
                       )}
                   />
                </div>
+                <FormField
+                    control={form.control}
+                    name="apensos"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Processos Apensos (Opcional)</FormLabel>
+                            <div className="flex items-center gap-2">
+                                <div className="flex flex-wrap gap-2 p-2 border rounded-md min-h-10 w-full bg-background">
+                                    {apensos.length > 0 ? (
+                                        apensos.map((apenso) => (
+                                            <Badge key={apenso} variant="secondary" className="flex items-center gap-1">
+                                                {apenso}
+                                                <button type="button" onClick={() => removeApenso(apenso)} className="rounded-full hover:bg-destructive/20">
+                                                    <X className="h-3 w-3" />
+                                                </button>
+                                            </Badge>
+                                        ))
+                                    ) : (
+                                        <span className="text-sm text-muted-foreground px-1">Nenhum processo apenso</span>
+                                    )}
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => setIsProcessSearchOpen(true)}
+                                    aria-label="Buscar processo para apensar"
+                                >
+                                    <Search className="h-4 w-4" />
+                                </Button>
+                            </div>
+                            <FormDescriptionUI>Vincule outros processos a este.</FormDescriptionUI>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
                <FormField
                   control={form.control}
                   name="expressoGoias"
@@ -694,6 +700,12 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
         isOpen={isClientSearchOpen}
         onClose={() => setIsClientSearchOpen(false)}
         onClientSelected={handleClientSelected}
+      />
+
+       <ProcessSearchDialog
+        isOpen={isProcessSearchOpen}
+        onClose={() => setIsProcessSearchOpen(false)}
+        onProcessSelected={handleApensoSelected}
       />
 
       <ClientFormDialog

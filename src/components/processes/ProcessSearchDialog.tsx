@@ -23,7 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 interface ProcessSearchDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onProcessSelected: (processId: string) => void;
+  onProcessSelected: (processNumber: string) => void;
 }
 
 export function ProcessSearchDialog({ isOpen, onClose, onProcessSelected }: ProcessSearchDialogProps) {
