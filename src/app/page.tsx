@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import Link from 'next/link';
@@ -128,27 +127,29 @@ export default function DashboardPage() {
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {/* Próximos Prazos agora como Calendário */}
-                <Card className="shadow-lg h-full">
+                <Card className="shadow-lg h-full flex flex-col">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle>Próximos Compromissos</CardTitle>
                         <CalendarDays className="h-6 w-6 text-muted-foreground" />
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="flex-1 flex items-center justify-center">
                         {isLoading ? (
-                            <div className="space-y-3 pt-2">
+                            <div className="space-y-3 pt-2 w-full">
                                 <Skeleton className="h-48 w-full" />
                             </div>
                         ) : (
-                           <Calendar
-                                mode="single"
-                                onSelect={() => router.push('/agenda')}
-                                className="rounded-md p-0"
-                                locale={ptBR}
-                                modifiers={{ events: eventDays }}
-                                modifiersClassNames={{
-                                    events: 'bg-primary/20 text-primary-foreground font-bold',
-                                }}
-                            />
+                           <div className="origin-center scale-[0.8]">
+                                <Calendar
+                                    mode="single"
+                                    onSelect={() => router.push('/agenda')}
+                                    className="rounded-md p-0"
+                                    locale={ptBR}
+                                    modifiers={{ events: eventDays }}
+                                    modifiersClassNames={{
+                                        events: 'bg-primary/20 text-primary-foreground font-bold',
+                                    }}
+                                />
+                            </div>
                         )}
                     </CardContent>
                 </Card>
