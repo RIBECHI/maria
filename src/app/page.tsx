@@ -18,6 +18,8 @@ import type { CalendarEvent } from '@/components/agenda/EventFormDialog';
 import type { Process } from '@/components/processes/ProcessFormDialog';
 import type { Client } from '@/components/clients/ClientFormDialog';
 import { getPhases } from '@/services/phaseService';
+import { Calendar } from '@/components/ui/calendar';
+import { useRouter } from 'next/navigation';
 
 interface RecentActivityItem {
     id: string;
@@ -34,13 +36,14 @@ export default function DashboardPage() {
     const [processStats, setProcessStats] = React.useState<Record<string, number>>({});
     const [phases, setPhases] = React.useState<{id: string, name: string}[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
+    const router = useRouter();
 
     React.useEffect(() => {
         async function fetchData() {
             setIsLoading(true);
             try {
                 const [events, recentProcs, recentClients, allProcesses, allPhases] = await Promise.all([
-                    getEventsForDashboard(5),
+                    getEventsForDashboard(30), // Fetch more for calendar view
                     getRecentProcesses(3),
                     getRecentClients(2),
                     getProcesses(),
@@ -117,12 +120,14 @@ export default function DashboardPage() {
         return <Briefcase className="h-4 w-4 text-blue-500" />;
     };
 
+    const eventDays = upcomingEvents.map(event => parseISO(event.date));
+
     return (
         <div className="container mx-auto p-4 md:p-6 lg:p-8">
             <h1 className="text-4xl font-headline font-extrabold mb-8 text-primary">Painel</h1>
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {/* Próximos Prazos */}
+                {/* Próximos Prazos agora como Calendário */}
                 <Card className="shadow-lg h-full">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle>Próximos Compromissos</CardTitle>
@@ -131,25 +136,19 @@ export default function DashboardPage() {
                     <CardContent>
                         {isLoading ? (
                             <div className="space-y-3 pt-2">
-                                <Skeleton className="h-5 w-full" />
-                                <Skeleton className="h-5 w-5/6" />
-                                <Skeleton className="h-5 w-full" />
+                                <Skeleton className="h-48 w-full" />
                             </div>
-                        ) : upcomingEvents.length > 0 ? (
-                            <List>
-                                {upcomingEvents.map((item) => (
-                                    <ListItem key={item.id} className="p-0 border-b-0">
-                                        <Link href="/agenda" className="flex justify-between items-center w-full p-2 rounded-md hover:bg-muted/50 transition-colors">
-                                            <span className="flex-1 truncate pr-2">
-                                                {item.description}
-                                            </span>
-                                            <Badge variant="outline">{format(parseISO(item.date), 'dd/MM', { locale: ptBR })}</Badge>
-                                        </Link>
-                                    </ListItem>
-                                ))}
-                            </List>
                         ) : (
-                            <p className="text-sm text-muted-foreground pt-2">Nenhum compromisso futuro na agenda.</p>
+                           <Calendar
+                                mode="single"
+                                onSelect={() => router.push('/agenda')}
+                                className="rounded-md p-0"
+                                locale={ptBR}
+                                modifiers={{ events: eventDays }}
+                                modifiersClassNames={{
+                                    events: 'bg-primary/20 text-primary-foreground font-bold',
+                                }}
+                            />
                         )}
                     </CardContent>
                 </Card>
