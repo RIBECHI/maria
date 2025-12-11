@@ -12,6 +12,8 @@ const fromFirestore = (docSnap: DocumentData): Client => {
     name: data.name,
     contact: data.contact,
     cpf: data.cpf,
+    maritalStatus: data.maritalStatus,
+    occupation: data.occupation,
     caseCount: data.caseCount,
     lastActivity: data.lastActivity,
     address: data.address,
@@ -39,8 +41,7 @@ export async function getClients(): Promise<Client[]> {
         operation: 'list',
         auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
       };
-      const permissionError = new FirestorePermissionError(context);
-      errorEmitter.emit('permission-error', permissionError);
+      errorEmitter.emit('permission-error', new FirestorePermissionError(context));
     }
     // Re-throw other errors or handle them as needed
     throw error;

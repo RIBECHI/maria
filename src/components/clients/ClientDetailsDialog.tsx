@@ -71,6 +71,14 @@ export function ClientDetailsDialog({ isOpen, onClose, clientData, allProcesses 
             <span className={valueClass}>{clientData.cpf || "Não informado"}</span>
           </div>
            <div className={detailItemClass}>
+            <span className={labelClass}>Estado Civil:</span>
+            <span className={valueClass}>{clientData.maritalStatus || "Não informado"}</span>
+          </div>
+           <div className={detailItemClass}>
+            <span className={labelClass}>Ocupação:</span>
+            <span className={valueClass}>{clientData.occupation || "Não informado"}</span>
+          </div>
+           <div className={detailItemClass}>
             <span className={labelClass}>Endereço:</span>
             <span className={valueClass}>{clientData.address || "Não informado"}</span>
           </div>

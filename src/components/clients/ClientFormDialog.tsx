@@ -36,6 +36,8 @@ export interface Client extends DocumentData {
   lastActivity: string;
   address?: string;
   notes?: string;
+  maritalStatus?: string;
+  occupation?: string;
   createdAt?: string; // Can be a string (ISO date) or undefined
 }
 
@@ -43,6 +45,8 @@ const clientFormSchema = z.object({
   name: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres." }),
   contact: z.string().min(10, { message: "O contato deve ter pelo menos 10 caracteres (email ou telefone)." }),
   cpf: z.string().optional(),
+  maritalStatus: z.string().optional(),
+  occupation: z.string().optional(),
   address: z.string().optional(),
   notes: z.string().optional(),
 });
@@ -65,6 +69,8 @@ export function ClientFormDialog({ isOpen, onClose, onSubmit, clientData }: Clie
       name: "",
       contact: "",
       cpf: "",
+      maritalStatus: "",
+      occupation: "",
       address: "",
       notes: "",
     },
@@ -76,6 +82,8 @@ export function ClientFormDialog({ isOpen, onClose, onSubmit, clientData }: Clie
         name: clientData.name,
         contact: clientData.contact,
         cpf: clientData.cpf || "",
+        maritalStatus: clientData.maritalStatus || "",
+        occupation: clientData.occupation || "",
         address: clientData.address || "",
         notes: clientData.notes || "",
       });
@@ -84,6 +92,8 @@ export function ClientFormDialog({ isOpen, onClose, onSubmit, clientData }: Clie
         name: "",
         contact: "",
         cpf: "",
+        maritalStatus: "",
+        occupation: "",
         address: "",
         notes: "",
       });
@@ -113,7 +123,7 @@ export function ClientFormDialog({ isOpen, onClose, onSubmit, clientData }: Clie
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 py-4">
+          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-3 py-4">
             <FormField
               control={form.control}
               name="name"
@@ -127,7 +137,7 @@ export function ClientFormDialog({ isOpen, onClose, onSubmit, clientData }: Clie
                 </FormItem>
               )}
             />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                <FormField
                 control={form.control}
                 name="cpf"
@@ -149,6 +159,34 @@ export function ClientFormDialog({ isOpen, onClose, onSubmit, clientData }: Clie
                     <FormLabel>Contato (Email / Telefone)</FormLabel>
                     <FormControl>
                       <Input placeholder="(11) 99999-9999" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+               <FormField
+                control={form.control}
+                name="maritalStatus"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Estado Civil</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: Solteiro(a), Casado(a)" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="occupation"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Ocupação</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: Advogado, Engenheiro" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
