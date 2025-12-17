@@ -45,6 +45,8 @@ interface TemplateFormDialogProps {
 const availableVariables = [
     { variable: "{{cliente.nome}}", description: "Nome completo do cliente" },
     { variable: "{{cliente.cpf}}", description: "CPF/CNPJ do cliente" },
+    { variable: "{{cliente.estadoCivil}}", description: "Estado civil do cliente" },
+    { variable: "{{cliente.ocupacao}}", description: "Ocupação do cliente" },
     { variable: "{{cliente.contato}}", description: "Contato (email/telefone) do cliente" },
     { variable: "{{cliente.endereco}}", description: "Endereço do cliente" },
     { variable: "{{processo.numero}}", description: "Número do processo" },

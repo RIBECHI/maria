@@ -92,6 +92,8 @@ export default function DocumentGeneratorPage() {
       content = content.replace(/\{\{cliente\.cpf\}\}/g, client.cpf || "");
       content = content.replace(/\{\{cliente\.contato\}\}/g, client.contact || "");
       content = content.replace(/\{\{cliente\.endereco\}\}/g, client.address || "");
+      content = content.replace(/\{\{cliente\.estadoCivil\}\}/g, client.maritalStatus || "");
+      content = content.replace(/\{\{cliente\.ocupacao\}\}/g, client.occupation || "");
       
       // Replace process variables
       content = content.replace(/\{\{processo\.numero\}\}/g, process.processNumber || "");
