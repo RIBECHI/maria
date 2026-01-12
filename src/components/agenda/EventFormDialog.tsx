@@ -50,6 +50,7 @@ export interface CalendarEvent extends DocumentData {
   client?: string; // Optional - Client NAME
   process?: string; // Optional, agora será o ID do processo
   createdAt?: string;
+  isFromProcess?: boolean; // Flag to identify events from processes
 }
 
 const eventFormSchema = z.object({

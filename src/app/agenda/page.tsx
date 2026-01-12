@@ -25,7 +25,7 @@ import {
 import { getEvents, addEvent, updateEvent, deleteEvent } from "@/services/eventService";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getProcesses } from '@/services/processService';
-import type { Process } from '@/components/processes/ProcessFormDialog';
+import type { Process, TimelineEvent } from '@/components/processes/ProcessFormDialog';
 
 const getEventTypeDetails = (type: CalendarEvent['type']) => {
   switch (type) {
@@ -59,7 +59,24 @@ export default function AgendaPage() {
         getEvents(),
         getProcesses()
       ]);
-      setEvents(eventsFromDb);
+
+      const eventsFromProcesses = processesFromDb.flatMap(process =>
+        (process.timeline || [])
+          .filter(item => item.source === 'Prazo' || item.source === 'Audiência')
+          .map((item: TimelineEvent) => ({
+            id: `proc-${process.id}-${item.id}`,
+            date: item.date,
+            description: `[${process.processNumber}] ${item.description}`,
+            type: item.source === 'Prazo' ? 'prazo' : 'audiencia',
+            process: process.processNumber, // Usando o número para exibição
+            client: process.clients.join(', '),
+            isFromProcess: true, // Flag para identificar a origem
+          } as CalendarEvent))
+      );
+
+      const combinedEvents = [...eventsFromDb, ...eventsFromProcesses];
+
+      setEvents(combinedEvents);
       setProcesses(processesFromDb);
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -79,6 +96,14 @@ export default function AgendaPage() {
 
 
   const handleOpenFormDialog = (event?: CalendarEvent) => {
+    if (event?.isFromProcess) {
+      toast({
+        title: "Ação não permitida",
+        description: "Eventos criados a partir de um processo devem ser editados na linha do tempo do próprio processo.",
+        variant: "default",
+      });
+      return;
+    }
     setEditingEvent(event);
     setIsFormDialogOpen(true);
   };
@@ -106,6 +131,14 @@ export default function AgendaPage() {
   };
 
   const handleDeleteConfirmation = (event: CalendarEvent) => {
+     if (event.isFromProcess) {
+      toast({
+        title: "Ação não permitida",
+        description: "Eventos de processos não podem ser excluídos diretamente da agenda.",
+        variant: "default",
+      });
+      return;
+    }
     setEventToDelete(event);
     setIsDeleteDialogOpen(true);
   };
@@ -127,8 +160,12 @@ export default function AgendaPage() {
   };
 
   const getProcessNumberById = (processId: string) => {
+    // A propriedade `process` nos eventos de processo já é o número, não o ID
+    if (events.find(e => e.process === processId && e.isFromProcess)) {
+      return processId;
+    }
     const process = processes.find(p => p.id === processId);
-    return process?.processNumber || processId; // Retorna o ID se não encontrar
+    return process?.processNumber || processId;
   };
 
   const eventsForSelectedDate = selectedDate
