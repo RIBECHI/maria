@@ -36,7 +36,7 @@ import type { Process, TimelineEvent } from "./ProcessFormDialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Briefcase, Calendar, CheckCircle, Edit, Info, Loader2, PlusCircle, Trash2, XCircle, Save, Link2 } from "lucide-react";
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, isFuture, isToday } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
 import {
     AlertDialog,
@@ -172,12 +172,10 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
       
       newTimeline = [newEvent, ...currentTimeline];
       
-      // Sync with main agenda if it's a future event
       const sourceLowerCase = data.eventSource.toLowerCase();
       let eventType: 'prazo' | 'audiencia' | 'consulta' | null = null;
       if (sourceLowerCase === 'prazo') eventType = 'prazo';
       else if (sourceLowerCase === 'audiência') eventType = 'audiencia';
-      else if (sourceLowerCase === 'nota manual' || sourceLowerCase === 'outro') eventType = 'consulta';
 
       if (eventType) {
           await addEvent({
