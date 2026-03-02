@@ -6,7 +6,7 @@ import { ListChecks, NotebookText } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { getProcesses, updateProcess } from "@/services/processService";
 import type { Process, TimelineEvent } from "@/components/processes/ProcessFormDialog";
-import { getNotepadTasks, saveNotes, type Note } from "@/services/notepadService";
+import { getNotepadTasks, getNotes, saveNotes, type Note } from "@/services/notepadService";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Accordion,
@@ -76,14 +76,18 @@ export default function TasksPage() {
 
     const handleToggleNotepadTask = async (taskId: string) => {
         const originalNotes = [...notepadTasks];
+        const noteToUpdate = notepadTasks.find(task => task.id === taskId);
+        if (!noteToUpdate) return;
+        
+        const newStatus = noteToUpdate.status === 'concluido' ? 'aberto' : 'concluido';
+
         const updatedNotes = notepadTasks.map(task =>
-            task.id === taskId ? { ...task, completed: !task.completed } : task
+            task.id === taskId ? { ...task, status: newStatus } : task
         );
         setNotepadTasks(updatedNotes);
     
         try {
-            // A função saveNotes espera todas as notas para salvar o documento inteiro
-            const allNotes = await getNotepadTasks(); 
+            const allNotes = await getNotes(); 
             const notesToSave = allNotes.map(n => n.id === taskId ? updatedNotes.find(un => un.id === taskId)! : n);
             await saveNotes(notesToSave);
         } catch (error) {
@@ -115,12 +119,14 @@ export default function TasksPage() {
 
     const filteredNotepadTasks = React.useMemo(() => {
         let tasks = [...notepadTasks];
-        if (filter === 'pending') tasks = tasks.filter(t => !t.completed);
-        else if (filter === 'completed') tasks = tasks.filter(t => t.completed);
+        if (filter === 'pending') tasks = tasks.filter(t => t.status === 'aberto' || t.status === 'urgente');
+        else if (filter === 'completed') tasks = tasks.filter(t => t.status === 'concluido');
 
         return tasks.sort((a,b) => {
-             if (a.completed !== b.completed) return a.completed ? 1 : -1;
-             return b.createdAt.toMillis() - a.createdAt.toMillis();
+             if (a.status === b.status) return b.createdAt.toMillis() - a.createdAt.toMillis();
+             if (a.status === 'concluido') return 1;
+             if (b.status === 'concluido') return -1;
+             return 0;
         });
     }, [notepadTasks, filter]);
 
@@ -173,16 +179,16 @@ export default function TasksPage() {
                                             <div key={task.id} className="flex items-start gap-3">
                                                 <Checkbox 
                                                     id={`task-note-${task.id}`}
-                                                    checked={task.completed}
+                                                    checked={task.status === 'concluido'}
                                                     onCheckedChange={() => handleToggleNotepadTask(task.id)}
                                                     className="mt-1"
                                                 />
                                                 <label htmlFor={`task-note-${task.id}`} className="flex-1 cursor-pointer">
-                                                    <span className={`block text-sm ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
+                                                    <span className={`block text-sm ${task.status === 'concluido' ? 'line-through text-muted-foreground' : ''}`}>
                                                         {task.content}
                                                     </span>
-                                                     <span className={`block text-xs text-muted-foreground ${task.completed ? 'line-through' : ''}`}>
-                                                        Criada em {format(task.createdAt.toDate(), "dd/MM/yyyy")}
+                                                     <span className={`block text-xs text-muted-foreground ${task.status === 'concluido' ? 'line-through' : ''}`}>
+                                                        Criada por {task.author} em {format(task.createdAt.toDate(), "dd/MM/yyyy")}
                                                     </span>
                                                 </label>
                                             </div>

@@ -8,8 +8,9 @@ export interface Note {
   id: string;
   content: string;
   createdAt: Timestamp;
+  author: string;
   isTask?: boolean;
-  completed?: boolean;
+  status?: 'aberto' | 'urgente' | 'concluido';
 }
 
 // GET
@@ -20,10 +21,19 @@ export async function getNotes(): Promise<Note[]> {
     const docSnap = await getDoc(notepadDocRef);
     if (docSnap.exists() && docSnap.data().notes) {
         const notesData = docSnap.data().notes as any[];
-        return notesData.map(note => ({
-        ...note,
-        createdAt: new Timestamp(note.createdAt.seconds, note.createdAt.nanoseconds)
-        })).sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+        return notesData.map(note => {
+          const newNote: any = {
+            ...note,
+            createdAt: new Timestamp(note.createdAt.seconds, note.createdAt.nanoseconds),
+            author: note.author || 'Usuário Desconhecido'
+          };
+          // Migration from old 'completed' to new 'status'
+          if (note.isTask && typeof note.completed !== 'undefined') {
+            newNote.status = note.completed ? 'concluido' : 'aberto';
+            delete newNote.completed; // remove old field
+          }
+          return newNote as Note;
+        }).sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
     } else {
         return [];
     }

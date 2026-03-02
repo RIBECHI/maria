@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Save, Loader2, PlusCircle, Trash2, XCircle, CalendarPlus } from "lucide-react";
+import { Save, Loader2, PlusCircle, Trash2, CalendarPlus, MoreHorizontal, Circle, AlertCircle, CircleCheck } from "lucide-react";
 import { getNotes, saveNotes, type Note } from "@/services/notepadService";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -34,6 +34,16 @@ import { EventFormDialog, type CalendarEvent, type EventFormValues } from "@/com
 import { addEvent } from "@/services/eventService";
 import { Checkbox } from "../ui/checkbox";
 import { Label } from "../ui/label";
+import { useUser } from "@/contexts/UserContext";
+import { Badge } from "../ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 
 interface NotepadSheetProps {
@@ -43,6 +53,7 @@ interface NotepadSheetProps {
 
 export function NotepadSheet({ isOpen, onOpenChange }: NotepadSheetProps) {
   const { toast } = useToast();
+  const { userName } = useUser();
   const [notes, setNotes] = React.useState<Note[]>([]);
   const [newNoteContent, setNewNoteContent] = React.useState("");
   const [isTask, setIsTask] = React.useState(false);
@@ -74,7 +85,6 @@ export function NotepadSheet({ isOpen, onOpenChange }: NotepadSheetProps) {
       };
       fetchContent();
     } else {
-        // Limpa o estado quando o painel é fechado para garantir que dados novos sejam carregados na próxima abertura
         setNewNoteContent("");
         setNotes([]);
         setIsTask(false);
@@ -93,8 +103,9 @@ export function NotepadSheet({ isOpen, onOpenChange }: NotepadSheetProps) {
         id: `note-${Date.now()}`,
         content: newNoteContent,
         createdAt: Timestamp.now(),
+        author: userName,
         isTask: isTask,
-        ...(isTask && { completed: false }), // Apenas adiciona `completed` se for uma tarefa
+        ...(isTask && { status: 'aberto' }),
     };
 
     const updatedNotes = [newNote, ...notes];
@@ -151,21 +162,21 @@ export function NotepadSheet({ isOpen, onOpenChange }: NotepadSheetProps) {
   const handleScheduleFromNote = (note: Note) => {
     setEventToCreate({
       description: note.content,
-      date: new Date().toISOString(), // Preenche a data atual para evitar o erro
+      date: new Date().toISOString(),
     });
     setIsEventDialogOpen(true);
   };
   
-  const handleToggleTask = async (noteId: string) => {
+  const handleStatusChange = async (noteId: string, status: Note['status']) => {
     const updatedNotes = notes.map(note =>
-        note.id === noteId ? { ...note, completed: !note.completed } : note
+        note.id === noteId ? { ...note, status } : note
     );
     setNotes(updatedNotes); // Optimistic update
     try {
         await saveNotes(updatedNotes);
+        toast({ title: "Status da tarefa atualizado!" });
     } catch(error) {
-        toast({ title: "Erro ao atualizar tarefa", variant: "destructive" });
-        // Revert on error
+        toast({ title: "Erro ao atualizar status", variant: "destructive" });
         setNotes(notes);
     }
   };
@@ -178,6 +189,18 @@ export function NotepadSheet({ isOpen, onOpenChange }: NotepadSheetProps) {
     } catch(error) {
       console.error("Failed to save event from note:", error);
       toast({ title: "Erro ao agendar", description: "Não foi possível salvar o evento.", variant: "destructive" });
+    }
+  };
+
+  const getStatusProps = (status?: Note['status']) => {
+    switch (status) {
+        case 'concluido':
+            return { label: 'Concluído', variant: 'secondary' as const, icon: <CircleCheck className="h-3 w-3" /> };
+        case 'urgente':
+            return { label: 'Urgente', variant: 'destructive' as const, icon: <AlertCircle className="h-3 w-3" /> };
+        case 'aberto':
+        default:
+            return { label: 'Em Aberto', variant: 'outline' as const, icon: <Circle className="h-3 w-3" /> };
     }
   };
 
@@ -205,7 +228,7 @@ export function NotepadSheet({ isOpen, onOpenChange }: NotepadSheetProps) {
                 <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center space-x-2">
                         <Checkbox id="is-task-note" checked={isTask} onCheckedChange={(checked) => setIsTask(!!checked)} />
-                        <Label htmlFor="is-task-note" className="text-sm font-normal">É uma tarefa pendente?</Label>
+                        <Label htmlFor="is-task-note" className="text-sm font-normal">É uma tarefa?</Label>
                     </div>
                     <Button onClick={handleAddNote} disabled={isSaving || newNoteContent.trim() === ""} className="flex-1">
                         {isSaving && !noteToDelete ? (
@@ -234,35 +257,36 @@ export function NotepadSheet({ isOpen, onOpenChange }: NotepadSheetProps) {
                     <ScrollArea className="h-[calc(100vh-320px)] pr-4 -mr-4">
                     {notes.length > 0 ? (
                         <div className="space-y-3">
-                        {notes.map(note => (
-                            <Card key={note.id} className="bg-muted/40 relative group">
+                        {notes.map(note => {
+                          const statusProps = getStatusProps(note.status);
+                          return (
+                            <Card key={note.id} className={`bg-muted/40 relative group transition-opacity ${note.status === 'concluido' ? 'opacity-70' : ''}`}>
                             <CardContent className="p-3">
-                                {note.isTask ? (
-                                    <div className="flex items-start gap-3">
-                                        <Checkbox 
-                                            id={`task-note-${note.id}`}
-                                            checked={note.completed}
-                                            onCheckedChange={() => handleToggleTask(note.id)}
-                                            className="mt-1"
-                                        />
-                                        <div className="flex-1">
-                                             <label htmlFor={`task-note-${note.id}`} className={`block text-sm cursor-pointer ${note.completed ? 'line-through text-muted-foreground' : ''}`}>
-                                                {note.content}
-                                            </label>
-                                            <p className={`text-xs text-muted-foreground mt-2 ${note.completed ? 'line-through' : ''}`}>
-                                                Tarefa criada em {note.createdAt ? format(note.createdAt.toDate(), "dd/MM/yyyy", { locale: ptBR }) : '...'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <>
-                                        <p className="text-sm whitespace-pre-wrap">{note.content}</p>
-                                        <p className="text-xs text-muted-foreground mt-2">
-                                            Anotado em {note.createdAt ? format(note.createdAt.toDate(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : '...'}
+                                <div className="flex-1">
+                                    <p className="text-sm whitespace-pre-wrap">{note.content}</p>
+                                    <div className="flex items-center justify-between mt-2">
+                                        <p className="text-xs text-muted-foreground">
+                                            por {note.author} em {note.createdAt ? format(note.createdAt.toDate(), "dd/MM/yyyy", { locale: ptBR }) : '...'}
                                         </p>
-                                    </>
-                                )}
+                                        {note.isTask && <Badge variant={statusProps.variant}>{statusProps.label}</Badge>}
+                                    </div>
+                                </div>
+                                
                                 <div className="absolute top-1 right-1 flex opacity-0 group-hover:opacity-100 transition-opacity">
+                                  {note.isTask && (
+                                     <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                           <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary"><MoreHorizontal className="h-4 w-4" /></Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuLabel>Mudar Status</DropdownMenuLabel>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem onClick={() => handleStatusChange(note.id, 'aberto')}>Em Aberto</DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleStatusChange(note.id, 'urgente')}>Urgente</DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleStatusChange(note.id, 'concluido')}>Concluído</DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  )}
                                   <Button
                                     variant="ghost"
                                     size="icon"
@@ -270,7 +294,6 @@ export function NotepadSheet({ isOpen, onOpenChange }: NotepadSheetProps) {
                                     onClick={() => handleScheduleFromNote(note)}
                                     disabled={isSaving}
                                     title="Agendar esta anotação"
-                                    aria-label="Agendar nota"
                                   >
                                     <CalendarPlus className="h-4 w-4" />
                                   </Button>
@@ -280,15 +303,15 @@ export function NotepadSheet({ isOpen, onOpenChange }: NotepadSheetProps) {
                                     className="h-7 w-7 text-muted-foreground hover:text-destructive"
                                     onClick={() => handleDeleteConfirmation(note)}
                                     disabled={isSaving}
-                                    title="Excluir esta anotação"
-                                    aria-label="Excluir nota"
+                                    title="Excluir"
                                   >
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
                                 </div>
                             </CardContent>
                             </Card>
-                        ))}
+                          );
+                        })}
                         </div>
                     ) : (
                         <div className="text-center text-muted-foreground py-10">
@@ -320,7 +343,6 @@ export function NotepadSheet({ isOpen, onOpenChange }: NotepadSheetProps) {
         </AlertDialog>
       )}
 
-      {/* Dialog para agendar evento a partir da nota */}
       <EventFormDialog
         isOpen={isEventDialogOpen}
         onClose={() => setIsEventDialogOpen(false)}
@@ -330,5 +352,3 @@ export function NotepadSheet({ isOpen, onOpenChange }: NotepadSheetProps) {
     </>
   );
 }
-
-    
