@@ -1,0 +1,616 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the LexManager application, typically an attorney or legal assistant, managing legal processes, clients, and documents. This entity facilitates tracking who made modifications.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name of the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user, used for communication.",
+          "format": "email"
+        },
+        "role": {
+          "type": "string",
+          "description": "The role of the user within the system (e.g., 'Attorney', 'Paralegal', 'Admin')."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the user account was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the user account was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "email",
+        "role",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Client": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Client",
+      "type": "object",
+      "description": "Stores detailed information about a client, including contact details, case history, and billing information.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Client entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name of the client or the company name."
+        },
+        "contactPerson": {
+          "type": "string",
+          "description": "The primary contact person for the client, if applicable (e.g., for a corporate client)."
+        },
+        "email": {
+          "type": "string",
+          "description": "Primary email address of the client.",
+          "format": "email"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Primary phone number of the client."
+        },
+        "address": {
+          "type": "string",
+          "description": "Full physical address of the client."
+        },
+        "caseHistorySummary": {
+          "type": "string",
+          "description": "A summary or overview of the client's past legal case history."
+        },
+        "billingDetails": {
+          "type": "string",
+          "description": "General description or summary of billing arrangements for the client."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the client record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the client record was last updated.",
+          "format": "date-time"
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "Reference to the User who created this client record. (Relationship: User 1:N Client)"
+        },
+        "updatedBy": {
+          "type": "string",
+          "description": "Reference to the User who last updated this client record. (Relationship: User 1:N Client)"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "email",
+        "phone",
+        "createdAt",
+        "updatedAt",
+        "createdBy",
+        "updatedBy"
+      ]
+    },
+    "LegalProcess": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "LegalProcess",
+      "type": "object",
+      "description": "Tracks key information for a specific legal process or case, including its status, dates, and related parties.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the LegalProcess entity."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title or a brief descriptive name of the legal process/case."
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed description of the legal process, including its background and objectives."
+        },
+        "caseNumber": {
+          "type": "string",
+          "description": "An internal or external unique case number for the legal process."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the legal process (e.g., 'Open', 'Pending', 'Closed', 'Appealed')."
+        },
+        "startDate": {
+          "type": "string",
+          "description": "The date when the legal process officially commenced.",
+          "format": "date"
+        },
+        "dueDate": {
+          "type": "string",
+          "description": "The primary overall deadline for the completion of the legal process.",
+          "format": "date"
+        },
+        "clientId": {
+          "type": "string",
+          "description": "Reference to the Client associated with this legal process. (Relationship: Client 1:N LegalProcess)"
+        },
+        "responsibleUserId": {
+          "type": "string",
+          "description": "Reference to the User primarily responsible for managing this legal process. (Relationship: User 1:N LegalProcess)"
+        },
+        "tagIds": {
+          "type": "array",
+          "description": "References to Tags applied to this legal process for categorization. (Relationship: Tag N:N LegalProcess)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the legal process record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the legal process record was last updated.",
+          "format": "date-time"
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "Reference to the User who created this legal process record. (Relationship: User 1:N LegalProcess)"
+        },
+        "updatedBy": {
+          "type": "string",
+          "description": "Reference to the User who last updated this legal process record. (Relationship: User 1:N LegalProcess)"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "description",
+        "caseNumber",
+        "status",
+        "startDate",
+        "clientId",
+        "responsibleUserId",
+        "createdAt",
+        "updatedAt",
+        "createdBy",
+        "updatedBy"
+      ]
+    },
+    "Document": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Document",
+      "type": "object",
+      "description": "Manages information about uploaded documents pertinent to legal processes or clients, including file details and associated tags.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Document entity."
+        },
+        "fileName": {
+          "type": "string",
+          "description": "The original name of the uploaded file."
+        },
+        "fileUrl": {
+          "type": "string",
+          "description": "The URL or path where the document is stored.",
+          "format": "uri"
+        },
+        "fileType": {
+          "type": "string",
+          "description": "The MIME type or file extension of the document (e.g., 'application/pdf', 'image/jpeg')."
+        },
+        "description": {
+          "type": "string",
+          "description": "A brief description or summary of the document's content."
+        },
+        "uploadDate": {
+          "type": "string",
+          "description": "The date and time when the document was uploaded.",
+          "format": "date-time"
+        },
+        "legalProcessId": {
+          "type": "string",
+          "description": "Reference to the LegalProcess this document is associated with. (Relationship: LegalProcess 1:N Document)"
+        },
+        "clientId": {
+          "type": "string",
+          "description": "Reference to the Client this document is associated with. (Relationship: Client 1:N Document)"
+        },
+        "tagIds": {
+          "type": "array",
+          "description": "References to Tags applied to this document for categorization. (Relationship: Tag N:N Document)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the document record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the document record was last updated.",
+          "format": "date-time"
+        },
+        "uploadedBy": {
+          "type": "string",
+          "description": "Reference to the User who uploaded this document. (Relationship: User 1:N Document)"
+        },
+        "updatedBy": {
+          "type": "string",
+          "description": "Reference to the User who last updated this document record. (Relationship: User 1:N Document)"
+        }
+      },
+      "required": [
+        "id",
+        "fileName",
+        "fileUrl",
+        "fileType",
+        "uploadDate",
+        "legalProcessId",
+        "clientId",
+        "createdAt",
+        "updatedAt",
+        "uploadedBy",
+        "updatedBy"
+      ]
+    },
+    "Tag": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Tag",
+      "type": "object",
+      "description": "Defines categories or keywords for organizing and searching legal processes and documents.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Tag entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the tag (e.g., 'Contract', 'Pleading', 'Evidence')."
+        },
+        "description": {
+          "type": "string",
+          "description": "A short description explaining the purpose or typical usage of the tag."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description"
+      ]
+    },
+    "Deadline": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Deadline",
+      "type": "object",
+      "description": "Represents specific dates and times for important events, tasks, or deadlines within a legal process, used for tracking and reminders.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Deadline entity."
+        },
+        "title": {
+          "type": "string",
+          "description": "A concise title for the deadline or event."
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed description of the deadline or event, including any necessary context or instructions."
+        },
+        "dateTime": {
+          "type": "string",
+          "description": "The exact date and time of the deadline or event.",
+          "format": "date-time"
+        },
+        "type": {
+          "type": "string",
+          "description": "The category or type of the event/deadline (e.g., 'Court Hearing', 'Filing Deadline', 'Client Meeting')."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the deadline (e.g., 'Upcoming', 'Completed', 'Missed', 'Rescheduled')."
+        },
+        "legalProcessId": {
+          "type": "string",
+          "description": "Reference to the LegalProcess this deadline belongs to. (Relationship: LegalProcess 1:N Deadline)"
+        },
+        "remindMe": {
+          "type": "boolean",
+          "description": "Indicates whether a reminder should be generated for this deadline."
+        },
+        "reminderSentAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the reminder for this deadline was last sent, if applicable.",
+          "format": "date-time"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the deadline record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the deadline record was last updated.",
+          "format": "date-time"
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "Reference to the User who created this deadline record. (Relationship: User 1:N Deadline)"
+        },
+        "updatedBy": {
+          "type": "string",
+          "description": "Reference to the User who last updated this deadline record. (Relationship: User 1:N Deadline)"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "dateTime",
+        "type",
+        "status",
+        "legalProcessId",
+        "remindMe",
+        "createdAt",
+        "updatedAt",
+        "createdBy",
+        "updatedBy"
+      ]
+    },
+    "Alert": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Alert",
+      "type": "object",
+      "description": "Stores AI-generated alerts or reminders regarding new rules, regulations, or precedents applicable to legal processes.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Alert entity."
+        },
+        "title": {
+          "type": "string",
+          "description": "A concise title summarizing the alert."
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed explanation of the new rule, regulation, or precedent and its potential applicability."
+        },
+        "type": {
+          "type": "string",
+          "description": "The category of the alert (e.g., 'Rule Change', 'Precedent Update', 'Regulatory Notice')."
+        },
+        "source": {
+          "type": "string",
+          "description": "The origin of the information (e.g., 'Supreme Court Ruling', 'New Regulation X', 'Legal Journal')."
+        },
+        "alertDate": {
+          "type": "string",
+          "description": "The date and time when the alert was generated or identified.",
+          "format": "date-time"
+        },
+        "legalProcessIds": {
+          "type": "array",
+          "description": "References to LegalProcess entities that this alert is applicable to. (Relationship: LegalProcess N:N Alert)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User (attorney) for whom this alert is primarily intended. (Relationship: User 1:N Alert)"
+        },
+        "isRead": {
+          "type": "boolean",
+          "description": "Indicates whether the alert has been acknowledged or read by the recipient."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the alert record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the alert record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "description",
+        "type",
+        "source",
+        "alertDate",
+        "userId",
+        "isRead",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles and roles. The 'role' field is used for Database Access Control (DBAC). Documents are accessible only by the user whose ID matches '{userId}' (i.e., `request.auth.uid == userId`).",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, corresponding to `request.auth.uid`."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/clients/{clientId}",
+        "definition": {
+          "entityName": "Client",
+          "schema": {
+            "$ref": "#/backend/entities/Client"
+          },
+          "description": "Stores client records, privately owned by the attorney specified by '{userId}'. The 'createdBy' field in the document must match '{userId}' for authorization independence. Client data is accessible only by the owning attorney.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the attorney (user) who owns this client record."
+            },
+            {
+              "name": "clientId",
+              "description": "The unique identifier for the client."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/clients/{clientId}/legalProcesses/{legalProcessId}",
+        "definition": {
+          "entityName": "LegalProcess",
+          "schema": {
+            "$ref": "#/backend/entities/LegalProcess"
+          },
+          "description": "Tracks legal processes, nested under a specific client and owned by the attorney '{userId}'. The 'responsibleUserId' and 'createdBy' fields in the document must match '{userId}', and 'clientId' must match '{clientId}' for authorization independence. Access is restricted to the owning attorney.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the attorney (user) who owns this legal process."
+            },
+            {
+              "name": "clientId",
+              "description": "The unique identifier of the client associated with this legal process."
+            },
+            {
+              "name": "legalProcessId",
+              "description": "The unique identifier for the legal process."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/clients/{clientId}/legalProcesses/{legalProcessId}/documents/{documentId}",
+        "definition": {
+          "entityName": "Document",
+          "schema": {
+            "$ref": "#/backend/entities/Document"
+          },
+          "description": "Manages documents related to a legal process, nested under its parent legal process, client, and owner attorney. The 'uploadedBy' field must match '{userId}', 'clientId' must match '{clientId}', and 'legalProcessId' must match '{legalProcessId}' for authorization independence. Access is restricted to the owning attorney.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the attorney (user) who uploaded and owns this document."
+            },
+            {
+              "name": "clientId",
+              "description": "The unique identifier of the client associated with this document."
+            },
+            {
+              "name": "legalProcessId",
+              "description": "The unique identifier of the legal process this document belongs to."
+            },
+            {
+              "name": "documentId",
+              "description": "The unique identifier for the document."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/clients/{clientId}/legalProcesses/{legalProcessId}/deadlines/{deadlineId}",
+        "definition": {
+          "entityName": "Deadline",
+          "schema": {
+            "$ref": "#/backend/entities/Deadline"
+          },
+          "description": "Stores specific deadlines and events for a legal process, nested under its parent legal process, client, and owner attorney. The 'createdBy' field must match '{userId}', 'clientId' must be denormalized into the document and match '{clientId}', and 'legalProcessId' must match '{legalProcessId}' for authorization independence. Access is restricted to the owning attorney.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the attorney (user) who created and owns this deadline."
+            },
+            {
+              "name": "clientId",
+              "description": "The unique identifier of the client associated with this deadline."
+            },
+            {
+              "name": "legalProcessId",
+              "description": "The unique identifier of the legal process this deadline belongs to."
+            },
+            {
+              "name": "deadlineId",
+              "description": "The unique identifier for the deadline."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/alerts/{alertId}",
+        "definition": {
+          "entityName": "Alert",
+          "schema": {
+            "$ref": "#/backend/entities/Alert"
+          },
+          "description": "Contains AI-generated alerts intended for a specific attorney, directly owned by the user. The 'userId' field in the document must match '{userId}' for authorization independence. Alerts are only accessible by the intended recipient attorney.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the attorney (user) for whom this alert is intended."
+            },
+            {
+              "name": "alertId",
+              "description": "The unique identifier for the alert."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/tags/{tagId}",
+        "definition": {
+          "entityName": "Tag",
+          "schema": {
+            "$ref": "#/backend/entities/Tag"
+          },
+          "description": "This collection serves as a global dictionary for tags. Read access is typically allowed for all authenticated users, while modification access is usually restricted to users with 'Admin' roles (e.g., by checking `/users/{uid}.role`).",
+          "params": [
+            {
+              "name": "tagId",
+              "description": "The unique identifier for the tag."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The recommended Firestore structure for LexManager prioritizes Authorization Independence and Structural Segregation to ensure robust, debuggable security rules and efficient queries (QAPs). \n\n**Authorization Independence via Denormalization:**\nAll user-specific data (Clients, Legal Processes, Documents, Deadlines, and Alerts) is nested under the `/users/{userId}` path. This establishes a clear ownership hierarchy where the `{userId}` in the path directly corresponds to the owner/manager of the nested data. To eliminate the need for `get()` operations in security rules, crucial authorization fields are denormalized directly into each document:\n*   **Client:** The `createdBy` field must match the `{userId}` in the path.\n*   **LegalProcess:** The `responsibleUserId` and `createdBy` fields must match the `{userId}` in the path, and the `clientId` field must match the `{clientId}` in the path.\n*   **Document:** The `uploadedBy` field must match the `{userId}` in the path, and both `clientId` and `legalProcessId` must match their respective path parameters. \n*   **Deadline:** The `createdBy` field must match the `{userId}` in the path. Crucially, `clientId` is denormalized into the Deadline document (even though it's implicitly available from the parent LegalProcess's path) to allow direct authorization checks without fetching the LegalProcess document. The `legalProcessId` also matches its path parameter.\n*   **Alert:** The `userId` field must match the `{userId}` in the path.\nThis denormalization strategy means that any authorization check can be performed solely using `request.auth.uid`, the path parameters (`{userId}`, `{clientId}`, etc.), and the fields within the `resource.data` of the document being accessed, thereby avoiding complex and expensive `get()` calls.\n\n**QAPs (Query as a Proxy to Security) Support:**\nStructural Segregation ensures that all documents within a given collection share a homogeneous security posture. For instance, all documents under `/users/{userId}/clients/{clientId}/legalProcesses` are privately owned by the `{userId}` and associated with the `{clientId}`. This allows for secure `list` queries. A user can query `users/{request.auth.uid}/clients` to retrieve all their clients, and Firebase's security rules can simply verify that `request.auth.uid` matches the `{userId}` wildcard in the path, and that the `createdBy` field (or `responsibleUserId`, `uploadedBy`) in the document matches this `uid`. This makes list operations secure by design, as the path itself acts as a primary filter. Global data like `Tags` resides in a separate collection (`/tags`), allowing for different, typically more permissive read-access rules (e.g., read by all authenticated users) and restricted write-access (e.g., only by 'Admin' roles, checked via a `role` field on the user's profile document `users/{request.auth.uid}.role`)."
+  }
+}
