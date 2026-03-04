@@ -30,10 +30,13 @@ export async function createUserProfile(user: User): Promise<void> {
   if (!db) throw new Error("Firebase DB not initialized");
   const userDocRef = doc(db, USERS_COLLECTION, user.uid);
   
+  // Define o e-mail do administrador. Altere se desejar.
+  const adminEmail = "admin@lexmanager.com";
+
   const newUserProfile: Omit<UserProfile, 'id' | 'createdAt'> = {
     name: user.displayName || user.email || 'Usuário Anônimo',
     email: user.email || '',
-    role: 'Usuário Padrão', // Default role for new users
+    role: user.email === adminEmail ? 'Admin' : 'Usuário Padrão', // Atribui Admin se o e-mail corresponder
   };
 
   try {
