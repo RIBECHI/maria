@@ -24,28 +24,27 @@ const fromFirestore = (docSnap: any): CalendarEvent => {
 };
 
 // READ ALL
-export async function getEvents(): Promise<CalendarEvent[]> {
+export function getEvents(): Promise<CalendarEvent[]> {
   if (!db) throw new Error("Firebase DB not initialized");
   const eventsCollectionRef = collection(db, 'events');
   const q = query(eventsCollectionRef, orderBy('date', 'asc'));
-  try {
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(fromFirestore);
-  } catch(error) {
-    if (error instanceof FirestoreError && error.code === 'permission-denied') {
-      const context: SecurityRuleContext = {
-        path: 'events',
-        operation: 'list',
-        auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-      };
-      errorEmitter.emit('permission-error', new FirestorePermissionError(context));
-    }
-    throw error;
-  }
+  return getDocs(q)
+    .then(querySnapshot => querySnapshot.docs.map(fromFirestore))
+    .catch(error => {
+      if (error instanceof FirestoreError && error.code === 'permission-denied') {
+        const context: SecurityRuleContext = {
+          path: 'events',
+          operation: 'list',
+          auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
+        };
+        errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+      }
+      return [];
+    });
 }
 
 // READ for Dashboard/Sidebar
-export async function getEventsForDashboard(count: number): Promise<CalendarEvent[]> {
+export function getEventsForDashboard(count: number): Promise<CalendarEvent[]> {
   if (!db) throw new Error("Firebase DB not initialized");
   const eventsCollectionRef = collection(db, 'events');
   const today = format(startOfToday(), 'yyyy-MM-dd');
@@ -56,67 +55,73 @@ export async function getEventsForDashboard(count: number): Promise<CalendarEven
     limit(count)
   );
   
-  const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(fromFirestore);
+  return getDocs(q)
+    .then(querySnapshot => querySnapshot.docs.map(fromFirestore))
+    .catch(error => {
+        if (error instanceof FirestoreError && error.code === 'permission-denied') {
+            const context: SecurityRuleContext = {
+                path: 'events',
+                operation: 'list',
+                auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
+            };
+            errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+        }
+        return [];
+    });
 }
 
 // CREATE
-export async function addEvent(eventData: Omit<EventFormValues, "clientId"> & { client?: string | undefined; }): Promise<CalendarEvent> {
+export function addEvent(eventData: Omit<EventFormValues, "clientId"> & { client?: string | undefined; }): void {
   if (!db) throw new Error("Firebase DB not initialized");
   const eventsCollectionRef = collection(db, 'events');
-  try {
-    const docRef = await addDoc(eventsCollectionRef, {
-        ...eventData,
-        createdAt: serverTimestamp(),
-    });
-    const snapshot = await getDoc(docRef);
-    return fromFirestore(snapshot);
-  } catch(error) {
-    if (error instanceof FirestoreError && error.code === 'permission-denied') {
-        const context: SecurityRuleContext = {
-            path: 'events',
-            operation: 'create',
-            auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-            resource: eventData,
-        };
-        errorEmitter.emit('permission-error', new FirestorePermissionError(context));
-    }
-    throw error;
-  }
+  const dataToSave = {
+      ...eventData,
+      createdAt: serverTimestamp(),
+  };
+
+  addDoc(eventsCollectionRef, dataToSave)
+    .catch(error => {
+      if (error instanceof FirestoreError && error.code === 'permission-denied') {
+          const context: SecurityRuleContext = {
+              path: 'events',
+              operation: 'create',
+              auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
+              resource: dataToSave,
+          };
+          errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+      }
+  });
 }
 
 // UPDATE
-export async function updateEvent(eventId: string, eventData: Omit<EventFormValues, "clientId"> & { client?: string | undefined; }): Promise<CalendarEvent> {
+export function updateEvent(eventId: string, eventData: Omit<EventFormValues, "clientId"> & { client?: string | undefined; }): void {
   if (!db) throw new Error("Firebase DB not initialized");
   const eventDocRef = doc(db, 'events', eventId);
-  try {
-    await updateDoc(eventDocRef, {
-        ...eventData,
-        updatedAt: serverTimestamp(),
-    });
-    const snapshot = await getDoc(eventDocRef);
-    return fromFirestore(snapshot);
-  } catch(error) {
-    if (error instanceof FirestoreError && error.code === 'permission-denied') {
-        const context: SecurityRuleContext = {
-            path: `events/${eventId}`,
-            operation: 'update',
-            auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-            resource: eventData,
-        };
-        errorEmitter.emit('permission-error', new FirestorePermissionError(context));
-    }
-    throw error;
-  }
+  const dataToUpdate = {
+      ...eventData,
+      updatedAt: serverTimestamp(),
+  };
+
+  updateDoc(eventDocRef, dataToUpdate)
+    .catch(error => {
+      if (error instanceof FirestoreError && error.code === 'permission-denied') {
+          const context: SecurityRuleContext = {
+              path: `events/${eventId}`,
+              operation: 'update',
+              auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
+              resource: dataToUpdate,
+          };
+          errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+      }
+  });
 }
 
 // DELETE
-export async function deleteEvent(eventId: string): Promise<void> {
+export function deleteEvent(eventId: string): void {
   if (!db) throw new Error("Firebase DB not initialized");
   const eventDocRef = doc(db, 'events', eventId);
-  try {
-    await deleteDoc(eventDocRef);
-  } catch(error) {
+  
+  deleteDoc(eventDocRef).catch(error => {
     if (error instanceof FirestoreError && error.code === 'permission-denied') {
         const context: SecurityRuleContext = {
             path: `events/${eventId}`,
@@ -125,6 +130,5 @@ export async function deleteEvent(eventId: string): Promise<void> {
         };
         errorEmitter.emit('permission-error', new FirestorePermissionError(context));
     }
-    throw error;
-  }
+  });
 }

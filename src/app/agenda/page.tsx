@@ -116,17 +116,18 @@ export default function AgendaPage() {
   const handleSubmitEventForm = async (data: EventFormValues) => {
     try {
       if (editingEvent) {
-        await updateEvent(editingEvent.id, data);
+        updateEvent(editingEvent.id, data);
         toast({ title: "Evento atualizado!", description: `O evento "${data.description}" foi atualizado.` });
       } else {
-        await addEvent(data);
+        addEvent(data);
         toast({ title: "Evento adicionado!", description: `O evento foi adicionado.` });
       }
       handleCloseFormDialog();
-      fetchData(); // Re-fetch para garantir consistência
+      // Use um pequeno atraso para dar tempo ao Firestore de atualizar antes de refazer a busca
+      setTimeout(() => fetchData(), 500);
     } catch(error) {
       console.error("Failed to save event:", error);
-      toast({ title: "Erro ao salvar", description: "Não foi possível salvar o evento.", variant: "destructive" });
+      toast({ title: "Erro ao salvar", description: "Ocorreu um erro ao salvar o evento.", variant: "destructive" });
     }
   };
 
@@ -146,7 +147,7 @@ export default function AgendaPage() {
   const confirmDeleteEvent = async () => {
     if (eventToDelete) {
       try {
-        await deleteEvent(eventToDelete.id);
+        deleteEvent(eventToDelete.id);
         setEvents(events.filter(e => e.id !== eventToDelete.id));
         toast({ title: "Evento excluído!", description: `O evento "${eventToDelete.description}" foi excluído.`});
       } catch (error) {

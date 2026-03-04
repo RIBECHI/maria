@@ -64,7 +64,7 @@ export default function TasksPage() {
         );
 
         try {
-            await updateProcess(processId, { ...updatedProcess });
+            await updateProcess(processId, { timeline: updatedTimeline });
         } catch (error) {
             console.error("Failed to update task status:", error);
             toast({ title: "Erro ao atualizar tarefa", variant: "destructive" });

@@ -59,13 +59,13 @@ export default function DocumentTemplatesPage() {
     setIsFormOpen(false);
   };
 
-  const handleSubmit = async (data: TemplateFormValues) => {
+  const handleSubmit = (data: TemplateFormValues) => {
     try {
       if (editingTemplate) {
-        await updateTemplate(editingTemplate.id, data);
+        updateTemplate(editingTemplate.id, data);
         toast({ title: "Modelo atualizado!", description: "Suas alterações foram salvas." });
       } else {
-        await addTemplate(data);
+        addTemplate(data);
         toast({ title: "Modelo criado!", description: "O novo modelo já está disponível para uso." });
       }
       fetchTemplates(); // Re-fetch to update list
@@ -81,10 +81,10 @@ export default function DocumentTemplatesPage() {
     setIsAlertOpen(true);
   };
 
-  const confirmDelete = async () => {
+  const confirmDelete = () => {
     if (templateToDelete) {
       try {
-        await deleteTemplate(templateToDelete.id);
+        deleteTemplate(templateToDelete.id);
         setTemplates(prev => prev.filter(t => t.id !== templateToDelete.id));
         toast({ title: "Modelo excluído!", description: `O modelo "${templateToDelete.name}" foi removido.` });
       } catch (error) {

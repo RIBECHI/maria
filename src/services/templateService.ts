@@ -29,83 +29,78 @@ const fromFirestore = (docSnap: DocumentData): DocumentTemplate => {
 };
 
 // READ
-export async function getTemplates(): Promise<DocumentTemplate[]> {
+export function getTemplates(): Promise<DocumentTemplate[]> {
   if (!db) throw new Error("Firebase DB not initialized");
   const templatesCollectionRef = collection(db, 'documentTemplates');
   const q = query(templatesCollectionRef, orderBy("name", "asc"));
-  try {
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(fromFirestore);
-  } catch (error) {
-    if (error instanceof FirestoreError && error.code === 'permission-denied') {
-      const context: SecurityRuleContext = {
-        path: 'documentTemplates',
-        operation: 'list',
-        auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-      };
-      errorEmitter.emit('permission-error', new FirestorePermissionError(context));
-    }
-    throw error;
-  }
+  
+  return getDocs(q)
+    .then(querySnapshot => querySnapshot.docs.map(fromFirestore))
+    .catch(error => {
+      if (error instanceof FirestoreError && error.code === 'permission-denied') {
+        const context: SecurityRuleContext = {
+          path: 'documentTemplates',
+          operation: 'list',
+          auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
+        };
+        errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+      }
+      return [];
+  });
 }
 
 // CREATE
-export async function addTemplate(templateData: TemplateFormValues): Promise<DocumentTemplate> {
+export function addTemplate(templateData: TemplateFormValues): void {
     if (!db) throw new Error("Firebase DB not initialized");
     const templatesCollectionRef = collection(db, 'documentTemplates');
-    try {
-        const docRef = await addDoc(templatesCollectionRef, {
-            ...templateData,
-            createdAt: serverTimestamp(),
-        });
-        const snapshot = await getDoc(docRef);
-        return fromFirestore(snapshot);
-    } catch (error) {
+    const dataToSave = {
+        ...templateData,
+        createdAt: serverTimestamp(),
+    };
+
+    addDoc(templatesCollectionRef, dataToSave)
+      .catch(error => {
         if (error instanceof FirestoreError && error.code === 'permission-denied') {
             const context: SecurityRuleContext = {
                 path: 'documentTemplates',
                 operation: 'create',
                 auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-                resource: templateData,
+                resource: dataToSave,
             };
             errorEmitter.emit('permission-error', new FirestorePermissionError(context));
         }
-        throw error;
-    }
+    });
 }
 
 // UPDATE
-export async function updateTemplate(templateId: string, templateData: TemplateFormValues): Promise<DocumentTemplate> {
+export function updateTemplate(templateId: string, templateData: TemplateFormValues): void {
     if (!db) throw new Error("Firebase DB not initialized");
     const templateDocRef = doc(db, 'documentTemplates', templateId);
-    try {
-        await updateDoc(templateDocRef, {
-            ...templateData,
-            updatedAt: serverTimestamp(),
-        });
-        const snapshot = await getDoc(templateDocRef);
-        return fromFirestore(snapshot);
-    } catch (error) {
+    const dataToUpdate = {
+        ...templateData,
+        updatedAt: serverTimestamp(),
+    };
+
+    updateDoc(templateDocRef, dataToUpdate)
+      .catch(error => {
         if (error instanceof FirestoreError && error.code === 'permission-denied') {
             const context: SecurityRuleContext = {
                 path: `documentTemplates/${templateId}`,
                 operation: 'update',
                 auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-                resource: templateData,
+                resource: dataToUpdate,
             };
             errorEmitter.emit('permission-error', new FirestorePermissionError(context));
         }
-        throw error;
-    }
+    });
 }
 
 // DELETE
-export async function deleteTemplate(templateId: string): Promise<void> {
+export function deleteTemplate(templateId: string): void {
     if (!db) throw new Error("Firebase DB not initialized");
     const templateDocRef = doc(db, 'documentTemplates', templateId);
-    try {
-        await deleteDoc(templateDocRef);
-    } catch (error) {
+    
+    deleteDoc(templateDocRef).catch(error => {
         if (error instanceof FirestoreError && error.code === 'permission-denied') {
             const context: SecurityRuleContext = {
                 path: `documentTemplates/${templateId}`,
@@ -114,6 +109,5 @@ export async function deleteTemplate(templateId: string): Promise<void> {
             };
             errorEmitter.emit('permission-error', new FirestorePermissionError(context));
         }
-        throw error;
-    }
+    });
 }

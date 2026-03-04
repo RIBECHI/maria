@@ -73,22 +73,22 @@ export default function ClientsPage() {
     setIsFormDialogOpen(false);
   };
 
-  const handleSubmitClientForm = async (data: ClientFormValues) => {
+  const handleSubmitClientForm = (data: ClientFormValues) => {
     try {
       if (editingClient) {
-        const updatedClient = await updateClient(editingClient.id, data);
-        setClients(clients.map(c => (c.id === editingClient.id ? { ...c, ...updatedClient } : c)));
+        updateClient(editingClient.id, data);
         toast({ title: "Cliente atualizado!", description: `O cliente ${data.name} foi atualizado com sucesso.` });
       } else {
-        await addClient({
+        addClient({
           ...data,
           caseCount: 0,
           lastActivity: new Date().toISOString().split('T')[0],
         });
         toast({ title: "Cliente adicionado!", description: `O cliente ${data.name} foi adicionado com sucesso.` });
-        fetchData(); // Re-fetch para garantir que a lista está atualizada.
       }
       handleCloseFormDialog();
+       // Use um pequeno atraso para dar tempo ao Firestore de atualizar antes de refazer a busca
+      setTimeout(() => fetchData(), 500);
     } catch (error) {
         console.error("Failed to save client: ", error);
         toast({ title: "Erro ao salvar", description: "Não foi possível salvar o cliente.", variant: "destructive" });
@@ -100,10 +100,10 @@ export default function ClientsPage() {
     setIsDeleteDialogOpen(true);
   };
 
-  const confirmDeleteClient = async () => {
+  const confirmDeleteClient = () => {
     if (clientToDelete) {
       try {
-        await deleteClient(clientToDelete.id);
+        deleteClient(clientToDelete.id);
         setClients(clients.filter(c => c.id !== clientToDelete.id));
         toast({ title: "Cliente excluído!", description: `O cliente ${clientToDelete.name} foi excluído.` });
       } catch (error) {

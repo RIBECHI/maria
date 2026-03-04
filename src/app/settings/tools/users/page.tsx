@@ -61,7 +61,7 @@ export default function UsersPage() {
   
   const handleRoleChange = async (userId: string, newRole: "Admin" | "Usuário Padrão") => {
     try {
-      await updateUserRole(userId, newRole);
+      updateUserRole(userId, newRole);
       setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u));
       toast({
         title: "Função do usuário atualizada!",

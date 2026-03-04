@@ -44,7 +44,6 @@ export async function getPhases(): Promise<Phase[]> {
   try {
     const querySnapshot = await getDocs(q);
     if (querySnapshot.empty) {
-        // Se estiver vazio, crie as fases padrão
         const defaultPhases = [
             { name: "Análise Inicial", order: 1 },
             { name: "Aguardando Documentos", order: 2 },
@@ -60,7 +59,15 @@ export async function getPhases(): Promise<Phase[]> {
              batch.set(docRef, { ...phase, createdAt: serverTimestamp() });
              addedPhases.push({ ...phase, id: docRef.id, createdAt: new Date().toISOString() });
         }
-        await batch.commit();
+        await batch.commit().catch(error => {
+            if (error instanceof FirestoreError && error.code === 'permission-denied') {
+                errorEmitter.emit('permission-error', new FirestorePermissionError({
+                    path: PHASES_COLLECTION,
+                    operation: 'write', // Batch write is a write operation
+                    auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
+                }));
+            }
+        });
         
         return addedPhases.sort((a,b) => a.order - b.order);
     }
@@ -74,23 +81,20 @@ export async function getPhases(): Promise<Phase[]> {
       };
       errorEmitter.emit('permission-error', new FirestorePermissionError(context));
     }
-    throw error;
+    // Return empty on error to avoid crash
+    return [];
   }
 }
 
 // CREATE
-export async function addPhase(phaseData: Partial<Omit<Phase, 'id' | 'createdAt'>>): Promise<Phase> {
+export async function addPhase(phaseData: Partial<Omit<Phase, 'id' | 'createdAt'>>): Promise<void> {
   if (!db) throw new Error('Firebase DB not initialized');
   const phasesCollectionRef = collection(db, PHASES_COLLECTION);
   const dataToSave = {
     ...phaseData,
     createdAt: serverTimestamp(),
   };
-  try {
-    const docRef = await addDoc(phasesCollectionRef, dataToSave);
-    const snapshot = await getDoc(docRef);
-    return fromFirestore(snapshot);
-  } catch (error) {
+  addDoc(phasesCollectionRef, dataToSave).catch(error => {
     if (error instanceof FirestoreError && error.code === 'permission-denied') {
       const context: SecurityRuleContext = {
         path: PHASES_COLLECTION,
@@ -100,39 +104,32 @@ export async function addPhase(phaseData: Partial<Omit<Phase, 'id' | 'createdAt'
       };
       errorEmitter.emit('permission-error', new FirestorePermissionError(context));
     }
-    throw error;
-  }
+  });
 }
 
 // UPDATE
-export async function updatePhase(phaseId: string, phaseData: Partial<Omit<Phase, 'id' | 'createdAt'>>): Promise<Phase> {
+export async function updatePhase(phaseId: string, phaseData: Partial<Omit<Phase, 'id' | 'createdAt'>>): Promise<void> {
   if (!db) throw new Error('Firebase DB not initialized');
   const phaseDocRef = doc(db, PHASES_COLLECTION, phaseId);
-  try {
-    await updateDoc(phaseDocRef, { ...phaseData, updatedAt: serverTimestamp() });
-    const snapshot = await getDoc(phaseDocRef);
-    return fromFirestore(snapshot);
-  } catch (error) {
+  const dataToUpdate = { ...phaseData, updatedAt: serverTimestamp() };
+  updateDoc(phaseDocRef, dataToUpdate).catch(error => {
     if (error instanceof FirestoreError && error.code === 'permission-denied') {
       const context: SecurityRuleContext = {
         path: `${PHASES_COLLECTION}/${phaseId}`,
         operation: 'update',
         auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-        resource: phaseData,
+        resource: dataToUpdate,
       };
       errorEmitter.emit('permission-error', new FirestorePermissionError(context));
     }
-    throw error;
-  }
+  });
 }
 
 // DELETE
 export async function deletePhase(phaseId: string): Promise<void> {
   if (!db) throw new Error('Firebase DB not initialized');
   const phaseDocRef = doc(db, PHASES_COLLECTION, phaseId);
-  try {
-    await deleteDoc(phaseDocRef);
-  } catch (error) {
+  deleteDoc(phaseDocRef).catch(error => {
     if (error instanceof FirestoreError && error.code === 'permission-denied') {
       const context: SecurityRuleContext = {
         path: `${PHASES_COLLECTION}/${phaseId}`,
@@ -141,6 +138,5 @@ export async function deletePhase(phaseId: string): Promise<void> {
       };
       errorEmitter.emit('permission-error', new FirestorePermissionError(context));
     }
-    throw error;
-  }
+  });
 }

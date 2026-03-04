@@ -37,67 +37,72 @@ export async function createUserProfile(user: User): Promise<void> {
   };
 
   try {
-    // Use setDoc com merge: true para criar ou atualizar sem sobrescrever,
-    // mas só se o documento não existir para evitar reescritas desnecessárias.
     const docSnap = await getDoc(userDocRef);
     if (!docSnap.exists()) {
-        await setDoc(userDocRef, {
+        const dataToSave = {
             ...newUserProfile,
             createdAt: serverTimestamp(),
+        };
+        setDoc(userDocRef, dataToSave).catch(error => {
+            if (error instanceof FirestoreError && error.code === 'permission-denied') {
+              const context: SecurityRuleContext = {
+                path: `${USERS_COLLECTION}/${user.uid}`,
+                operation: 'create',
+                auth: user ? { uid: user.uid } : null,
+                resource: dataToSave,
+              };
+              errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+            }
         });
     }
   } catch(error) {
     if (error instanceof FirestoreError && error.code === 'permission-denied') {
       const context: SecurityRuleContext = {
         path: `${USERS_COLLECTION}/${user.uid}`,
-        operation: 'create',
+        operation: 'get',
         auth: user ? { uid: user.uid } : null,
-        resource: newUserProfile,
       };
       errorEmitter.emit('permission-error', new FirestorePermissionError(context));
     }
-    throw error;
   }
 }
 
 // READ ALL USERS (for admins)
-export async function getUsers(): Promise<UserProfile[]> {
+export function getUsers(): Promise<UserProfile[]> {
   if (!db) throw new Error("Firebase DB not initialized");
   const usersCollectionRef = collection(db, USERS_COLLECTION);
   const q = query(usersCollectionRef, orderBy("name", "asc"));
-  try {
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(fromFirestore);
-  } catch (error) {
-    if (error instanceof FirestoreError && error.code === 'permission-denied') {
-      const context: SecurityRuleContext = {
-        path: USERS_COLLECTION,
-        operation: 'list',
-        auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-      };
-      errorEmitter.emit('permission-error', new FirestorePermissionError(context));
-    }
-    throw error;
-  }
+  
+  return getDocs(q)
+    .then(querySnapshot => querySnapshot.docs.map(fromFirestore))
+    .catch(error => {
+        if (error instanceof FirestoreError && error.code === 'permission-denied') {
+        const context: SecurityRuleContext = {
+            path: USERS_COLLECTION,
+            operation: 'list',
+            auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
+        };
+        errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+        }
+        return [];
+    });
 }
 
 // UPDATE USER ROLE (for admins)
-export async function updateUserRole(userId: string, role: 'Admin' | 'Usuário Padrão'): Promise<void> {
+export function updateUserRole(userId: string, role: 'Admin' | 'Usuário Padrão'): void {
     if (!db) throw new Error("Firebase DB not initialized");
     const userDocRef = doc(db, USERS_COLLECTION, userId);
+    const dataToUpdate = { role };
     
-    try {
-        await updateDoc(userDocRef, { role });
-    } catch(error) {
+    updateDoc(userDocRef, dataToUpdate).catch(error => {
        if (error instanceof FirestoreError && error.code === 'permission-denied') {
         const context: SecurityRuleContext = {
             path: `${USERS_COLLECTION}/${userId}`,
             operation: 'update',
             auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-            resource: { role },
+            resource: dataToUpdate,
         };
         errorEmitter.emit('permission-error', new FirestorePermissionError(context));
         }
-        throw error;
-    }
+    });
 }

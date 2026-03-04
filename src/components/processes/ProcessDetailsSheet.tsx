@@ -73,7 +73,7 @@ interface ProcessDetailsSheetProps {
   isOpen: boolean;
   onClose: () => void;
   processData: Process | null;
-  onTimelineUpdate: (processId: string, newTimeline: TimelineEvent[]) => Promise<void>;
+  onTimelineUpdate: (processId: string, newTimeline: TimelineEvent[]) => void;
   onOpenEditDialog: (process: Process) => void;
   onApensoClick?: (apensoNumber: string) => void;
 }
@@ -119,12 +119,12 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
     return null;
   }
 
-  const handleToggleTask = async (eventId: string) => {
+  const handleToggleTask = (eventId: string) => {
     const newTimeline = currentTimeline.map(event =>
       event.id === eventId ? { ...event, completed: !event.completed } : event
     );
     
-    await onTimelineUpdate(processData.id, newTimeline);
+    onTimelineUpdate(processData.id, newTimeline);
     setCurrentTimeline(newTimeline);
   };
   
@@ -138,7 +138,7 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
     setEditingEventId(null);
   };
   
-  const handleTimelineSubmit: SubmitHandler<TimelineEventFormValues> = async (data) => {
+  const handleTimelineSubmit: SubmitHandler<TimelineEventFormValues> = (data) => {
     setIsSaving(true);
     let newTimeline: TimelineEvent[];
 
@@ -178,7 +178,7 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
       else if (sourceLowerCase === 'audiência') eventType = 'audiencia';
 
       if (eventType) {
-          await addEvent({
+          addEvent({
               date: newEvent.date,
               type: eventType,
               description: `[Processo: ${processData.processNumber}] ${data.eventDescription}`,
@@ -196,7 +196,7 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
     const sortedTimeline = newTimeline.sort((a, b) => parseISO(b.date).getTime() - parseISO(a.date).getTime());
     
     try {
-      await onTimelineUpdate(processData.id, sortedTimeline);
+      onTimelineUpdate(processData.id, sortedTimeline);
       setCurrentTimeline(sortedTimeline);
       resetForm();
     } catch (error) {
@@ -230,11 +230,11 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
     }
   };
 
-  const confirmDeleteTimelineEvent = async () => {
+  const confirmDeleteTimelineEvent = () => {
     if (timelineEventToDelete) {
       setIsSaving(true);
       const newTimeline = currentTimeline.filter(e => e.id !== timelineEventToDelete.id);
-      await onTimelineUpdate(processData.id, newTimeline);
+      onTimelineUpdate(processData.id, newTimeline);
       setCurrentTimeline(newTimeline);
       setIsSaving(false);
     }

@@ -25,37 +25,36 @@ const fromFirestore = (docSnap: DocumentData): Document => {
 };
 
 // READ
-export async function getDocuments(): Promise<Document[]> {
+export function getDocuments(): Promise<Document[]> {
   if (!db) throw new Error("Firebase DB not initialized");
   const documentsCollectionRef = collection(db, 'documents');
   const q = query(documentsCollectionRef, orderBy("createdAt", "desc"));
-  try {
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(fromFirestore);
-  } catch (error) {
-    if (error instanceof FirestoreError && error.code === 'permission-denied') {
-      const context: SecurityRuleContext = {
-        path: 'documents',
-        operation: 'list',
-        auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-      };
-      errorEmitter.emit('permission-error', new FirestorePermissionError(context));
-    }
-    throw error;
-  }
+  
+  return getDocs(q)
+    .then(querySnapshot => querySnapshot.docs.map(fromFirestore))
+    .catch (error => {
+      if (error instanceof FirestoreError && error.code === 'permission-denied') {
+        const context: SecurityRuleContext = {
+          path: 'documents',
+          operation: 'list',
+          auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
+        };
+        errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+      }
+      return [];
+  });
 }
 
 // CREATE
-export async function addDocument(docData: DocumentFormValues & { name: string }, file: File): Promise<Document> {
+export async function addDocument(docData: DocumentFormValues & { name: string }, file: File): Promise<void> {
   if (!db || !storage) throw new Error("Firebase not initialized");
-
   if (!file) throw new Error("File is required for upload.");
 
   const filePath = `documents/${Date.now()}-${file.name}`;
   const storageRef = ref(storage, filePath);
   
+  // Storage operations can also have security rules, but we focus on Firestore for this pattern.
   await uploadBytes(storageRef, file);
-  
   const fileUrl = await getDownloadURL(storageRef);
 
   const dataToSave = {
@@ -68,11 +67,8 @@ export async function addDocument(docData: DocumentFormValues & { name: string }
     filePath: filePath,
   };
 
-  try {
-    const docRef = await addDoc(collection(db, 'documents'), dataToSave);
-    const snapshot = await getDoc(docRef);
-    return fromFirestore(snapshot);
-  } catch (error) {
+  addDoc(collection(db, 'documents'), dataToSave)
+    .catch(error => {
      if (error instanceof FirestoreError && error.code === 'permission-denied') {
       const context: SecurityRuleContext = {
         path: 'documents',
@@ -82,12 +78,11 @@ export async function addDocument(docData: DocumentFormValues & { name: string }
       };
       errorEmitter.emit('permission-error', new FirestorePermissionError(context));
     }
-    throw error;
-  }
+  });
 }
 
 // UPDATE (metadata only)
-export async function updateDocument(documentId: string, docData: DocumentFormValues & { name: string }): Promise<Document> {
+export function updateDocument(documentId: string, docData: DocumentFormValues & { name: string }): void {
   if (!db) throw new Error("Firebase DB not initialized");
   const docRef = doc(db, 'documents', documentId);
   
@@ -97,11 +92,8 @@ export async function updateDocument(documentId: string, docData: DocumentFormVa
       updatedAt: serverTimestamp(),
   };
 
-  try {
-    await updateDoc(docRef, dataToUpdate);
-    const snapshot = await getDoc(docRef);
-    return fromFirestore(snapshot);
-  } catch (error) {
+  updateDoc(docRef, dataToUpdate)
+    .catch(error => {
      if (error instanceof FirestoreError && error.code === 'permission-denied') {
       const context: SecurityRuleContext = {
         path: `documents/${documentId}`,
@@ -111,8 +103,7 @@ export async function updateDocument(documentId: string, docData: DocumentFormVa
       };
       errorEmitter.emit('permission-error', new FirestorePermissionError(context));
     }
-    throw error;
-  }
+  });
 }
 
 // DELETE
@@ -124,15 +115,12 @@ export async function deleteDocument(document: Document): Promise<void> {
       await deleteObject(fileRef).catch(error => {
           if (error.code !== 'storage/object-not-found') {
               console.error("Error deleting file from storage:", error);
-              throw error;
           }
       });
   }
 
   const docRef = doc(db, 'documents', document.id);
-  try {
-    await deleteDoc(docRef);
-  } catch (error) {
+  deleteDoc(docRef).catch(error => {
     if (error instanceof FirestoreError && error.code === 'permission-denied') {
       const context: SecurityRuleContext = {
         path: `documents/${document.id}`,
@@ -141,8 +129,7 @@ export async function deleteDocument(document: Document): Promise<void> {
       };
       errorEmitter.emit('permission-error', new FirestorePermissionError(context));
     }
-    throw error;
-  }
+  });
 }
 
 // DOWNLOAD URL GETTER

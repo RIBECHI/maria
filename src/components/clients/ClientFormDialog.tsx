@@ -100,9 +100,9 @@ export function ClientFormDialog({ isOpen, onClose, onSubmit, clientData }: Clie
     }
   }, [clientData, form, isOpen]); // Adicionado isOpen para resetar quando o dialog reabre
 
-  const handleFormSubmit: SubmitHandler<ClientFormValues> = async (data) => {
+  const handleFormSubmit: SubmitHandler<ClientFormValues> = (data) => {
     setIsLoading(true);
-    await onSubmit(data); // A lógica de submissão agora é assíncrona
+    onSubmit(data); 
     setIsLoading(false);
   };
   

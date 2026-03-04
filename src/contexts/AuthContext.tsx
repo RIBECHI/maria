@@ -23,10 +23,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const auth = getAuth(app);
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         // Quando um usuário faz login ou se registra, cria/verifica seu perfil.
-        await createUserProfile(user);
+        createUserProfile(user);
       }
       setCurrentUser(user);
       setIsLoading(false);

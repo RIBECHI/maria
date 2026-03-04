@@ -113,8 +113,7 @@ function ProcessesPageComponent() {
     try {
       if (editingProcess) {
         const updatedData = { ...data, timeline: data.timeline || editingProcess.timeline };
-        const updatedProcess = await updateProcess(editingProcess.id, updatedData);
-        setProcesses(processes.map(p => (p.id === editingProcess.id ? updatedProcess : p)));
+        await updateProcess(editingProcess.id, updatedData);
         toast({ title: "Processo atualizado!", description: `O processo para ${data.clients.join(', ')} foi atualizado.` });
       } else {
         const newProcessData = {
@@ -126,7 +125,7 @@ function ProcessesPageComponent() {
         toast({ title: "Processo adicionado!", description: `Novo processo para ${data.clients.join(', ')} foi adicionado.` });
       }
       handleCloseFormDialog();
-      fetchData();
+      setTimeout(() => fetchData(), 500);
     } catch (error) {
       console.error("Failed to save process:", error);
       toast({ title: "Erro ao salvar", description: "Não foi possível salvar o processo.", variant: "destructive" });
@@ -138,10 +137,10 @@ function ProcessesPageComponent() {
     setIsDeleteDialogOpen(true);
   };
 
-  const confirmDeleteProcess = async () => {
+  const confirmDeleteProcess = () => {
     if (processToDelete) {
       try {
-        await deleteProcess(processToDelete.id);
+        deleteProcess(processToDelete.id);
         setProcesses(processes.filter(p => p.id !== processToDelete.id));
         toast({ title: "Processo excluído!", description: `O processo ${processToDelete.processNumber} foi excluído.`});
       } catch (error) {
@@ -163,15 +162,15 @@ function ProcessesPageComponent() {
     const processToUpdate = processes.find(p => p.id === processId);
     if (processToUpdate) {
         try {
-            const updatedProcess = await updateProcess(processId, { timeline: newTimeline });
+            await updateProcess(processId, { timeline: newTimeline });
             
             // Atualiza o estado local para refletir a mudança imediatamente
-            const updatedProcesses = processes.map(p => p.id === processId ? updatedProcess : p);
+            const updatedProcesses = processes.map(p => p.id === processId ? {...p, timeline: newTimeline } : p);
             setProcesses(updatedProcesses);
             
             // Atualiza também o processo que está no painel de detalhes
             if (selectedProcessForDetails && selectedProcessForDetails.id === processId) {
-                setSelectedProcessForDetails(updatedProcess);
+                setSelectedProcessForDetails({...selectedProcessForDetails, timeline: newTimeline});
             }
 
             toast({ title: "Linha do Tempo Atualizada!" });

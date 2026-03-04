@@ -67,24 +67,22 @@ export default function DocumentsPage() {
   const handleSubmitDocumentForm = async (data: Partial<DocumentFormValues>, file?: File) => {
     try {
       if (editingDocument) {
-        // A lógica de atualização de arquivo não é suportada nesta versão, apenas metadados
         if (file) {
             toast({ title: "Aviso", description: "A substituição de arquivos não é suportada. Apenas os metadados foram atualizados." });
         }
         const dataToUpdate = { ...data, name: editingDocument.name };
-        const updatedDoc = await updateDocument(editingDocument.id, dataToUpdate as DocumentFormValues & { name: string });
-        setDocuments(documents.map(d => (d.id === editingDocument.id ? { ...d, ...updatedDoc } : d)));
+        updateDocument(editingDocument.id, dataToUpdate as DocumentFormValues & { name: string });
         toast({ title: "Documento atualizado!", description: `O documento ${dataToUpdate.name} foi atualizado.` });
       } else {
         if (!file) {
             toast({ title: "Arquivo Faltando", description: "Por favor, selecione um arquivo para carregar.", variant: "destructive"});
             return;
         }
-        const newDocument = await addDocument({ ...data, name: file.name } as DocumentFormValues & { name: string }, file);
-        setDocuments(prevDocs => [newDocument, ...prevDocs]);
-        toast({ title: "Documento adicionado!", description: `O documento ${newDocument.name} foi adicionado.` });
+        await addDocument({ ...data, name: file.name } as DocumentFormValues & { name: string }, file);
+        toast({ title: "Documento adicionado!", description: `O documento ${file.name} foi adicionado.` });
       }
       handleCloseFormDialog();
+      setTimeout(() => fetchDocuments(), 500);
     } catch (error) {
       console.error("Failed to save document:", error);
       toast({ title: "Erro ao salvar", description: "Não foi possível salvar o documento.", variant: "destructive" });

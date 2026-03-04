@@ -14,45 +14,45 @@ export interface Note {
 }
 
 // GET
-export async function getNotes(): Promise<Note[]> {
-  if (!db) return []; // Return empty array if db is not available
+export function getNotes(): Promise<Note[]> {
+  if (!db) return Promise.resolve([]);
   const notepadDocRef = doc(db, 'notepad', 'main');
-  try {
-    const docSnap = await getDoc(notepadDocRef);
-    if (docSnap.exists() && docSnap.data().notes) {
-        const notesData = docSnap.data().notes as any[];
-        return notesData.map(note => {
-          const newNote: any = {
-            ...note,
-            createdAt: new Timestamp(note.createdAt.seconds, note.createdAt.nanoseconds),
-            author: note.author || 'Usuário Desconhecido'
-          };
-          // Migration from old 'completed' to new 'status'
-          if (note.isTask && typeof note.completed !== 'undefined') {
-            newNote.status = note.completed ? 'concluido' : 'aberto';
-            delete newNote.completed; // remove old field
-          }
-          return newNote as Note;
-        }).sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
-    } else {
-        return [];
-    }
-  } catch(error) {
-     if (error instanceof FirestoreError && error.code === 'permission-denied') {
-      const context: SecurityRuleContext = {
-        path: 'notepad/main',
-        operation: 'get',
-        auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-      };
-      errorEmitter.emit('permission-error', new FirestorePermissionError(context));
-    }
-    // Para GET, podemos retornar um array vazio em caso de erro de permissão para não quebrar a UI
-    return [];
-  }
+  
+  return getDoc(notepadDocRef)
+    .then(docSnap => {
+      if (docSnap.exists() && docSnap.data().notes) {
+          const notesData = docSnap.data().notes as any[];
+          return notesData.map(note => {
+            const newNote: any = {
+              ...note,
+              createdAt: new Timestamp(note.createdAt.seconds, note.createdAt.nanoseconds),
+              author: note.author || 'Usuário Desconhecido'
+            };
+            // Migration from old 'completed' to new 'status'
+            if (note.isTask && typeof note.completed !== 'undefined') {
+              newNote.status = note.completed ? 'concluido' : 'aberto';
+              delete newNote.completed; // remove old field
+            }
+            return newNote as Note;
+          }).sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+      }
+      return [];
+    })
+    .catch(error => {
+       if (error instanceof FirestoreError && error.code === 'permission-denied') {
+        const context: SecurityRuleContext = {
+          path: 'notepad/main',
+          operation: 'get',
+          auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
+        };
+        errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+      }
+      return [];
+    });
 }
 
 // SAVE
-export async function saveNotes(notes: Note[]): Promise<void> {
+export function saveNotes(notes: Note[]): void {
   if (!db) throw new Error("Firebase DB not initialized");
   const notepadDocRef = doc(db, 'notepad', 'main');
   
@@ -65,20 +65,18 @@ export async function saveNotes(notes: Note[]): Promise<void> {
     updatedAt: serverTimestamp(),
   };
 
-  try {
-    await setDoc(notepadDocRef, dataToSave);
-  } catch(error) {
-     if (error instanceof FirestoreError && error.code === 'permission-denied') {
-      const context: SecurityRuleContext = {
-        path: 'notepad/main',
-        operation: 'update',
-        auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-        resource: dataToSave,
-      };
-      errorEmitter.emit('permission-error', new FirestorePermissionError(context));
-    }
-    throw error;
-  }
+  setDoc(notepadDocRef, dataToSave)
+    .catch(error => {
+      if (error instanceof FirestoreError && error.code === 'permission-denied') {
+        const context: SecurityRuleContext = {
+          path: 'notepad/main',
+          operation: 'update',
+          auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
+          resource: dataToSave,
+        };
+        errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+      }
+    });
 }
 
 // GET ONLY TASKS
