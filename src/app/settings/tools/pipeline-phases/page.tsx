@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -39,9 +38,12 @@ import {
 } from "@/services/phaseService";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PhaseFormDialog, type PhaseFormValues } from "@/components/pipeline/PhaseFormDialog";
+import { getProcesses } from "@/services/processService";
+import type { Process } from "@/components/processes/ProcessFormDialog";
 
 export default function PipelinePhasesPage() {
   const [phases, setPhases] = React.useState<Phase[]>([]);
+  const [processes, setProcesses] = React.useState<Process[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [editingPhase, setEditingPhase] = React.useState<Phase | undefined>(
@@ -53,16 +55,20 @@ export default function PipelinePhasesPage() {
   );
   const { toast } = useToast();
 
-  const fetchPhases = React.useCallback(async () => {
+  const fetchData = React.useCallback(async () => {
     setIsLoading(true);
     try {
-      const data = await getPhases();
-      setPhases(data.sort((a, b) => a.order - b.order));
+      const [phasesData, processesData] = await Promise.all([
+          getPhases(),
+          getProcesses(),
+      ]);
+      setPhases(phasesData.sort((a, b) => a.order - b.order));
+      setProcesses(processesData);
     } catch (error) {
-      console.error("Error fetching phases:", error);
+      console.error("Error fetching data:", error);
       toast({
-        title: "Erro ao buscar fases",
-        description: "Não foi possível carregar a lista.",
+        title: "Erro ao buscar dados",
+        description: "Não foi possível carregar a lista de fases e processos.",
         variant: "destructive",
       });
     } finally {
@@ -71,8 +77,20 @@ export default function PipelinePhasesPage() {
   }, [toast]);
 
   React.useEffect(() => {
-    fetchPhases();
-  }, [fetchPhases]);
+    fetchData();
+  }, [fetchData]);
+
+  const processCounts = React.useMemo(() => {
+    const counts = new Map<string, number>();
+    phases.forEach(phase => counts.set(phase.id, 0));
+    processes.forEach(process => {
+        if (process.phaseId) {
+            counts.set(process.phaseId, (counts.get(process.phaseId) || 0) + 1);
+        }
+    });
+    return counts;
+  }, [processes, phases]);
+
 
   const handleOpenForm = (phase?: Phase) => {
     setEditingPhase(phase);
@@ -133,7 +151,7 @@ export default function PipelinePhasesPage() {
           description: "A nova fase já está disponível no pipeline.",
         });
       }
-      fetchPhases(); // Re-fetch to update list
+      fetchData(); // Re-fetch to update list
       handleCloseForm();
     } catch (error) {
       console.error("Failed to save phase:", error);
@@ -165,7 +183,7 @@ export default function PipelinePhasesPage() {
           title: "Fase excluída!",
           description: `A fase "${phaseToDelete.name}" foi removida.`,
         });
-        fetchPhases(); // Re-fetch to see updated order
+        fetchData(); // Re-fetch to see updated order
       } catch (error) {
         console.error("Failed to delete phase:", error);
         toast({
@@ -204,6 +222,7 @@ export default function PipelinePhasesPage() {
               <TableRow>
                 <TableHead>Ordem</TableHead>
                 <TableHead>Nome da Fase</TableHead>
+                <TableHead>Processos</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -215,6 +234,7 @@ export default function PipelinePhasesPage() {
                     <TableCell>
                       <Skeleton className="h-4 w-48" />
                     </TableCell>
+                    <TableCell><Skeleton className="h-4 w-12" /></TableCell>
                     <TableCell className="text-right">
                       <Skeleton className="h-8 w-20 ml-auto" />
                     </TableCell>
@@ -225,6 +245,7 @@ export default function PipelinePhasesPage() {
                   <TableRow key={phase.id}>
                     <TableCell className="font-medium">{phase.order}</TableCell>
                     <TableCell>{phase.name}</TableCell>
+                    <TableCell>{processCounts.get(phase.id) || 0}</TableCell>
                     <TableCell className="text-right">
                       <Button
                         variant="ghost"
@@ -247,7 +268,7 @@ export default function PipelinePhasesPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center h-24">
+                  <TableCell colSpan={4} className="text-center h-24">
                     Nenhuma fase encontrada. Crie uma para começar!
                   </TableCell>
                 </TableRow>
