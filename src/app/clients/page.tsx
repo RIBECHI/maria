@@ -73,13 +73,13 @@ export default function ClientsPage() {
     setIsFormDialogOpen(false);
   };
 
-  const handleSubmitClientForm = (data: ClientFormValues) => {
+  const handleSubmitClientForm = async (data: ClientFormValues) => {
     try {
       if (editingClient) {
-        updateClient(editingClient.id, data);
+        await updateClient(editingClient.id, data);
         toast({ title: "Cliente atualizado!", description: `O cliente ${data.name} foi atualizado com sucesso.` });
       } else {
-        addClient({
+        await addClient({
           ...data,
           caseCount: 0,
           lastActivity: new Date().toISOString().split('T')[0],

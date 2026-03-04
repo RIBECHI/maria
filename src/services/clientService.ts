@@ -69,7 +69,7 @@ export function getRecentClients(count: number = 3): Promise<Client[]> {
 }
 
 // CREATE
-export function addClient(clientData: Omit<Client, 'id' | 'createdAt'>): void {
+export async function addClient(clientData: Omit<Client, 'id' | 'createdAt'>): Promise<void> {
     if (!db) throw new Error("Firebase DB not initialized");
     const clientsCollectionRef = collection(db, 'clients');
     
@@ -78,22 +78,24 @@ export function addClient(clientData: Omit<Client, 'id' | 'createdAt'>): void {
         createdAt: serverTimestamp(),
     };
 
-    addDoc(clientsCollectionRef, dataToSave)
-      .catch(error => {
-        if (error instanceof FirestoreError && error.code === 'permission-denied') {
-            const context: SecurityRuleContext = {
-                path: `clients`,
-                operation: 'create',
-                auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-                resource: dataToSave,
-            };
-            errorEmitter.emit('permission-error', new FirestorePermissionError(context));
-        }
-    });
+    try {
+        await addDoc(clientsCollectionRef, dataToSave);
+    } catch (error) {
+      if (error instanceof FirestoreError && error.code === 'permission-denied') {
+          const context: SecurityRuleContext = {
+              path: `clients`,
+              operation: 'create',
+              auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
+              resource: dataToSave,
+          };
+          errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+      }
+      throw error;
+    }
 }
 
 // UPDATE
-export function updateClient(clientId: string, clientData: ClientFormValues): void {
+export async function updateClient(clientId: string, clientData: ClientFormValues): Promise<void> {
     if (!db) throw new Error("Firebase DB not initialized");
     const clientDocRef = doc(db, 'clients', clientId);
     const dataToUpdate = {
@@ -101,18 +103,20 @@ export function updateClient(clientId: string, clientData: ClientFormValues): vo
         updatedAt: serverTimestamp(),
     };
 
-    updateDoc(clientDocRef, dataToUpdate)
-      .catch(error => {
-        if (error instanceof FirestoreError && error.code === 'permission-denied') {
-            const context: SecurityRuleContext = {
-                path: `clients/${clientId}`,
-                operation: 'update',
-                auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-                resource: dataToUpdate,
-            };
-            errorEmitter.emit('permission-error', new FirestorePermissionError(context));
-        }
-    });
+    try {
+      await updateDoc(clientDocRef, dataToUpdate);
+    } catch (error) {
+      if (error instanceof FirestoreError && error.code === 'permission-denied') {
+          const context: SecurityRuleContext = {
+              path: `clients/${clientId}`,
+              operation: 'update',
+              auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
+              resource: dataToUpdate,
+          };
+          errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+      }
+      throw error;
+    }
 }
 
 // DELETE

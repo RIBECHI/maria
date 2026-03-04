@@ -286,14 +286,14 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
 
   const handleAddNewClient = async (data: ClientFormValues) => {
     try {
-        const newClient = await addClient({
+        await addClient({
           ...data,
           caseCount: 0,
           lastActivity: new Date().toISOString().split('T')[0],
         });
-        toast({ title: "Cliente adicionado!", description: `O cliente ${newClient.name} foi adicionado com sucesso.` });
-        if (!clients.includes(newClient.name)) {
-            form.setValue('clients', [...clients, newClient.name]); // Preenche o campo de cliente no formulário do processo
+        toast({ title: "Cliente adicionado!", description: `O cliente ${data.name} foi adicionado com sucesso.` });
+        if (!clients.includes(data.name)) {
+            form.setValue('clients', [...clients, data.name]); // Preenche o campo de cliente no formulário do processo
         }
         setIsNewClientDialogOpen(false); // Fecha o dialog de novo cliente
       } catch (error) {
