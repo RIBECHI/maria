@@ -46,6 +46,7 @@ export async function createUserProfile(user: User): Promise<void> {
     if (!docSnap.exists()) {
         const dataToSave = {
             ...newUserProfile,
+            id: user.uid,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
         };
