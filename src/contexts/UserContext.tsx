@@ -6,6 +6,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from './AuthContext';
 import type { UserProfile } from '@/services/userService';
+import { updateUserName as updateUserNameInDb } from '@/services/userService';
 
 interface UserContextType {
   userName: string;
@@ -34,8 +35,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           setProfile(data);
           setUserNameState(data.name);
         } else {
-          // This console.error is not critical. It can happen briefly when a new user signs up
-          // before their profile document is created. Removing it to avoid console noise.
           setUserNameState("Usuário não encontrado");
         }
       }, (error) => {
@@ -51,10 +50,10 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
 
   const setUserName = (name: string) => {
-    // Esta função agora pode ser usada para ATUALIZAR o nome no Firestore.
-    // A implementação da atualização do nome no firestore não está aqui,
-    // mas a estrutura está pronta.
-    console.log("A atualização do nome deve ser implementada no firestore service.")
+    if (currentUser && name) {
+      updateUserNameInDb(currentUser.uid, name);
+    }
+    // Optimistic update for immediate UI feedback
     setUserNameState(name);
   };
 

@@ -10,6 +10,7 @@ export interface UserProfile {
   email: string;
   role: 'Admin' | 'Usuário Padrão';
   createdAt: string;
+  updatedAt?: string;
 }
 
 const fromFirestore = (docSnap: DocumentData): UserProfile => {
@@ -20,6 +21,7 @@ const fromFirestore = (docSnap: DocumentData): UserProfile => {
     email: data.email,
     role: data.role,
     createdAt: data.createdAt?.toDate().toISOString(),
+    updatedAt: data.updatedAt?.toDate().toISOString(),
   };
 };
 
@@ -33,7 +35,7 @@ export async function createUserProfile(user: User): Promise<void> {
   // Define o e-mail do administrador. Altere se desejar.
   const adminEmail = "admin@lexmanager.com";
 
-  const newUserProfile: Omit<UserProfile, 'id' | 'createdAt'> = {
+  const newUserProfile: Omit<UserProfile, 'id' | 'createdAt' | 'updatedAt'> = {
     name: user.displayName || user.email || 'Usuário Anônimo',
     email: user.email || '',
     role: user.email === adminEmail ? 'Admin' : 'Usuário Padrão', // Atribui Admin se o e-mail corresponder
@@ -45,6 +47,7 @@ export async function createUserProfile(user: User): Promise<void> {
         const dataToSave = {
             ...newUserProfile,
             createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
         };
         setDoc(userDocRef, dataToSave).catch(error => {
             if (error instanceof FirestoreError && error.code === 'permission-denied') {
@@ -95,7 +98,7 @@ export function getUsers(): Promise<UserProfile[]> {
 export function updateUserRole(userId: string, role: 'Admin' | 'Usuário Padrão'): void {
     if (!db) throw new Error("Firebase DB not initialized");
     const userDocRef = doc(db, USERS_COLLECTION, userId);
-    const dataToUpdate = { role };
+    const dataToUpdate = { role, updatedAt: serverTimestamp() };
     
     updateDoc(userDocRef, dataToUpdate).catch(error => {
        if (error instanceof FirestoreError && error.code === 'permission-denied') {
@@ -108,4 +111,23 @@ export function updateUserRole(userId: string, role: 'Admin' | 'Usuário Padrão
         errorEmitter.emit('permission-error', new FirestorePermissionError(context));
         }
     });
+}
+
+// UPDATE USER NAME
+export function updateUserName(userId: string, newName: string): void {
+  if (!db) throw new Error("Firebase DB not initialized");
+  const userDocRef = doc(db, USERS_COLLECTION, userId);
+  const dataToUpdate = { name: newName, updatedAt: serverTimestamp() };
+  
+  updateDoc(userDocRef, dataToUpdate).catch(error => {
+     if (error instanceof FirestoreError && error.code === 'permission-denied') {
+      const context: SecurityRuleContext = {
+          path: `${USERS_COLLECTION}/${userId}`,
+          operation: 'update',
+          auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
+          resource: dataToUpdate,
+      };
+      errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+      }
+  });
 }
