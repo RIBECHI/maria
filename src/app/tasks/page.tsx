@@ -79,7 +79,7 @@ export default function TasksPage() {
         const noteToUpdate = notepadTasks.find(task => task.id === taskId);
         if (!noteToUpdate) return;
         
-        const newStatus = noteToUpdate.status === 'concluido' ? 'aberto' : 'concluido';
+        const newStatus: Note['status'] = noteToUpdate.status === 'concluido' ? 'aberto' : 'concluido';
 
         const updatedNotes = notepadTasks.map(task =>
             task.id === taskId ? { ...task, status: newStatus } : task
