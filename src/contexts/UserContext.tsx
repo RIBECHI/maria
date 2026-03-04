@@ -34,7 +34,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           setProfile(data);
           setUserNameState(data.name);
         } else {
-          console.error("Perfil do usuário não encontrado no Firestore.");
+          // This console.error is not critical. It can happen briefly when a new user signs up
+          // before their profile document is created. Removing it to avoid console noise.
           setUserNameState("Usuário não encontrado");
         }
       }, (error) => {
