@@ -6,7 +6,7 @@ service cloud.firestore {
      * Core Philosophy: This ruleset implements a strict user-ownership security model. All primary
      * business data, including clients, legal processes, and documents, is segregated into private
      * user-specific data trees. Access to any document within a user's tree is restricted exclusively
-     * to that authenticated user.
+     * to that authenticated user. Admins are granted specific overrides for management purposes.
      *
      * Data Structure: The data is hierarchically organized under `/users/{userId}`. This path-based
      * ownership model ensures that queries for a user's data are inherently secure. A separate
@@ -15,23 +15,14 @@ service cloud.firestore {
      * Key Security Decisions:
      * - Default Deny: All access is denied unless explicitly granted.
      * - Strict Ownership: A user can only access data where the path's `{userId}` matches their
-     *   authentication UID. Cross-user access is forbidden.
-     * - No User Listing: It is not possible to list documents in the top-level `/users` collection.
+     *   authentication UID. Cross-user access is forbidden unless the user is an Admin.
+     * - Admin Privileges: Admins can list and manage users for administrative purposes.
      * - Relational Integrity: On creation, documents must contain fields that link back to their
-     *   parent documents in the path (e.g., a Document must contain the correct `legalProcessId`
-     *   and `clientId`), enforcing data consistency. These relational fields are immutable.
+     *   parent documents in the path, enforcing data consistency.
      *
-     * Denormalization for Authorization: To ensure fast and simple authorization checks, key
-     * ownership and relational identifiers (e.g., `createdBy`, `clientId`, `legalProcessId`) are
-     * denormalized directly onto the documents being secured. This avoids slow and costly `get()`
-     * calls in security rules, making the system more performant and secure. For example, a rule
-     * on a Document can validate its `uploadedBy` and `clientId` fields directly without needing
-     * to fetch the parent LegalProcess or Client documents.
-     *
-     * Structural Segregation: User-private data (`/users/{userId}/...`) is kept entirely separate
-     * from globally accessible data (`/tags`). This clear separation allows for distinct and simple
-     * security rules for each collection type, enhancing security for list operations and making
-     * the ruleset easier to maintain.
+     * Denormalization for Authorization: Key ownership and relational identifiers are
+     * denormalized directly onto the documents being secured. This avoids costly `get()` calls in
+     * security rules, making the system more performant and secure.
      */
 
     // --------------------------------------------------------------------------
@@ -54,6 +45,14 @@ service cloud.firestore {
     }
 
     /**
+     * @description Checks if the authenticated user has the 'Admin' role.
+     *              This requires a read to the user's own profile document.
+     */
+    function isAdmin() {
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
+    }
+
+    /**
      * @description Checks if the user is the owner and the document already exists.
      *              Used for safe update and delete operations.
      * @param userId The user ID to check for ownership.
@@ -70,10 +69,12 @@ service cloud.firestore {
     }
 
     /**
-     * @description Ensures critical relational fields of a User document are immutable.
+     * @description Ensures critical relational fields of a User document are immutable,
+     *              and prevents a user from elevating their own role.
      */
     function isUserUpdateValid() {
-      return request.resource.data.id == resource.data.id;
+      return request.resource.data.id == resource.data.id
+          && request.resource.data.role == resource.data.role;
     }
     
     /**
@@ -173,18 +174,23 @@ service cloud.firestore {
 
     /**
      * @description Manages user profile data. A user can create their own profile,
-     *              and can only read or write to their own document.
+     *              and can only read or write to their own document. Admins have broader access.
      * @path /users/{userId}
-     * @allow (create) An authenticated user with UID 'user123' creating their own profile at `/users/user123`.
-     * @deny (get) A user 'user123' trying to read the profile of 'user456' at `/users/user456`.
-     * @principle Restricts access to a user's own data tree and allows self-creation of a profile.
+     * @allow (list) An Admin user listing all user profiles.
+     * @allow (get) An Admin reading any user's profile.
+     * @allow (update) An Admin changing another user's role.
+     * @deny (list) A non-admin user trying to list all profiles.
+     * @principle Restricts access to a user's own data, but grants admins list/read/update privileges for management.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId);
-      allow list: if false; // Disallow listing all users for security.
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
       allow create: if isOwner(userId) && isValidNewUser(userId);
-      allow update: if isExistingOwner(userId) && isUserUpdateValid();
-      allow delete: if isExistingOwner(userId);
+      // A user can update their own profile, but not change their role.
+      // An admin can update any user's profile (e.g., to change their role).
+      allow update: if (isOwner(userId) && isUserUpdateValid()) || isAdmin();
+      // Only admins can delete users, and they cannot delete themselves.
+      allow delete: if isAdmin() && request.auth.uid != userId;
 
       /**
        * @description Manages client records owned by a specific user. Only the owning
@@ -291,10 +297,28 @@ service cloud.firestore {
       allow get: if isSignedIn();
       allow list: if isSignedIn();
       // Write operations are disabled. Enable them for admin roles by checking a user's custom claims or role field.
-      // Example for admin-only writes: `get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin'`
+      // Example for admin-only writes: `isAdmin()`
       allow create: if false; // TODO: Implement admin-only creation logic.
       allow update: if false; // TODO: Implement admin-only update logic.
       allow delete: if false; // TODO: Implement admin-only deletion logic.
+    }
+    
+    /**
+     * @description Manages the phases (columns) for the process pipeline.
+     *              Admins can create, update, and delete phases. All authenticated users can read them.
+     */
+    match /documentPhases/{phaseId} {
+        allow read: if isSignedIn();
+        allow write: if isAdmin();
+    }
+    
+    /**
+     * @description Manages text templates for document generation.
+     *              Admins can manage templates, and all authenticated users can read them.
+     */
+    match /documentTemplates/{templateId} {
+        allow read: if isSignedIn();
+        allow write: if isAdmin();
     }
   }
 }
