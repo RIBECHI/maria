@@ -63,7 +63,7 @@ export async function getPhases(): Promise<Phase[]> {
             if (error instanceof FirestoreError && error.code === 'permission-denied') {
                 errorEmitter.emit('permission-error', new FirestorePermissionError({
                     path: PHASES_COLLECTION,
-                    operation: 'write', // Batch write is a write operation
+                    operation: 'create', // Batch write is a write operation
                     auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
                 }));
             }
