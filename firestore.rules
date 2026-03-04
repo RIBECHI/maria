@@ -266,6 +266,18 @@ service cloud.firestore {
         allow delete: if isExistingOwner(userId);
       }
     }
+    
+    /**
+     * @description Manages the shared notepad. All authenticated users can read
+     *              and write to the notepad to facilitate collaboration.
+     * @path /notepad/{notepadId}
+     * @allow (get, list, write) Any authenticated user.
+     * @deny (all) Unauthenticated users.
+     * @principle Allows global read/write access for a shared resource among authenticated users.
+     */
+    match /notepad/{notepadId} {
+      allow read, write: if isSignedIn();
+    }
 
     /**
      * @description Provides a global dictionary of tags. All authenticated users can read
