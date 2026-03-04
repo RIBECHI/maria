@@ -157,7 +157,7 @@ export default function DashboardPage() {
                 {/* Atividade Recente */}
                 <Card className="shadow-lg h-full">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle>Atividade Recente</CardTitle>
+                        <CardTitle className="text-green-600">Atividade Recente</CardTitle>
                         <Activity className="h-6 w-6 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
