@@ -305,6 +305,44 @@ service cloud.firestore {
     }
     
     /**
+     * @description Manages legal processes. All authenticated users can read all processes
+     *              to populate shared views like the pipeline.
+     * @path /processes/{processId}
+     * @principle Allows global read/write for collaboration among signed-in users.
+     */
+    match /processes/{processId} {
+      allow read, write: if isSignedIn();
+    }
+
+    /**
+     * @description Manages clients. All authenticated users can read and write clients.
+     * @path /clients/{clientId}
+     * @principle Allows global read/write for collaboration among signed-in users.
+     */
+    match /clients/{clientId} {
+      allow read, write: if isSignedIn();
+    }
+
+    /**
+     * @description Manages documents metadata. All authenticated users can read and write.
+     * @path /documents/{documentId}
+     * @principle Allows global read/write for collaboration. Storage file access
+     *            should be controlled by Firebase Storage security rules.
+     */
+    match /documents/{documentId} {
+      allow read, write: if isSignedIn();
+    }
+
+    /**
+     * @description Manages shared calendar events. All authenticated users can read and write.
+     * @path /events/{eventId}
+     * @principle Allows global read/write for a shared calendar.
+     */
+    match /events/{eventId} {
+      allow read, write: if isSignedIn();
+    }
+
+    /**
      * @description Manages the phases (columns) for the process pipeline.
      *              Admins can create, update, and delete phases. All authenticated users can read them.
      */
