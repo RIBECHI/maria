@@ -2,9 +2,9 @@
 "use client";
 
 import * as React from "react";
-import { getProcesses, updateProcess } from "@/services/processService";
+import { getProcesses, addProcess, updateProcess } from "@/services/processService";
 import { getPhases, type Phase } from "@/services/phaseService";
-import type { Process } from "@/components/processes/ProcessFormDialog";
+import type { Process, ProcessFormValues, TimelineEvent } from "@/components/processes/ProcessFormDialog";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, KanbanSquare } from "lucide-react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -12,6 +12,7 @@ import ProcessCard from "@/components/pipeline/ProcessCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { ProcessDetailsSheet } from "@/components/processes/ProcessDetailsSheet";
+import { ProcessFormDialog } from "@/components/processes/ProcessFormDialog";
 import Link from "next/link";
 
 
@@ -21,6 +22,8 @@ export default function PipelinePage() {
     const [isLoading, setIsLoading] = React.useState(true);
     const [isSheetOpen, setIsSheetOpen] = React.useState(false);
     const [selectedProcess, setSelectedProcess] = React.useState<Process | null>(null);
+    const [isFormOpen, setIsFormOpen] = React.useState(false);
+    const [editingProcess, setEditingProcess] = React.useState<Process | undefined>(undefined);
     const { toast } = useToast();
 
     const fetchData = React.useCallback(async () => {
@@ -53,6 +56,36 @@ export default function PipelinePage() {
         setIsSheetOpen(false);
         setSelectedProcess(null);
     };
+
+    const handleOpenForm = (proc?: Process) => {
+        setEditingProcess(proc);
+        setIsFormOpen(true);
+    };
+
+    const handleCloseForm = () => {
+        setEditingProcess(undefined);
+        setIsFormOpen(false);
+    };
+    
+    const handleSubmitForm = async (data: ProcessFormValues & { timeline?: TimelineEvent[] }) => {
+        try {
+            if (editingProcess) {
+                const updatedData = { ...data, timeline: data.timeline || editingProcess.timeline };
+                await updateProcess(editingProcess.id, updatedData);
+                toast({ title: "Processo atualizado!" });
+            } else {
+                const newProcessData = { ...data, documents: 0, timeline: data.timeline || [] };
+                await addProcess(newProcessData);
+                toast({ title: "Processo adicionado!" });
+            }
+            fetchData();
+            handleCloseForm();
+        } catch (error) {
+          console.error("Failed to save process:", error);
+          toast({ title: "Erro ao salvar", description: "Não foi possível salvar o processo.", variant: "destructive" });
+        }
+    };
+
 
     const handleTimelineUpdate = async (processId: string, newTimeline: any[]) => {
         const processToUpdate = processes.find(p => p.id === processId);
@@ -121,12 +154,17 @@ export default function PipelinePage() {
                             <p className="text-muted-foreground">Visualize o fluxo de trabalho dos seus processos.</p>
                          </div>
                     </div>
-                    <Button asChild>
-                        <Link href="/settings/tools/pipeline-phases">
+                     <div className="flex items-center gap-2">
+                        <Button onClick={() => handleOpenForm()}>
                             <PlusCircle className="mr-2 h-4 w-4" />
-                            Gerenciar Fases
-                        </Link>
-                    </Button>
+                            Adicionar Processo
+                        </Button>
+                        <Button asChild variant="outline">
+                            <Link href="/settings/tools/pipeline-phases">
+                                Gerenciar Fases
+                            </Link>
+                        </Button>
+                    </div>
                 </div>
 
                 <div className="flex-1 min-h-0">
@@ -184,7 +222,13 @@ export default function PipelinePage() {
                 onClose={handleCloseDetails}
                 processData={selectedProcess}
                 onTimelineUpdate={handleTimelineUpdate}
-                onOpenEditDialog={() => { /* Placeholder */}}
+                onOpenEditDialog={handleOpenForm}
+            />
+            <ProcessFormDialog
+                isOpen={isFormOpen}
+                onClose={handleCloseForm}
+                onSubmit={handleSubmitForm}
+                processData={editingProcess}
             />
         </>
     );
