@@ -87,19 +87,29 @@ export default function PipelinePage() {
     };
 
 
-    const handleTimelineUpdate = async (processId: string, newTimeline: any[]) => {
+    const handleTimelineUpdate = async (processId: string, newTimeline: TimelineEvent[]) => {
         const processToUpdate = processes.find(p => p.id === processId);
         if (processToUpdate) {
+            const originalProcesses = [...processes];
+            const updatedProcessData: Process = { ...processToUpdate, timeline: newTimeline };
+
+            // Optimistic UI update
+            const updatedProcesses = processes.map(p => p.id === processId ? updatedProcessData : p);
+            setProcesses(updatedProcesses);
+            if (selectedProcess && selectedProcess.id === processId) {
+                setSelectedProcess(updatedProcessData);
+            }
+            
             try {
-                const updatedProcess = await updateProcess(processId, { timeline: newTimeline });
-                const updatedProcesses = processes.map(p => p.id === processId ? updatedProcess : p);
-                setProcesses(updatedProcesses);
-                if (selectedProcess && selectedProcess.id === processId) {
-                    setSelectedProcess(updatedProcess);
-                }
+                await updateProcess(processId, { timeline: newTimeline });
                 toast({ title: "Linha do Tempo Atualizada!" });
             } catch (error) {
                 console.error("Failed to update timeline:", error);
+                // Rollback on error
+                setProcesses(originalProcesses);
+                if (selectedProcess && selectedProcess.id === processId) {
+                    setSelectedProcess(originalProcesses.find(p => p.id === processId) || null);
+                }
                 toast({ title: "Erro ao atualizar", variant: "destructive" });
             }
         }

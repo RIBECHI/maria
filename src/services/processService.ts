@@ -160,7 +160,9 @@ export async function updateProcess(processId: string, processData: Partial<Proc
       updatedAt: serverTimestamp(),
   };
   
-  updateDoc(processDocRef, dataToUpdate).catch(error => {
+  try {
+    await updateDoc(processDocRef, dataToUpdate);
+  } catch(error) {
     if (error instanceof FirestoreError && error.code === 'permission-denied') {
         const context: SecurityRuleContext = {
             path: `processes/${processId}`,
@@ -170,7 +172,8 @@ export async function updateProcess(processId: string, processData: Partial<Proc
         };
         errorEmitter.emit('permission-error', new FirestorePermissionError(context));
     }
-  });
+    throw error;
+  }
 }
 
 // DELETE
