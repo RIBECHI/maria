@@ -2,35 +2,63 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useAuth } from './AuthContext';
+import type { UserProfile } from '@/services/userService';
 
 interface UserContextType {
   userName: string;
   setUserName: (name: string) => void;
-  userTitle: string; // Título/cargo permanece estático por enquanto
+  userTitle: string; // Título/cargo agora virá do perfil
+  isAdmin: boolean;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const UserProvider = ({ children }: { children: ReactNode }) => {
-  const [userName, setUserNameState] = useState("Laura Antonelli");
-  const userTitle = "Advogada"; // Mantendo o título estático por enquanto
+  const { currentUser } = useAuth();
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [userName, setUserNameState] = useState("Carregando...");
+  const userTitle = profile?.role || '...';
+  const isAdmin = profile?.role === 'Admin';
+
 
   useEffect(() => {
-    // Carrega o nome do localStorage quando o componente é montado no cliente
-    const storedName = localStorage.getItem('userName');
-    if (storedName) {
-      setUserNameState(storedName);
+    let unsubscribe: () => void = () => {};
+    if (currentUser) {
+      const userDocRef = doc(db, "users", currentUser.uid);
+      unsubscribe = onSnapshot(userDocRef, (doc) => {
+        if (doc.exists()) {
+          const data = doc.data() as UserProfile;
+          setProfile(data);
+          setUserNameState(data.name);
+        } else {
+          console.error("Perfil do usuário não encontrado no Firestore.");
+          setUserNameState("Usuário não encontrado");
+        }
+      }, (error) => {
+        console.error("Erro ao buscar perfil do usuário:", error);
+      });
+    } else {
+        setProfile(null);
+        setUserNameState("Visitante");
     }
-  }, []);
+
+    return () => unsubscribe();
+  }, [currentUser]);
+
 
   const setUserName = (name: string) => {
-    // Salva o nome no estado e no localStorage
-    localStorage.setItem('userName', name);
+    // Esta função agora pode ser usada para ATUALIZAR o nome no Firestore.
+    // A implementação da atualização do nome no firestore não está aqui,
+    // mas a estrutura está pronta.
+    console.log("A atualização do nome deve ser implementada no firestore service.")
     setUserNameState(name);
   };
 
   return (
-    <UserContext.Provider value={{ userName, setUserName, userTitle }}>
+    <UserContext.Provider value={{ userName, setUserName, userTitle, isAdmin }}>
       {children}
     </UserContext.Provider>
   );

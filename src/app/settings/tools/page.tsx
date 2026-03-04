@@ -5,7 +5,7 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { FileSignature, ImageIcon, KanbanSquare } from "lucide-react";
+import { FileSignature, ImageIcon, KanbanSquare, Users } from "lucide-react";
 import Link from 'next/link';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -85,6 +85,25 @@ export default function ToolsPage() {
                              <Button>
                                 <KanbanSquare className="mr-2 h-4 w-4" />
                                 Gerenciar Fases
+                            </Button>
+                        </Link>
+                    </CardContent>
+                </Card>
+                <Card className="shadow-lg">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <Users />
+                            Usuários
+                        </CardTitle>
+                        <CardDescription>
+                            Gerencie os usuários e suas permissões no sistema.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Link href="/settings/tools/users" passHref>
+                             <Button>
+                                <Users className="mr-2 h-4 w-4" />
+                                Gerenciar Usuários
                             </Button>
                         </Link>
                     </CardContent>
