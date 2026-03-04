@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -185,7 +186,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isOwner(userId) || isAdmin();
       allow list: if isAdmin();
-      allow create: if isOwner(userId) && isValidNewUser(userId);
+      allow create: if isOwner(userId);
       // A user can update their own profile, but not change their role.
       // An admin can update any user's profile (e.g., to change their role).
       allow update: if (isOwner(userId) && isUserUpdateValid()) || isAdmin();

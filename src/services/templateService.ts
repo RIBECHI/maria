@@ -50,7 +50,7 @@ export function getTemplates(): Promise<DocumentTemplate[]> {
 }
 
 // CREATE
-export function addTemplate(templateData: TemplateFormValues): void {
+export async function addTemplate(templateData: TemplateFormValues): Promise<void> {
     if (!db) throw new Error("Firebase DB not initialized");
     const templatesCollectionRef = collection(db, 'documentTemplates');
     const dataToSave = {
@@ -58,22 +58,24 @@ export function addTemplate(templateData: TemplateFormValues): void {
         createdAt: serverTimestamp(),
     };
 
-    addDoc(templatesCollectionRef, dataToSave)
-      .catch(error => {
-        if (error instanceof FirestoreError && error.code === 'permission-denied') {
-            const context: SecurityRuleContext = {
-                path: 'documentTemplates',
-                operation: 'create',
-                auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-                resource: dataToSave,
-            };
-            errorEmitter.emit('permission-error', new FirestorePermissionError(context));
-        }
-    });
+    try {
+      await addDoc(templatesCollectionRef, dataToSave);
+    } catch (error) {
+      if (error instanceof FirestoreError && error.code === 'permission-denied') {
+          const context: SecurityRuleContext = {
+              path: 'documentTemplates',
+              operation: 'create',
+              auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
+              resource: dataToSave,
+          };
+          errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+      }
+      throw error;
+    }
 }
 
 // UPDATE
-export function updateTemplate(templateId: string, templateData: TemplateFormValues): void {
+export async function updateTemplate(templateId: string, templateData: TemplateFormValues): Promise<void> {
     if (!db) throw new Error("Firebase DB not initialized");
     const templateDocRef = doc(db, 'documentTemplates', templateId);
     const dataToUpdate = {
@@ -81,33 +83,38 @@ export function updateTemplate(templateId: string, templateData: TemplateFormVal
         updatedAt: serverTimestamp(),
     };
 
-    updateDoc(templateDocRef, dataToUpdate)
-      .catch(error => {
-        if (error instanceof FirestoreError && error.code === 'permission-denied') {
-            const context: SecurityRuleContext = {
-                path: `documentTemplates/${templateId}`,
-                operation: 'update',
-                auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-                resource: dataToUpdate,
-            };
-            errorEmitter.emit('permission-error', new FirestorePermissionError(context));
-        }
-    });
+    try {
+      await updateDoc(templateDocRef, dataToUpdate);
+    } catch (error) {
+      if (error instanceof FirestoreError && error.code === 'permission-denied') {
+          const context: SecurityRuleContext = {
+              path: `documentTemplates/${templateId}`,
+              operation: 'update',
+              auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
+              resource: dataToUpdate,
+          };
+          errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+      }
+      throw error;
+    }
 }
 
 // DELETE
-export function deleteTemplate(templateId: string): void {
+export async function deleteTemplate(templateId: string): Promise<void> {
     if (!db) throw new Error("Firebase DB not initialized");
     const templateDocRef = doc(db, 'documentTemplates', templateId);
     
-    deleteDoc(templateDocRef).catch(error => {
-        if (error instanceof FirestoreError && error.code === 'permission-denied') {
-            const context: SecurityRuleContext = {
-                path: `documentTemplates/${templateId}`,
-                operation: 'delete',
-                auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-            };
-            errorEmitter.emit('permission-error', new FirestorePermissionError(context));
-        }
-    });
+    try {
+      await deleteDoc(templateDocRef);
+    } catch (error) {
+      if (error instanceof FirestoreError && error.code === 'permission-denied') {
+          const context: SecurityRuleContext = {
+              path: `documentTemplates/${templateId}`,
+              operation: 'delete',
+              auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
+          };
+          errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+      }
+      throw error;
+    }
 }
