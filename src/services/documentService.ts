@@ -1,5 +1,5 @@
 
-import { auth, db, storage } from '@/lib/firebase';
+import { getFirebaseServices } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDoc, query, orderBy, FirestoreError, where } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import type { Document, DocumentFormValues } from '@/components/documents/DocumentFormDialog';
@@ -27,7 +27,7 @@ const fromFirestore = (docSnap: DocumentData): Document => {
 
 // READ
 export function getDocuments(): Promise<Document[]> {
-  if (!db) throw new Error("Firebase DB not initialized");
+  const { db, auth } = getFirebaseServices();
   
   const user = auth.currentUser;
   if (!user) {
@@ -56,7 +56,7 @@ export function getDocuments(): Promise<Document[]> {
 
 // CREATE (handles both upload and metadata)
 export async function addDocument(docData: DocumentFormValues, file: File): Promise<void> {
-  if (!db || !storage) throw new Error("Firebase não foi inicializado corretamente.");
+  const { db, storage, auth } = getFirebaseServices();
   const user = auth.currentUser;
   if (!user) {
     throw new Error("Usuário não autenticado. Por favor, faça o login novamente.");
@@ -67,11 +67,13 @@ export async function addDocument(docData: DocumentFormValues, file: File): Prom
   const storageRef = ref(storage, filePath);
   let fileUrl = '';
   try {
-    await uploadBytes(storageRef, file);
-    fileUrl = await getDownloadURL(storageRef);
+    console.log(`Uploading file to: ${filePath}`);
+    const uploadResult = await uploadBytes(storageRef, file);
+    fileUrl = await getDownloadURL(uploadResult.ref);
+    console.log(`File uploaded successfully. URL: ${fileUrl}`);
   } catch (storageError) {
     console.error("Erro no upload para o Firebase Storage:", storageError);
-    throw new Error(`Falha no upload do arquivo: ${(storageError as Error).message}`);
+    throw new Error(`Falha no upload do arquivo. Verifique as regras de segurança do Storage.`);
   }
   
   // 2. Create document metadata in Firestore
@@ -87,7 +89,9 @@ export async function addDocument(docData: DocumentFormValues, file: File): Prom
   };
 
   try {
+    console.log("Saving metadata to Firestore...");
     await addDoc(collection(db, 'documents'), dataToSave);
+    console.log("Metadata saved successfully.");
   } catch (firestoreError) {
      if (firestoreError instanceof FirestoreError && firestoreError.code === 'permission-denied') {
       const context: SecurityRuleContext = {
@@ -99,13 +103,17 @@ export async function addDocument(docData: DocumentFormValues, file: File): Prom
       errorEmitter.emit('permission-error', new FirestorePermissionError(context));
      }
      console.error("Erro ao salvar metadados no Firestore:", firestoreError);
+     // Clean up uploaded file if metadata fails
+     await deleteObject(storageRef).catch(cleanupError => {
+        console.error("Failed to clean up uploaded file after Firestore error:", cleanupError);
+     });
      throw firestoreError;
   }
 }
 
 // UPDATE (metadata only)
 export async function updateDocument(documentId: string, docData: DocumentFormValues & { name: string }): Promise<void> {
-  if (!db) throw new Error("Firebase DB not initialized");
+  const { db, auth } = getFirebaseServices();
   const docRef = doc(db, 'documents', documentId);
   
   const dataToUpdate = {
@@ -133,8 +141,7 @@ export async function updateDocument(documentId: string, docData: DocumentFormVa
 
 // DELETE
 export async function deleteDocument(document: Document): Promise<void> {
-  if (!db || !storage) throw new Error("Firebase not initialized");
-
+  const { db, storage, auth } = getFirebaseServices();
   const user = auth.currentUser;
   if (!user) throw new Error("Usuário não autenticado.");
 
@@ -142,7 +149,6 @@ export async function deleteDocument(document: Document): Promise<void> {
   if (document.ownerId && document.ownerId !== user.uid) {
     throw new Error("Você não tem permissão para excluir este arquivo.");
   }
-
 
   if (document.filePath) {
       const fileRef = ref(storage, document.filePath);
@@ -172,7 +178,7 @@ export async function deleteDocument(document: Document): Promise<void> {
 
 // DOWNLOAD URL GETTER
 export async function getDownloadUrl(filePath: string): Promise<string> {
-    if (!storage) throw new Error("Firebase Storage not initialized");
+    const { storage } = getFirebaseServices();
     const fileRef = ref(storage, filePath);
     const url = await getDownloadURL(fileRef);
     return url;

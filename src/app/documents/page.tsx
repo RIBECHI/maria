@@ -74,7 +74,7 @@ export default function DocumentsPage() {
       } else {
         if (!file) {
             toast({ title: "Arquivo Faltando", description: "Por favor, selecione um arquivo para carregar.", variant: "destructive"});
-            // Lança um erro para que o formulário saiba que a submissão falhou
+            // Lança um erro para que o formulário saiba que a submissão falhou.
             throw new Error("Arquivo não fornecido.");
         }
         toast({ title: "Iniciando upload...", description: `Enviando o arquivo ${file.name}. Isso pode levar um momento.` });
@@ -89,7 +89,8 @@ export default function DocumentsPage() {
       setTimeout(() => fetchDocuments(), 500);
     } catch (error: any) {
       console.error("Falha ao salvar o documento:", error);
-      toast({ title: "Erro ao Salvar", description: error.message || "Não foi possível salvar o documento.", variant: "destructive" });
+      const errorMessage = error.message || "Não foi possível salvar o documento. Verifique o console para mais detalhes.";
+      toast({ title: "Erro ao Salvar", description: errorMessage, variant: "destructive" });
       // Re-lançar o erro garante que o estado de 'loading' no formulário seja tratado corretamente.
       throw error;
     }

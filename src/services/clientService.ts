@@ -1,5 +1,5 @@
 
-import { auth, db } from '@/lib/firebase';
+import { getFirebaseServices } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy, limit, type DocumentData, getDoc, FirestoreError } from 'firebase/firestore';
 import type { Client, ClientFormValues } from '@/components/clients/ClientFormDialog';
 import { Timestamp } from 'firebase/firestore';
@@ -28,7 +28,7 @@ const fromFirestore = (docSnap: DocumentData): Client => {
 
 // READ
 export function getClients(): Promise<Client[]> {
-  if (!db) throw new Error("Firebase DB not initialized");
+  const { db, auth } = getFirebaseServices();
   const clientsCollectionRef = collection(db, 'clients');
   const q = query(clientsCollectionRef, orderBy("name", "asc"));
   
@@ -49,7 +49,7 @@ export function getClients(): Promise<Client[]> {
 
 // READ RECENT
 export function getRecentClients(count: number = 3): Promise<Client[]> {
-  if (!db) throw new Error("Firebase DB not initialized");
+  const { db, auth } = getFirebaseServices();
   const clientsCollectionRef = collection(db, 'clients');
   const q = query(clientsCollectionRef, orderBy("createdAt", "desc"), limit(count));
   
@@ -70,7 +70,7 @@ export function getRecentClients(count: number = 3): Promise<Client[]> {
 
 // CREATE
 export async function addClient(clientData: Omit<Client, 'id' | 'createdAt'>): Promise<void> {
-    if (!db) throw new Error("Firebase DB not initialized");
+    const { db, auth } = getFirebaseServices();
     const clientsCollectionRef = collection(db, 'clients');
     
     const dataToSave = {
@@ -96,7 +96,7 @@ export async function addClient(clientData: Omit<Client, 'id' | 'createdAt'>): P
 
 // UPDATE
 export async function updateClient(clientId: string, clientData: ClientFormValues): Promise<void> {
-    if (!db) throw new Error("Firebase DB not initialized");
+    const { db, auth } = getFirebaseServices();
     const clientDocRef = doc(db, 'clients', clientId);
     const dataToUpdate = {
         ...clientData,
@@ -121,7 +121,7 @@ export async function updateClient(clientId: string, clientData: ClientFormValue
 
 // DELETE
 export function deleteClient(clientId: string): void {
-    if (!db) throw new Error("Firebase DB not initialized");
+    const { db, auth } = getFirebaseServices();
     const clientDocRef = doc(db, 'clients', clientId);
     
     deleteDoc(clientDocRef).catch(error => {

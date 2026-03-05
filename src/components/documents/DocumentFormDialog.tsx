@@ -97,10 +97,12 @@ export function DocumentFormDialog({ isOpen, onClose, onSubmit, documentData }: 
       const file = data.file?.[0];
       await onSubmit(data, file);
     } catch (error) {
-      // O erro já é tratado e exibido na página, o catch aqui serve para
-      // garantir que o `finally` seja executado e o spinner pare.
+      // The error is now thrown up from the page, and it's caught here.
+      // The page already shows a toast, so we don't need another one.
+      // The main purpose of this try/catch is to ensure the `finally` block runs.
+      console.error("Error during form submission:", error);
     } finally {
-      setIsLoading(false);
+      setIsLoading(false); // This MUST run to stop the spinner.
     }
   };
 

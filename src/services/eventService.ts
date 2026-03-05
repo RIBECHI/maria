@@ -1,5 +1,5 @@
 
-import { auth, db } from '@/lib/firebase';
+import { getFirebaseServices } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, orderBy, limit, serverTimestamp, getDoc, FirestoreError } from 'firebase/firestore';
 import type { CalendarEvent, EventFormValues } from '@/components/agenda/EventFormDialog';
 import { startOfToday, format } from 'date-fns';
@@ -25,7 +25,7 @@ const fromFirestore = (docSnap: any): CalendarEvent => {
 
 // READ ALL
 export function getEvents(): Promise<CalendarEvent[]> {
-  if (!db) throw new Error("Firebase DB not initialized");
+  const { db, auth } = getFirebaseServices();
   const eventsCollectionRef = collection(db, 'events');
   const q = query(eventsCollectionRef, orderBy('date', 'asc'));
   return getDocs(q)
@@ -45,7 +45,7 @@ export function getEvents(): Promise<CalendarEvent[]> {
 
 // READ for Dashboard/Sidebar
 export function getEventsForDashboard(count: number): Promise<CalendarEvent[]> {
-  if (!db) throw new Error("Firebase DB not initialized");
+  const { db, auth } = getFirebaseServices();
   const eventsCollectionRef = collection(db, 'events');
   const today = format(startOfToday(), 'yyyy-MM-dd');
   const q = query(
@@ -72,7 +72,7 @@ export function getEventsForDashboard(count: number): Promise<CalendarEvent[]> {
 
 // CREATE
 export function addEvent(eventData: Omit<EventFormValues, "clientId"> & { client?: string | undefined; }): void {
-  if (!db) throw new Error("Firebase DB not initialized");
+  const { db, auth } = getFirebaseServices();
   const eventsCollectionRef = collection(db, 'events');
   const dataToSave = {
       ...eventData,
@@ -95,7 +95,7 @@ export function addEvent(eventData: Omit<EventFormValues, "clientId"> & { client
 
 // UPDATE
 export function updateEvent(eventId: string, eventData: Omit<EventFormValues, "clientId"> & { client?: string | undefined; }): void {
-  if (!db) throw new Error("Firebase DB not initialized");
+  const { db, auth } = getFirebaseServices();
   const eventDocRef = doc(db, 'events', eventId);
   const dataToUpdate = {
       ...eventData,
@@ -118,7 +118,7 @@ export function updateEvent(eventId: string, eventData: Omit<EventFormValues, "c
 
 // DELETE
 export function deleteEvent(eventId: string): void {
-  if (!db) throw new Error("Firebase DB not initialized");
+  const { db, auth } = getFirebaseServices();
   const eventDocRef = doc(db, 'events', eventId);
   
   deleteDoc(eventDocRef).catch(error => {

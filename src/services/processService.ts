@@ -1,5 +1,5 @@
 
-import { auth, db } from '@/lib/firebase';
+import { getFirebaseServices } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, type DocumentData, query, orderBy, limit, getDoc, Timestamp, FirestoreError } from 'firebase/firestore';
 import type { Process, ProcessFormValues, TimelineEvent } from '@/components/processes/ProcessFormDialog';
 import { errorEmitter, FirestorePermissionError, SecurityRuleContext } from '@/lib/errors';
@@ -57,7 +57,7 @@ const fromFirestore = (docSnap: DocumentData, phases: any[]): Process => {
 
 // READ ALL
 export async function getProcesses(): Promise<Process[]> {
-  if (!db) throw new Error("Firebase DB not initialized");
+  const { db, auth } = getFirebaseServices();
   try {
     const [phasesSnapshot, processesSnapshot] = await Promise.all([
         getPhases(),
@@ -79,7 +79,7 @@ export async function getProcesses(): Promise<Process[]> {
 
 // READ RECENT
 export async function getRecentProcesses(count?: number): Promise<Process[]> {
-    if (!db) return [];
+    if (!getFirebaseServices().db) return [];
     try {
         const allProcesses = await getProcesses(); // Reutiliza a função principal que já ordena
         return count ? allProcesses.slice(0, count) : allProcesses;
@@ -119,7 +119,7 @@ async function ensureClientsExist(clientNames: string[]): Promise<void> {
 
 // CREATE
 export async function addProcess(processData: Omit<Process, 'id' | 'createdAt' | 'phaseName'>): Promise<void> {
-  if (!db) throw new Error("Firebase DB not initialized");
+  const { db, auth } = getFirebaseServices();
   const processesCollectionRef = collection(db, 'processes');
   const cleanData = removeUndefinedKeys(processData);
   
@@ -147,7 +147,7 @@ export async function addProcess(processData: Omit<Process, 'id' | 'createdAt' |
 
 // UPDATE
 export async function updateProcess(processId: string, processData: Partial<ProcessFormValues & { timeline?: TimelineEvent[] }>): Promise<void> {
-  if (!db) throw new Error("Firebase DB not initialized");
+  const { db, auth } = getFirebaseServices();
   const processDocRef = doc(db, 'processes', processId);
   const cleanData = removeUndefinedKeys(processData);
 
@@ -178,7 +178,7 @@ export async function updateProcess(processId: string, processData: Partial<Proc
 
 // DELETE
 export function deleteProcess(processId: string): void {
-  if (!db) throw new Error("Firebase DB not initialized");
+  const { db, auth } = getFirebaseServices();
   const processDocRef = doc(db, 'processes', processId);
   
   deleteDoc(processDocRef).catch(error => {

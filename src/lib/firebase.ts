@@ -13,21 +13,27 @@ const firebaseConfig = {
   appId: "1:487471917143:web:82033f194252d4ada95b12",
 };
 
-let app: FirebaseApp;
-let auth: Auth;
-let db: Firestore;
-let storage: FirebaseStorage;
+// This will hold the initialized services
+let services: {
+    app: FirebaseApp;
+    auth: Auth;
+    db: Firestore;
+    storage: FirebaseStorage;
+} | null = null;
 
-if (typeof window !== 'undefined' && !getApps().length) {
-  app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  db = getFirestore(app);
-  storage = getStorage(app);
-} else if (typeof window !== 'undefined') {
-  app = getApp();
-  auth = getAuth(app);
-  db = getFirestore(app);
-  storage = getStorage(app);
-}
-
-export { app, auth, db, storage };
+/**
+ * Initializes and/or returns the Firebase services singleton.
+ * This ensures Firebase is initialized only once, whether on server or client.
+ */
+export const getFirebaseServices = () => {
+    if (!services) {
+        const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+        services = {
+            app,
+            auth: getAuth(app),
+            db: getFirestore(app),
+            storage: getStorage(app),
+        };
+    }
+    return services;
+};

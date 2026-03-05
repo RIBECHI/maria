@@ -1,5 +1,5 @@
 
-import { auth, db } from '@/lib/firebase';
+import { getFirebaseServices } from '@/lib/firebase';
 import { collection, getDocs, doc, setDoc, updateDoc, serverTimestamp, query, orderBy, FirestoreError, getDoc, type DocumentData } from 'firebase/firestore';
 import { errorEmitter, FirestorePermissionError, SecurityRuleContext } from '@/lib/errors';
 import type { User } from 'firebase/auth';
@@ -29,7 +29,7 @@ const USERS_COLLECTION = 'users';
 
 // CREATE USER PROFILE
 export async function createUserProfile(user: User): Promise<void> {
-  if (!db) throw new Error("Firebase DB not initialized");
+  const { db } = getFirebaseServices();
   const userDocRef = doc(db, USERS_COLLECTION, user.uid);
   
   // Define o e-mail do administrador. Altere se desejar.
@@ -76,7 +76,7 @@ export async function createUserProfile(user: User): Promise<void> {
 
 // READ ALL USERS (for admins)
 export function getUsers(): Promise<UserProfile[]> {
-  if (!db) throw new Error("Firebase DB not initialized");
+  const { db, auth } = getFirebaseServices();
   const usersCollectionRef = collection(db, USERS_COLLECTION);
   const q = query(usersCollectionRef, orderBy("name", "asc"));
   
@@ -97,7 +97,7 @@ export function getUsers(): Promise<UserProfile[]> {
 
 // UPDATE USER ROLE (for admins)
 export function updateUserRole(userId: string, role: 'Admin' | 'Usuário Padrão'): void {
-    if (!db) throw new Error("Firebase DB not initialized");
+    const { db, auth } = getFirebaseServices();
     const userDocRef = doc(db, USERS_COLLECTION, userId);
     const dataToUpdate = { role, updatedAt: serverTimestamp() };
     
@@ -116,7 +116,7 @@ export function updateUserRole(userId: string, role: 'Admin' | 'Usuário Padrão
 
 // UPDATE USER NAME
 export function updateUserName(userId: string, newName: string): void {
-  if (!db) throw new Error("Firebase DB not initialized");
+  const { db, auth } = getFirebaseServices();
   const userDocRef = doc(db, USERS_COLLECTION, userId);
   const dataToUpdate = { name: newName, updatedAt: serverTimestamp() };
   

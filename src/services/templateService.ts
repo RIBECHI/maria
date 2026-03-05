@@ -1,5 +1,5 @@
 
-import { auth, db } from '@/lib/firebase';
+import { getFirebaseServices } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy, getDoc, type DocumentData, FirestoreError } from 'firebase/firestore';
 import { errorEmitter, FirestorePermissionError, SecurityRuleContext } from '@/lib/errors';
 
@@ -30,7 +30,7 @@ const fromFirestore = (docSnap: DocumentData): DocumentTemplate => {
 
 // READ
 export function getTemplates(): Promise<DocumentTemplate[]> {
-  if (!db) throw new Error("Firebase DB not initialized");
+  const { db, auth } = getFirebaseServices();
   const templatesCollectionRef = collection(db, 'documentTemplates');
   const q = query(templatesCollectionRef, orderBy("name", "asc"));
   
@@ -51,7 +51,7 @@ export function getTemplates(): Promise<DocumentTemplate[]> {
 
 // CREATE
 export async function addTemplate(templateData: TemplateFormValues): Promise<void> {
-    if (!db) throw new Error("Firebase DB not initialized");
+    const { db, auth } = getFirebaseServices();
     const templatesCollectionRef = collection(db, 'documentTemplates');
     const dataToSave = {
         ...templateData,
@@ -76,7 +76,7 @@ export async function addTemplate(templateData: TemplateFormValues): Promise<voi
 
 // UPDATE
 export async function updateTemplate(templateId: string, templateData: TemplateFormValues): Promise<void> {
-    if (!db) throw new Error("Firebase DB not initialized");
+    const { db, auth } = getFirebaseServices();
     const templateDocRef = doc(db, 'documentTemplates', templateId);
     const dataToUpdate = {
         ...templateData,
@@ -101,7 +101,7 @@ export async function updateTemplate(templateId: string, templateData: TemplateF
 
 // DELETE
 export async function deleteTemplate(templateId: string): Promise<void> {
-    if (!db) throw new Error("Firebase DB not initialized");
+    const { db, auth } = getFirebaseServices();
     const templateDocRef = doc(db, 'documentTemplates', templateId);
     
     try {

@@ -3,7 +3,7 @@
 
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getFirebaseServices } from '@/lib/firebase';
 import { useAuth } from './AuthContext';
 import type { UserProfile } from '@/services/userService';
 import { updateUserName as updateUserNameInDb } from '@/services/userService';
@@ -23,6 +23,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [userName, setUserNameState] = useState("Carregando...");
   const userTitle = profile?.role || '...';
   const isAdmin = profile?.role === 'Admin';
+  const { db } = getFirebaseServices();
 
 
   useEffect(() => {
@@ -46,7 +47,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     }
 
     return () => unsubscribe();
-  }, [currentUser]);
+  }, [currentUser, db]);
 
 
   const setUserName = (name: string) => {

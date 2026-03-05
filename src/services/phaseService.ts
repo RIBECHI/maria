@@ -1,5 +1,5 @@
 
-import { auth, db } from '@/lib/firebase';
+import { getFirebaseServices } from '@/lib/firebase';
 import {
   collection,
   getDocs,
@@ -38,7 +38,7 @@ const PHASES_COLLECTION = 'documentPhases';
 
 // READ
 export async function getPhases(): Promise<Phase[]> {
-  if (!db) throw new Error('Firebase DB not initialized');
+  const { db, auth } = getFirebaseServices();
   const phasesCollectionRef = collection(db, PHASES_COLLECTION);
   const q = query(phasesCollectionRef, orderBy('order', 'asc'));
   try {
@@ -63,7 +63,7 @@ export async function getPhases(): Promise<Phase[]> {
             if (error instanceof FirestoreError && error.code === 'permission-denied') {
                 errorEmitter.emit('permission-error', new FirestorePermissionError({
                     path: PHASES_COLLECTION,
-                    operation: 'create', // Batch write is a write operation
+                    operation: 'create', // Corrected from 'write'
                     auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
                 }));
             }
@@ -88,7 +88,7 @@ export async function getPhases(): Promise<Phase[]> {
 
 // CREATE
 export async function addPhase(phaseData: Partial<Omit<Phase, 'id' | 'createdAt'>>): Promise<void> {
-  if (!db) throw new Error('Firebase DB not initialized');
+  const { db, auth } = getFirebaseServices();
   const phasesCollectionRef = collection(db, PHASES_COLLECTION);
   const dataToSave = {
     ...phaseData,
@@ -109,7 +109,7 @@ export async function addPhase(phaseData: Partial<Omit<Phase, 'id' | 'createdAt'
 
 // UPDATE
 export async function updatePhase(phaseId: string, phaseData: Partial<Omit<Phase, 'id' | 'createdAt'>>): Promise<void> {
-  if (!db) throw new Error('Firebase DB not initialized');
+  const { db, auth } = getFirebaseServices();
   const phaseDocRef = doc(db, PHASES_COLLECTION, phaseId);
   const dataToUpdate = { ...phaseData, updatedAt: serverTimestamp() };
   updateDoc(phaseDocRef, dataToUpdate).catch(error => {
@@ -127,7 +127,7 @@ export async function updatePhase(phaseId: string, phaseData: Partial<Omit<Phase
 
 // DELETE
 export async function deletePhase(phaseId: string): Promise<void> {
-  if (!db) throw new Error('Firebase DB not initialized');
+  const { db, auth } = getFirebaseServices();
   const phaseDocRef = doc(db, PHASES_COLLECTION, phaseId);
   deleteDoc(phaseDocRef).catch(error => {
     if (error instanceof FirestoreError && error.code === 'permission-denied') {

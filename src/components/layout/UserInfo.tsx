@@ -1,10 +1,11 @@
+
 "use client";
 
 import { useUser } from '@/contexts/UserContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { signOut } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { getFirebaseServices } from "@/lib/firebase";
 import { LogOut } from 'lucide-react';
 import {
   DropdownMenu,
@@ -21,6 +22,7 @@ export default function UserInfo() {
   const { currentUser } = useAuth();
 
   const handleLogout = () => {
+    const { auth } = getFirebaseServices();
     signOut(auth);
     // The AuthWrapper in AuthContext will handle redirecting to /login
   };

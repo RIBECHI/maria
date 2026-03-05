@@ -1,5 +1,5 @@
 
-import { auth, db } from '@/lib/firebase';
+import { getFirebaseServices } from '@/lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp, Timestamp, FirestoreError } from 'firebase/firestore';
 import { errorEmitter, FirestorePermissionError, SecurityRuleContext } from '@/lib/errors';
 
@@ -15,6 +15,7 @@ export interface Note {
 
 // GET
 export function getNotes(): Promise<Note[]> {
+  const { db, auth } = getFirebaseServices();
   if (!db) return Promise.resolve([]);
   const notepadDocRef = doc(db, 'notepad', 'main');
   
@@ -53,6 +54,7 @@ export function getNotes(): Promise<Note[]> {
 
 // SAVE
 export function saveNotes(notes: Note[]): void {
+  const { db, auth } = getFirebaseServices();
   if (!db) throw new Error("Firebase DB not initialized");
   const notepadDocRef = doc(db, 'notepad', 'main');
   
@@ -81,6 +83,7 @@ export function saveNotes(notes: Note[]): void {
 
 // GET ONLY TASKS
 export async function getNotepadTasks(): Promise<Note[]> {
+    const { db } = getFirebaseServices();
     if (!db) return [];
     const allNotes = await getNotes();
     return allNotes.filter(note => note.isTask);
