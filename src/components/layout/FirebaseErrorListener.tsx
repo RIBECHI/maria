@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { errorEmitter, type FirestorePermissionError } from '@/lib/errors';
+import { errorEmitter, FirestorePermissionError } from '@/firebase';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -60,7 +60,7 @@ export default function FirebaseErrorListener() {
              <div>
                 <h4 className="font-semibold mb-2">Resumo</h4>
                 <p>
-                    A operação <Badge variant="destructive">{getOperationDescription(error.context.operation)}</Badge> na coleção <code className="bg-muted px-1.5 py-0.5 rounded-sm text-sm">/{error.context.path}</code> foi negada.
+                    A operação <Badge variant="destructive">{getOperationDescription(error.request.method)}</Badge> na coleção <code className="bg-muted px-1.5 py-0.5 rounded-sm text-sm">{error.request.path}</code> foi negada.
                 </p>
              </div>
              
@@ -69,15 +69,15 @@ export default function FirebaseErrorListener() {
                 <div className="bg-muted/60 p-3 rounded-md text-xs space-y-2">
                     <p><strong>Autenticação do Usuário (request.auth):</strong></p>
                      <pre className="p-2 bg-background rounded-md text-xs overflow-auto">
-                        <code>{JSON.stringify(error.context.auth, null, 2) || 'null'}</code>
+                        <code>{JSON.stringify(error.request.auth, null, 2) || 'null'}</code>
                     </pre>
 
-                    {error.context.resource && (
+                    {error.request.resource && (
                         <>
                            <p className="pt-2"><strong>Dados Enviados (request.resource.data):</strong></p>
                             <ScrollArea className="max-h-40">
                                 <pre className="p-2 bg-background rounded-md text-xs overflow-auto">
-                                    <code>{JSON.stringify(error.context.resource, null, 2)}</code>
+                                    <code>{JSON.stringify(error.request.resource.data, null, 2)}</code>
                                 </pre>
                             </ScrollArea>
                         </>

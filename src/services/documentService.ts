@@ -1,10 +1,10 @@
 
-import { getFirebaseServices } from '@/lib/firebase';
+import { initializeFirebase } from '@/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDoc, query, orderBy, FirestoreError, where } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import type { Document, DocumentFormValues } from '@/components/documents/DocumentFormDialog';
 import type { DocumentData } from 'firebase/firestore';
-import { errorEmitter, FirestorePermissionError, SecurityRuleContext } from '@/lib/errors';
+import { errorEmitter, FirestorePermissionError } from '@/firebase';
 
 
 const fromFirestore = (docSnap: DocumentData): Document => {
@@ -27,7 +27,7 @@ const fromFirestore = (docSnap: DocumentData): Document => {
 
 // READ
 export function getDocuments(): Promise<Document[]> {
-  const { db, auth } = getFirebaseServices();
+  const { firestore, auth } = initializeFirebase();
   
   const user = auth.currentUser;
   if (!user) {
@@ -35,7 +35,7 @@ export function getDocuments(): Promise<Document[]> {
     return Promise.resolve([]);
   }
 
-  const documentsCollectionRef = collection(db, 'documents');
+  const documentsCollectionRef = collection(firestore, 'documents');
   // Filter documents by the current user's ID
   const q = query(documentsCollectionRef, where("ownerId", "==", user.uid), orderBy("createdAt", "desc"));
   
@@ -43,12 +43,10 @@ export function getDocuments(): Promise<Document[]> {
     .then(querySnapshot => querySnapshot.docs.map(fromFirestore))
     .catch (error => {
       if (error instanceof FirestoreError && error.code === 'permission-denied') {
-        const context: SecurityRuleContext = {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
           path: 'documents',
           operation: 'list',
-          auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-        };
-        errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+        }));
       }
       return [];
   });
@@ -56,7 +54,7 @@ export function getDocuments(): Promise<Document[]> {
 
 // CREATE (handles both upload and metadata)
 export async function addDocument(docData: DocumentFormValues, file: File): Promise<void> {
-  const { db, storage, auth } = getFirebaseServices();
+  const { firestore, storage, auth } = initializeFirebase();
   const user = auth.currentUser;
   if (!user) {
     throw new Error("Usuário não autenticado. Por favor, faça o login novamente.");
@@ -90,17 +88,15 @@ export async function addDocument(docData: DocumentFormValues, file: File): Prom
 
   try {
     console.log("Saving metadata to Firestore...");
-    await addDoc(collection(db, 'documents'), dataToSave);
+    await addDoc(collection(firestore, 'documents'), dataToSave);
     console.log("Metadata saved successfully.");
   } catch (firestoreError) {
      if (firestoreError instanceof FirestoreError && firestoreError.code === 'permission-denied') {
-      const context: SecurityRuleContext = {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
         path: 'documents',
         operation: 'create',
-        auth: user ? { uid: user.uid } : null,
-        resource: dataToSave,
-      };
-      errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+        requestResourceData: dataToSave,
+      }));
      }
      console.error("Erro ao salvar metadados no Firestore:", firestoreError);
      // Clean up uploaded file if metadata fails
@@ -113,8 +109,8 @@ export async function addDocument(docData: DocumentFormValues, file: File): Prom
 
 // UPDATE (metadata only)
 export async function updateDocument(documentId: string, docData: DocumentFormValues & { name: string }): Promise<void> {
-  const { db, auth } = getFirebaseServices();
-  const docRef = doc(db, 'documents', documentId);
+  const { firestore, auth } = initializeFirebase();
+  const docRef = doc(firestore, 'documents', documentId);
   
   const dataToUpdate = {
       process: docData.process,
@@ -127,13 +123,11 @@ export async function updateDocument(documentId: string, docData: DocumentFormVa
   }
   catch(error) {
      if (error instanceof FirestoreError && error.code === 'permission-denied') {
-      const context: SecurityRuleContext = {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
         path: `documents/${documentId}`,
         operation: 'update',
-        auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-        resource: dataToUpdate,
-      };
-      errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+        requestResourceData: dataToUpdate,
+      }));
     }
     throw error;
   }
@@ -141,7 +135,7 @@ export async function updateDocument(documentId: string, docData: DocumentFormVa
 
 // DELETE
 export async function deleteDocument(document: Document): Promise<void> {
-  const { db, storage, auth } = getFirebaseServices();
+  const { firestore, storage, auth } = initializeFirebase();
   const user = auth.currentUser;
   if (!user) throw new Error("Usuário não autenticado.");
 
@@ -160,17 +154,15 @@ export async function deleteDocument(document: Document): Promise<void> {
       });
   }
 
-  const docRef = doc(db, 'documents', document.id);
+  const docRef = doc(firestore, 'documents', document.id);
   try {
     await deleteDoc(docRef);
   } catch(error) {
     if (error instanceof FirestoreError && error.code === 'permission-denied') {
-      const context: SecurityRuleContext = {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
         path: `documents/${document.id}`,
         operation: 'delete',
-        auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-      };
-      errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+      }));
     }
     throw error;
   }
@@ -178,7 +170,7 @@ export async function deleteDocument(document: Document): Promise<void> {
 
 // DOWNLOAD URL GETTER
 export async function getDownloadUrl(filePath: string): Promise<string> {
-    const { storage } = getFirebaseServices();
+    const { storage } = initializeFirebase();
     const fileRef = ref(storage, filePath);
     const url = await getDownloadURL(fileRef);
     return url;

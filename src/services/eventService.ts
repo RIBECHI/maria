@@ -1,9 +1,9 @@
 
-import { getFirebaseServices } from '@/lib/firebase';
+import { initializeFirebase } from '@/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, orderBy, limit, serverTimestamp, getDoc, FirestoreError } from 'firebase/firestore';
 import type { CalendarEvent, EventFormValues } from '@/components/agenda/EventFormDialog';
 import { startOfToday, format } from 'date-fns';
-import { errorEmitter, FirestorePermissionError, SecurityRuleContext } from '@/lib/errors';
+import { errorEmitter, FirestorePermissionError } from '@/firebase';
 
 
 const fromFirestore = (docSnap: any): CalendarEvent => {
@@ -25,19 +25,17 @@ const fromFirestore = (docSnap: any): CalendarEvent => {
 
 // READ ALL
 export function getEvents(): Promise<CalendarEvent[]> {
-  const { db, auth } = getFirebaseServices();
-  const eventsCollectionRef = collection(db, 'events');
+  const { firestore, auth } = initializeFirebase();
+  const eventsCollectionRef = collection(firestore, 'events');
   const q = query(eventsCollectionRef, orderBy('date', 'asc'));
   return getDocs(q)
     .then(querySnapshot => querySnapshot.docs.map(fromFirestore))
     .catch(error => {
       if (error instanceof FirestoreError && error.code === 'permission-denied') {
-        const context: SecurityRuleContext = {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
           path: 'events',
           operation: 'list',
-          auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-        };
-        errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+        }));
       }
       return [];
     });
@@ -45,8 +43,8 @@ export function getEvents(): Promise<CalendarEvent[]> {
 
 // READ for Dashboard/Sidebar
 export function getEventsForDashboard(count: number): Promise<CalendarEvent[]> {
-  const { db, auth } = getFirebaseServices();
-  const eventsCollectionRef = collection(db, 'events');
+  const { firestore, auth } = initializeFirebase();
+  const eventsCollectionRef = collection(firestore, 'events');
   const today = format(startOfToday(), 'yyyy-MM-dd');
   const q = query(
     eventsCollectionRef, 
@@ -59,12 +57,10 @@ export function getEventsForDashboard(count: number): Promise<CalendarEvent[]> {
     .then(querySnapshot => querySnapshot.docs.map(fromFirestore))
     .catch(error => {
         if (error instanceof FirestoreError && error.code === 'permission-denied') {
-            const context: SecurityRuleContext = {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
                 path: 'events',
                 operation: 'list',
-                auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-            };
-            errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+            }));
         }
         return [];
     });
@@ -72,8 +68,8 @@ export function getEventsForDashboard(count: number): Promise<CalendarEvent[]> {
 
 // CREATE
 export function addEvent(eventData: Omit<EventFormValues, "clientId"> & { client?: string | undefined; }): void {
-  const { db, auth } = getFirebaseServices();
-  const eventsCollectionRef = collection(db, 'events');
+  const { firestore, auth } = initializeFirebase();
+  const eventsCollectionRef = collection(firestore, 'events');
   const dataToSave = {
       ...eventData,
       createdAt: serverTimestamp(),
@@ -82,21 +78,19 @@ export function addEvent(eventData: Omit<EventFormValues, "clientId"> & { client
   addDoc(eventsCollectionRef, dataToSave)
     .catch(error => {
       if (error instanceof FirestoreError && error.code === 'permission-denied') {
-          const context: SecurityRuleContext = {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
               path: 'events',
               operation: 'create',
-              auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-              resource: dataToSave,
-          };
-          errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+              requestResourceData: dataToSave,
+          }));
       }
   });
 }
 
 // UPDATE
 export function updateEvent(eventId: string, eventData: Omit<EventFormValues, "clientId"> & { client?: string | undefined; }): void {
-  const { db, auth } = getFirebaseServices();
-  const eventDocRef = doc(db, 'events', eventId);
+  const { firestore, auth } = initializeFirebase();
+  const eventDocRef = doc(firestore, 'events', eventId);
   const dataToUpdate = {
       ...eventData,
       updatedAt: serverTimestamp(),
@@ -105,30 +99,26 @@ export function updateEvent(eventId: string, eventData: Omit<EventFormValues, "c
   updateDoc(eventDocRef, dataToUpdate)
     .catch(error => {
       if (error instanceof FirestoreError && error.code === 'permission-denied') {
-          const context: SecurityRuleContext = {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
               path: `events/${eventId}`,
               operation: 'update',
-              auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-              resource: dataToUpdate,
-          };
-          errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+              requestResourceData: dataToUpdate,
+          }));
       }
   });
 }
 
 // DELETE
 export function deleteEvent(eventId: string): void {
-  const { db, auth } = getFirebaseServices();
-  const eventDocRef = doc(db, 'events', eventId);
+  const { firestore, auth } = initializeFirebase();
+  const eventDocRef = doc(firestore, 'events', eventId);
   
   deleteDoc(eventDocRef).catch(error => {
     if (error instanceof FirestoreError && error.code === 'permission-denied') {
-        const context: SecurityRuleContext = {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: `events/${eventId}`,
             operation: 'delete',
-            auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-        };
-        errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+        }));
     }
   });
 }

@@ -1,8 +1,8 @@
 
-import { getFirebaseServices } from '@/lib/firebase';
+import { initializeFirebase } from '@/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, type DocumentData, query, orderBy, limit, getDoc, Timestamp, FirestoreError } from 'firebase/firestore';
 import type { Process, ProcessFormValues, TimelineEvent } from '@/components/processes/ProcessFormDialog';
-import { errorEmitter, FirestorePermissionError, SecurityRuleContext } from '@/lib/errors';
+import { errorEmitter, FirestorePermissionError } from '@/firebase';
 import { getClients, addClient as createClient } from './clientService'; // Renomeando para evitar conflito
 import { getPhases } from './phaseService';
 
@@ -57,21 +57,19 @@ const fromFirestore = (docSnap: DocumentData, phases: any[]): Process => {
 
 // READ ALL
 export async function getProcesses(): Promise<Process[]> {
-  const { db, auth } = getFirebaseServices();
+  const { firestore, auth } = initializeFirebase();
   try {
     const [phasesSnapshot, processesSnapshot] = await Promise.all([
         getPhases(),
-        getDocs(query(collection(db, 'processes'), orderBy("createdAt", "desc")))
+        getDocs(query(collection(firestore, 'processes'), orderBy("createdAt", "desc")))
     ]);
     return processesSnapshot.docs.map(doc => fromFirestore(doc, phasesSnapshot));
   } catch(error) {
      if (error instanceof FirestoreError && error.code === 'permission-denied') {
-      const context: SecurityRuleContext = {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
         path: 'processes',
         operation: 'list',
-        auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-      };
-      errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+      }));
     }
     return [];
   }
@@ -79,7 +77,7 @@ export async function getProcesses(): Promise<Process[]> {
 
 // READ RECENT
 export async function getRecentProcesses(count?: number): Promise<Process[]> {
-    if (!getFirebaseServices().db) return [];
+    if (!initializeFirebase().firestore) return [];
     try {
         const allProcesses = await getProcesses(); // Reutiliza a função principal que já ordena
         return count ? allProcesses.slice(0, count) : allProcesses;
@@ -119,8 +117,8 @@ async function ensureClientsExist(clientNames: string[]): Promise<void> {
 
 // CREATE
 export async function addProcess(processData: Omit<Process, 'id' | 'createdAt' | 'phaseName'>): Promise<void> {
-  const { db, auth } = getFirebaseServices();
-  const processesCollectionRef = collection(db, 'processes');
+  const { firestore, auth } = initializeFirebase();
+  const processesCollectionRef = collection(firestore, 'processes');
   const cleanData = removeUndefinedKeys(processData);
   
   if (cleanData.clients && cleanData.clients.length > 0) {
@@ -134,21 +132,19 @@ export async function addProcess(processData: Omit<Process, 'id' | 'createdAt' |
 
   addDoc(processesCollectionRef, dataToSave).catch(error => {
     if (error instanceof FirestoreError && error.code === 'permission-denied') {
-        const context: SecurityRuleContext = {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: `processes`,
             operation: 'create',
-            auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-            resource: dataToSave,
-        };
-        errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+            requestResourceData: dataToSave,
+        }));
     }
   });
 }
 
 // UPDATE
 export async function updateProcess(processId: string, processData: Partial<ProcessFormValues & { timeline?: TimelineEvent[] }>): Promise<void> {
-  const { db, auth } = getFirebaseServices();
-  const processDocRef = doc(db, 'processes', processId);
+  const { firestore, auth } = initializeFirebase();
+  const processDocRef = doc(firestore, 'processes', processId);
   const cleanData = removeUndefinedKeys(processData);
 
   if (cleanData.clients && cleanData.clients.length > 0) {
@@ -164,13 +160,11 @@ export async function updateProcess(processId: string, processData: Partial<Proc
     await updateDoc(processDocRef, dataToUpdate);
   } catch(error) {
     if (error instanceof FirestoreError && error.code === 'permission-denied') {
-        const context: SecurityRuleContext = {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: `processes/${processId}`,
             operation: 'update',
-            auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-            resource: dataToUpdate,
-        };
-        errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+            requestResourceData: dataToUpdate,
+        }));
     }
     throw error;
   }
@@ -178,17 +172,15 @@ export async function updateProcess(processId: string, processData: Partial<Proc
 
 // DELETE
 export function deleteProcess(processId: string): void {
-  const { db, auth } = getFirebaseServices();
-  const processDocRef = doc(db, 'processes', processId);
+  const { firestore, auth } = initializeFirebase();
+  const processDocRef = doc(firestore, 'processes', processId);
   
   deleteDoc(processDocRef).catch(error => {
     if (error instanceof FirestoreError && error.code === 'permission-denied') {
-        const context: SecurityRuleContext = {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: `processes/${processId}`,
             operation: 'delete',
-            auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-        };
-        errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+        }));
     }
   });
 }

@@ -1,7 +1,7 @@
 
-import { getFirebaseServices } from '@/lib/firebase';
+import { initializeFirebase } from '@/firebase';
 import { doc, getDoc, setDoc, serverTimestamp, Timestamp, FirestoreError } from 'firebase/firestore';
-import { errorEmitter, FirestorePermissionError, SecurityRuleContext } from '@/lib/errors';
+import { errorEmitter, FirestorePermissionError } from '@/firebase';
 
 
 export interface Note {
@@ -15,9 +15,9 @@ export interface Note {
 
 // GET
 export function getNotes(): Promise<Note[]> {
-  const { db, auth } = getFirebaseServices();
-  if (!db) return Promise.resolve([]);
-  const notepadDocRef = doc(db, 'notepad', 'main');
+  const { firestore, auth } = initializeFirebase();
+  if (!firestore) return Promise.resolve([]);
+  const notepadDocRef = doc(firestore, 'notepad', 'main');
   
   return getDoc(notepadDocRef)
     .then(docSnap => {
@@ -41,12 +41,10 @@ export function getNotes(): Promise<Note[]> {
     })
     .catch(error => {
        if (error instanceof FirestoreError && error.code === 'permission-denied') {
-        const context: SecurityRuleContext = {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
           path: 'notepad/main',
           operation: 'get',
-          auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-        };
-        errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+        }));
       }
       return [];
     });
@@ -54,9 +52,9 @@ export function getNotes(): Promise<Note[]> {
 
 // SAVE
 export function saveNotes(notes: Note[]): void {
-  const { db, auth } = getFirebaseServices();
-  if (!db) throw new Error("Firebase DB not initialized");
-  const notepadDocRef = doc(db, 'notepad', 'main');
+  const { firestore, auth } = initializeFirebase();
+  if (!firestore) throw new Error("Firebase DB not initialized");
+  const notepadDocRef = doc(firestore, 'notepad', 'main');
   
   const sortedNotes = [...notes].sort((a, b) => 
     (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0)
@@ -70,21 +68,19 @@ export function saveNotes(notes: Note[]): void {
   setDoc(notepadDocRef, dataToSave)
     .catch(error => {
       if (error instanceof FirestoreError && error.code === 'permission-denied') {
-        const context: SecurityRuleContext = {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
           path: 'notepad/main',
           operation: 'update',
-          auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-          resource: dataToSave,
-        };
-        errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+          requestResourceData: dataToSave,
+        }));
       }
     });
 }
 
 // GET ONLY TASKS
 export async function getNotepadTasks(): Promise<Note[]> {
-    const { db } = getFirebaseServices();
-    if (!db) return [];
+    const { firestore } = initializeFirebase();
+    if (!firestore) return [];
     const allNotes = await getNotes();
     return allNotes.filter(note => note.isTask);
 }

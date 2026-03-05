@@ -3,7 +3,7 @@
 
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { getFirebaseServices } from '@/lib/firebase';
+import { initializeFirebase } from '@/firebase';
 import { useAuth } from './AuthContext';
 import type { UserProfile } from '@/services/userService';
 import { updateUserName as updateUserNameInDb } from '@/services/userService';
@@ -23,13 +23,13 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [userName, setUserNameState] = useState("Carregando...");
   const userTitle = profile?.role || '...';
   const isAdmin = profile?.role === 'Admin';
-  const { db } = getFirebaseServices();
+  const { firestore } = initializeFirebase();
 
 
   useEffect(() => {
     let unsubscribe: () => void = () => {};
     if (currentUser) {
-      const userDocRef = doc(db, "users", currentUser.uid);
+      const userDocRef = doc(firestore, "users", currentUser.uid);
       unsubscribe = onSnapshot(userDocRef, (doc) => {
         if (doc.exists()) {
           const data = doc.data() as UserProfile;
@@ -47,7 +47,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     }
 
     return () => unsubscribe();
-  }, [currentUser, db]);
+  }, [currentUser, firestore]);
 
 
   const setUserName = (name: string) => {

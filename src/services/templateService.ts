@@ -1,7 +1,7 @@
 
-import { getFirebaseServices } from '@/lib/firebase';
+import { initializeFirebase } from '@/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy, getDoc, type DocumentData, FirestoreError } from 'firebase/firestore';
-import { errorEmitter, FirestorePermissionError, SecurityRuleContext } from '@/lib/errors';
+import { errorEmitter, FirestorePermissionError } from '@/firebase';
 
 
 export interface DocumentTemplate extends DocumentData {
@@ -30,20 +30,18 @@ const fromFirestore = (docSnap: DocumentData): DocumentTemplate => {
 
 // READ
 export function getTemplates(): Promise<DocumentTemplate[]> {
-  const { db, auth } = getFirebaseServices();
-  const templatesCollectionRef = collection(db, 'documentTemplates');
+  const { firestore, auth } = initializeFirebase();
+  const templatesCollectionRef = collection(firestore, 'documentTemplates');
   const q = query(templatesCollectionRef, orderBy("name", "asc"));
   
   return getDocs(q)
     .then(querySnapshot => querySnapshot.docs.map(fromFirestore))
     .catch(error => {
       if (error instanceof FirestoreError && error.code === 'permission-denied') {
-        const context: SecurityRuleContext = {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
           path: 'documentTemplates',
           operation: 'list',
-          auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-        };
-        errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+        }));
       }
       return [];
   });
@@ -51,8 +49,8 @@ export function getTemplates(): Promise<DocumentTemplate[]> {
 
 // CREATE
 export async function addTemplate(templateData: TemplateFormValues): Promise<void> {
-    const { db, auth } = getFirebaseServices();
-    const templatesCollectionRef = collection(db, 'documentTemplates');
+    const { firestore, auth } = initializeFirebase();
+    const templatesCollectionRef = collection(firestore, 'documentTemplates');
     const dataToSave = {
         ...templateData,
         createdAt: serverTimestamp(),
@@ -62,13 +60,11 @@ export async function addTemplate(templateData: TemplateFormValues): Promise<voi
       await addDoc(templatesCollectionRef, dataToSave);
     } catch (error) {
       if (error instanceof FirestoreError && error.code === 'permission-denied') {
-          const context: SecurityRuleContext = {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
               path: 'documentTemplates',
               operation: 'create',
-              auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-              resource: dataToSave,
-          };
-          errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+              requestResourceData: dataToSave,
+          }));
       }
       throw error;
     }
@@ -76,8 +72,8 @@ export async function addTemplate(templateData: TemplateFormValues): Promise<voi
 
 // UPDATE
 export async function updateTemplate(templateId: string, templateData: TemplateFormValues): Promise<void> {
-    const { db, auth } = getFirebaseServices();
-    const templateDocRef = doc(db, 'documentTemplates', templateId);
+    const { firestore, auth } = initializeFirebase();
+    const templateDocRef = doc(firestore, 'documentTemplates', templateId);
     const dataToUpdate = {
         ...templateData,
         updatedAt: serverTimestamp(),
@@ -87,13 +83,11 @@ export async function updateTemplate(templateId: string, templateData: TemplateF
       await updateDoc(templateDocRef, dataToUpdate);
     } catch (error) {
       if (error instanceof FirestoreError && error.code === 'permission-denied') {
-          const context: SecurityRuleContext = {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
               path: `documentTemplates/${templateId}`,
               operation: 'update',
-              auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-              resource: dataToUpdate,
-          };
-          errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+              requestResourceData: dataToUpdate,
+          }));
       }
       throw error;
     }
@@ -101,19 +95,17 @@ export async function updateTemplate(templateId: string, templateData: TemplateF
 
 // DELETE
 export async function deleteTemplate(templateId: string): Promise<void> {
-    const { db, auth } = getFirebaseServices();
-    const templateDocRef = doc(db, 'documentTemplates', templateId);
+    const { firestore, auth } = initializeFirebase();
+    const templateDocRef = doc(firestore, 'documentTemplates', templateId);
     
     try {
       await deleteDoc(templateDocRef);
     } catch (error) {
       if (error instanceof FirestoreError && error.code === 'permission-denied') {
-          const context: SecurityRuleContext = {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
               path: `documentTemplates/${templateId}`,
               operation: 'delete',
-              auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-          };
-          errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+          }));
       }
       throw error;
     }

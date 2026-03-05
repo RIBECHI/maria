@@ -3,7 +3,7 @@
 
 import React, { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { onAuthStateChanged, type User } from "firebase/auth";
-import { getFirebaseServices } from '@/lib/firebase';
+import { initializeFirebase } from '@/firebase';
 import { usePathname, useRouter } from 'next/navigation';
 import { createUserProfile } from '@/services/userService';
 
@@ -22,7 +22,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const { auth } = getFirebaseServices();
+    const { auth } = initializeFirebase();
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         // Quando um usuário faz login ou se registra, cria/verifica seu perfil.

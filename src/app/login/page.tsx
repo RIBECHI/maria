@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { getFirebaseServices } from "@/lib/firebase";
+import { initializeFirebase } from "@/firebase";
 import Logo from "@/components/layout/Logo";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
@@ -39,7 +39,7 @@ export default function LoginPage() {
   const { toast } = useToast();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const { auth } = getFirebaseServices();
+  const { auth } = initializeFirebase();
 
   const loginForm = useForm<FormValues>({
     resolver: zodResolver(loginSchema),

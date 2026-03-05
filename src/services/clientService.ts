@@ -1,9 +1,9 @@
 
-import { getFirebaseServices } from '@/lib/firebase';
+import { initializeFirebase } from '@/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy, limit, type DocumentData, getDoc, FirestoreError } from 'firebase/firestore';
 import type { Client, ClientFormValues } from '@/components/clients/ClientFormDialog';
 import { Timestamp } from 'firebase/firestore';
-import { errorEmitter, FirestorePermissionError, SecurityRuleContext } from '@/lib/errors';
+import { errorEmitter, FirestorePermissionError } from '@/firebase';
 
 const fromFirestore = (docSnap: DocumentData): Client => {
   const data = docSnap.data();
@@ -28,20 +28,18 @@ const fromFirestore = (docSnap: DocumentData): Client => {
 
 // READ
 export function getClients(): Promise<Client[]> {
-  const { db, auth } = getFirebaseServices();
-  const clientsCollectionRef = collection(db, 'clients');
+  const { firestore, auth } = initializeFirebase();
+  const clientsCollectionRef = collection(firestore, 'clients');
   const q = query(clientsCollectionRef, orderBy("name", "asc"));
   
   return getDocs(q)
     .then(querySnapshot => querySnapshot.docs.map(fromFirestore))
     .catch(error => {
       if (error instanceof FirestoreError && error.code === 'permission-denied') {
-        const context: SecurityRuleContext = {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
           path: 'clients',
           operation: 'list',
-          auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-        };
-        errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+        }));
       }
       return [];
     });
@@ -49,20 +47,18 @@ export function getClients(): Promise<Client[]> {
 
 // READ RECENT
 export function getRecentClients(count: number = 3): Promise<Client[]> {
-  const { db, auth } = getFirebaseServices();
-  const clientsCollectionRef = collection(db, 'clients');
+  const { firestore, auth } = initializeFirebase();
+  const clientsCollectionRef = collection(firestore, 'clients');
   const q = query(clientsCollectionRef, orderBy("createdAt", "desc"), limit(count));
   
   return getDocs(q)
     .then(querySnapshot => querySnapshot.docs.map(fromFirestore))
     .catch(error => {
        if (error instanceof FirestoreError && error.code === 'permission-denied') {
-        const context: SecurityRuleContext = {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
           path: 'clients',
           operation: 'list',
-          auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-        };
-        errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+        }));
       }
       return [];
     });
@@ -70,8 +66,8 @@ export function getRecentClients(count: number = 3): Promise<Client[]> {
 
 // CREATE
 export async function addClient(clientData: Omit<Client, 'id' | 'createdAt'>): Promise<void> {
-    const { db, auth } = getFirebaseServices();
-    const clientsCollectionRef = collection(db, 'clients');
+    const { firestore, auth } = initializeFirebase();
+    const clientsCollectionRef = collection(firestore, 'clients');
     
     const dataToSave = {
         ...clientData,
@@ -82,13 +78,11 @@ export async function addClient(clientData: Omit<Client, 'id' | 'createdAt'>): P
         await addDoc(clientsCollectionRef, dataToSave);
     } catch (error) {
       if (error instanceof FirestoreError && error.code === 'permission-denied') {
-          const context: SecurityRuleContext = {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
               path: `clients`,
               operation: 'create',
-              auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-              resource: dataToSave,
-          };
-          errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+              requestResourceData: dataToSave,
+          }));
       }
       throw error;
     }
@@ -96,8 +90,8 @@ export async function addClient(clientData: Omit<Client, 'id' | 'createdAt'>): P
 
 // UPDATE
 export async function updateClient(clientId: string, clientData: ClientFormValues): Promise<void> {
-    const { db, auth } = getFirebaseServices();
-    const clientDocRef = doc(db, 'clients', clientId);
+    const { firestore, auth } = initializeFirebase();
+    const clientDocRef = doc(firestore, 'clients', clientId);
     const dataToUpdate = {
         ...clientData,
         updatedAt: serverTimestamp(),
@@ -107,13 +101,11 @@ export async function updateClient(clientId: string, clientData: ClientFormValue
       await updateDoc(clientDocRef, dataToUpdate);
     } catch (error) {
       if (error instanceof FirestoreError && error.code === 'permission-denied') {
-          const context: SecurityRuleContext = {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
               path: `clients/${clientId}`,
               operation: 'update',
-              auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-              resource: dataToUpdate,
-          };
-          errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+              requestResourceData: dataToUpdate,
+          }));
       }
       throw error;
     }
@@ -121,17 +113,15 @@ export async function updateClient(clientId: string, clientData: ClientFormValue
 
 // DELETE
 export function deleteClient(clientId: string): void {
-    const { db, auth } = getFirebaseServices();
-    const clientDocRef = doc(db, 'clients', clientId);
+    const { firestore, auth } = initializeFirebase();
+    const clientDocRef = doc(firestore, 'clients', clientId);
     
     deleteDoc(clientDocRef).catch(error => {
         if (error instanceof FirestoreError && error.code === 'permission-denied') {
-            const context: SecurityRuleContext = {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
                 path: `clients/${clientId}`,
                 operation: 'delete',
-                auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-            };
-            errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+            }));
         }
     });
 }

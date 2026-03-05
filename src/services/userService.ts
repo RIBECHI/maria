@@ -1,7 +1,7 @@
 
-import { getFirebaseServices } from '@/lib/firebase';
+import { initializeFirebase } from '@/firebase';
 import { collection, getDocs, doc, setDoc, updateDoc, serverTimestamp, query, orderBy, FirestoreError, getDoc, type DocumentData } from 'firebase/firestore';
-import { errorEmitter, FirestorePermissionError, SecurityRuleContext } from '@/lib/errors';
+import { errorEmitter, FirestorePermissionError } from '@/firebase';
 import type { User } from 'firebase/auth';
 
 export interface UserProfile {
@@ -29,8 +29,8 @@ const USERS_COLLECTION = 'users';
 
 // CREATE USER PROFILE
 export async function createUserProfile(user: User): Promise<void> {
-  const { db } = getFirebaseServices();
-  const userDocRef = doc(db, USERS_COLLECTION, user.uid);
+  const { firestore } = initializeFirebase();
+  const userDocRef = doc(firestore, USERS_COLLECTION, user.uid);
   
   // Define o e-mail do administrador. Altere se desejar.
   const adminEmail = "admin@lexmanager.com";
@@ -52,44 +52,38 @@ export async function createUserProfile(user: User): Promise<void> {
         };
         setDoc(userDocRef, dataToSave).catch(error => {
             if (error instanceof FirestoreError && error.code === 'permission-denied') {
-              const context: SecurityRuleContext = {
+              errorEmitter.emit('permission-error', new FirestorePermissionError({
                 path: `${USERS_COLLECTION}/${user.uid}`,
                 operation: 'create',
-                auth: user ? { uid: user.uid } : null,
-                resource: dataToSave,
-              };
-              errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+                requestResourceData: dataToSave,
+              }));
             }
         });
     }
   } catch(error) {
     if (error instanceof FirestoreError && error.code === 'permission-denied') {
-      const context: SecurityRuleContext = {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
         path: `${USERS_COLLECTION}/${user.uid}`,
         operation: 'get',
-        auth: user ? { uid: user.uid } : null,
-      };
-      errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+      }));
     }
   }
 }
 
 // READ ALL USERS (for admins)
 export function getUsers(): Promise<UserProfile[]> {
-  const { db, auth } = getFirebaseServices();
-  const usersCollectionRef = collection(db, USERS_COLLECTION);
+  const { firestore, auth } = initializeFirebase();
+  const usersCollectionRef = collection(firestore, USERS_COLLECTION);
   const q = query(usersCollectionRef, orderBy("name", "asc"));
   
   return getDocs(q)
     .then(querySnapshot => querySnapshot.docs.map(fromFirestore))
     .catch(error => {
         if (error instanceof FirestoreError && error.code === 'permission-denied') {
-        const context: SecurityRuleContext = {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: USERS_COLLECTION,
             operation: 'list',
-            auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-        };
-        errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+        }));
         }
         return [];
     });
@@ -97,38 +91,34 @@ export function getUsers(): Promise<UserProfile[]> {
 
 // UPDATE USER ROLE (for admins)
 export function updateUserRole(userId: string, role: 'Admin' | 'Usuário Padrão'): void {
-    const { db, auth } = getFirebaseServices();
-    const userDocRef = doc(db, USERS_COLLECTION, userId);
+    const { firestore, auth } = initializeFirebase();
+    const userDocRef = doc(firestore, USERS_COLLECTION, userId);
     const dataToUpdate = { role, updatedAt: serverTimestamp() };
     
     updateDoc(userDocRef, dataToUpdate).catch(error => {
        if (error instanceof FirestoreError && error.code === 'permission-denied') {
-        const context: SecurityRuleContext = {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: `${USERS_COLLECTION}/${userId}`,
             operation: 'update',
-            auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-            resource: dataToUpdate,
-        };
-        errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+            requestResourceData: dataToUpdate,
+        }));
         }
     });
 }
 
 // UPDATE USER NAME
 export function updateUserName(userId: string, newName: string): void {
-  const { db, auth } = getFirebaseServices();
-  const userDocRef = doc(db, USERS_COLLECTION, userId);
+  const { firestore, auth } = initializeFirebase();
+  const userDocRef = doc(firestore, USERS_COLLECTION, userId);
   const dataToUpdate = { name: newName, updatedAt: serverTimestamp() };
   
   updateDoc(userDocRef, dataToUpdate).catch(error => {
      if (error instanceof FirestoreError && error.code === 'permission-denied') {
-      const context: SecurityRuleContext = {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
           path: `${USERS_COLLECTION}/${userId}`,
           operation: 'update',
-          auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
-          resource: dataToUpdate,
-      };
-      errorEmitter.emit('permission-error', new FirestorePermissionError(context));
+          requestResourceData: dataToUpdate,
+      }));
       }
   });
 }
