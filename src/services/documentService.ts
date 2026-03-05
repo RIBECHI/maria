@@ -54,33 +54,16 @@ export function getDocuments(): Promise<Document[]> {
   });
 }
 
-// CREATE
-export async function addDocument(docData: DocumentFormValues & { name: string }, file: File): Promise<void> {
-  if (!db || !storage) throw new Error("Firebase not initialized");
-  if (!file) throw new Error("File is required for upload.");
+// CREATE (metadata only)
+export async function addDocument(docData: Omit<Document, 'id'>): Promise<void> {
+  if (!db) throw new Error("Firebase DB not initialized");
 
   const user = auth.currentUser;
   if (!user) {
-    throw new Error("Usuário não autenticado. Impossível carregar o arquivo.");
+    throw new Error("Usuário não autenticado.");
   }
-
-  // Use user-specific path for security
-  const filePath = `documents/${user.uid}/${Date.now()}-${file.name}`;
-  const storageRef = ref(storage, filePath);
   
-  await uploadBytes(storageRef, file);
-  const fileUrl = await getDownloadURL(storageRef);
-
-  const dataToSave = {
-    name: docData.name,
-    process: docData.process,
-    tags: docData.tagsString ? docData.tagsString.split(',').map(t => t.trim()).filter(t => t) : [],
-    uploadDate: new Date().toISOString().split('T')[0],
-    createdAt: serverTimestamp(),
-    fileUrl: fileUrl,
-    filePath: filePath,
-    ownerId: user.uid, // Add ownerId for future read rules
-  };
+  const dataToSave = { ...docData };
 
   try {
     await addDoc(collection(db, 'documents'), dataToSave);
@@ -89,7 +72,7 @@ export async function addDocument(docData: DocumentFormValues & { name: string }
       const context: SecurityRuleContext = {
         path: 'documents',
         operation: 'create',
-        auth: auth.currentUser ? { uid: auth.currentUser.uid } : null,
+        auth: user ? { uid: user.uid } : null,
         resource: dataToSave,
       };
       errorEmitter.emit('permission-error', new FirestorePermissionError(context));
@@ -100,7 +83,7 @@ export async function addDocument(docData: DocumentFormValues & { name: string }
 }
 
 // UPDATE (metadata only)
-export function updateDocument(documentId: string, docData: DocumentFormValues & { name: string }): void {
+export async function updateDocument(documentId: string, docData: DocumentFormValues & { name: string }): Promise<void> {
   if (!db) throw new Error("Firebase DB not initialized");
   const docRef = doc(db, 'documents', documentId);
   
@@ -110,8 +93,10 @@ export function updateDocument(documentId: string, docData: DocumentFormValues &
       updatedAt: serverTimestamp(),
   };
 
-  updateDoc(docRef, dataToUpdate)
-    .catch(error => {
+  try {
+    await updateDoc(docRef, dataToUpdate);
+  }
+  catch(error) {
      if (error instanceof FirestoreError && error.code === 'permission-denied') {
       const context: SecurityRuleContext = {
         path: `documents/${documentId}`,
@@ -121,7 +106,8 @@ export function updateDocument(documentId: string, docData: DocumentFormValues &
       };
       errorEmitter.emit('permission-error', new FirestorePermissionError(context));
     }
-  });
+    throw error;
+  }
 }
 
 // DELETE

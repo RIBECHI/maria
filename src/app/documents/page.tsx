@@ -22,6 +22,9 @@ import {
 import { DocumentFormDialog, type DocumentFormValues, type Document } from "@/components/documents/DocumentFormDialog";
 import { getDocuments, addDocument, updateDocument, deleteDocument, getDownloadUrl } from "@/services/documentService";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { auth } from "@/lib/firebase";
+import { serverTimestamp } from "firebase/firestore";
 
 export default function DocumentsPage() {
   const [documents, setDocuments] = React.useState<Document[]>([]);
@@ -42,7 +45,7 @@ export default function DocumentsPage() {
       console.error("Error fetching documents:", error);
       toast({
         title: "Erro ao buscar documentos",
-        description: "Não foi possível carregar a lista de documentos.",
+        description: "Não foi possível carregar la lista de documentos.",
         variant: "destructive",
       });
     } finally {
@@ -71,21 +74,48 @@ export default function DocumentsPage() {
             toast({ title: "Aviso", description: "A substituição de arquivos não é suportada. Apenas os metadados foram atualizados." });
         }
         const dataToUpdate = { ...data, name: editingDocument.name };
-        updateDocument(editingDocument.id, dataToUpdate as DocumentFormValues & { name: string });
+        await updateDocument(editingDocument.id, dataToUpdate as DocumentFormValues & { name: string });
         toast({ title: "Documento atualizado!", description: `O documento ${dataToUpdate.name} foi atualizado.` });
       } else {
         if (!file) {
             toast({ title: "Arquivo Faltando", description: "Por favor, selecione um arquivo para carregar.", variant: "destructive"});
             return;
         }
-        await addDocument({ ...data, name: file.name } as DocumentFormValues & { name: string }, file);
+
+        const user = auth.currentUser;
+        if (!user) {
+          throw new Error("Usuário não autenticado. Por favor, faça o login novamente.");
+        }
+        
+        toast({ title: "Iniciando upload...", description: `Enviando o arquivo ${file.name}.` });
+
+        const storage = getStorage();
+        const filePath = `documents/${user.uid}/${Date.now()}-${file.name}`;
+        const storageRef = ref(storage, filePath);
+        
+        await uploadBytes(storageRef, file);
+        const fileUrl = await getDownloadURL(storageRef);
+
+        const docDataForService = {
+          name: file.name,
+          process: data.process!,
+          tags: data.tagsString ? data.tagsString.split(',').map(t => t.trim()).filter(t => t) : [],
+          uploadDate: new Date().toISOString().split('T')[0],
+          createdAt: serverTimestamp(),
+          fileUrl: fileUrl,
+          filePath: filePath,
+          ownerId: user.uid,
+        };
+
+        await addDocument(docDataForService as any); 
+
         toast({ title: "Documento adicionado!", description: `O documento ${file.name} foi adicionado.` });
       }
       handleCloseFormDialog();
       setTimeout(() => fetchDocuments(), 500);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to save document:", error);
-      toast({ title: "Erro ao salvar", description: "Não foi possível salvar o documento.", variant: "destructive" });
+      toast({ title: "Erro ao salvar", description: error.message || "Não foi possível salvar o documento.", variant: "destructive" });
     }
   };
 
