@@ -94,9 +94,14 @@ export function DocumentFormDialog({ isOpen, onClose, onSubmit, documentData }: 
 
   const handleFormSubmit: SubmitHandler<DocumentFormValues> = async (data) => {
     setIsLoading(true);
-    const file = data.file?.[0];
-    await onSubmit({ ...data, name: file?.name }, file);
-    setIsLoading(false);
+    try {
+      const file = data.file?.[0];
+      await onSubmit({ ...data, name: file?.name }, file);
+    } catch (error) {
+      // O erro já é tratado na página, aqui apenas garantimos o fim do loading
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleDialogClose = () => {
@@ -207,3 +212,5 @@ export function DocumentFormDialog({ isOpen, onClose, onSubmit, documentData }: 
     </>
   );
 }
+
+    

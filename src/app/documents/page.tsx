@@ -24,7 +24,6 @@ import { getDocuments, addDocument, updateDocument, deleteDocument, getDownloadU
 import { Skeleton } from "@/components/ui/skeleton";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { auth } from "@/lib/firebase";
-import { serverTimestamp } from "firebase/firestore";
 
 export default function DocumentsPage() {
   const [documents, setDocuments] = React.useState<Document[]>([]);
@@ -93,15 +92,22 @@ export default function DocumentsPage() {
         const filePath = `documents/${user.uid}/${Date.now()}-${file.name}`;
         const storageRef = ref(storage, filePath);
         
-        await uploadBytes(storageRef, file);
+        await uploadBytes(storageRef, file).catch(err => {
+          console.error("Upload error:", err);
+          throw new Error(`Falha no upload do arquivo: ${err.message}`);
+        });
+
+        toast({ title: "Upload completo!", description: "Obtendo link do arquivo..." });
+        
         const fileUrl = await getDownloadURL(storageRef);
+
+        toast({ title: "Link obtido!", description: "Salvando informações no banco de dados..." });
 
         const docDataForService = {
           name: file.name,
           process: data.process!,
           tags: data.tagsString ? data.tagsString.split(',').map(t => t.trim()).filter(t => t) : [],
           uploadDate: new Date().toISOString().split('T')[0],
-          createdAt: serverTimestamp(),
           fileUrl: fileUrl,
           filePath: filePath,
           ownerId: user.uid,
@@ -116,6 +122,8 @@ export default function DocumentsPage() {
     } catch (error: any) {
       console.error("Failed to save document:", error);
       toast({ title: "Erro ao salvar", description: error.message || "Não foi possível salvar o documento.", variant: "destructive" });
+      // Re-throw para ser pego pelo finally no dialog
+      throw error;
     }
   };
 
@@ -275,3 +283,5 @@ export default function DocumentsPage() {
     </div>
   );
 }
+
+    

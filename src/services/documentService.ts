@@ -55,7 +55,7 @@ export function getDocuments(): Promise<Document[]> {
 }
 
 // CREATE (metadata only)
-export async function addDocument(docData: Omit<Document, 'id'>): Promise<void> {
+export async function addDocument(docData: Omit<Document, 'id' | 'createdAt'>): Promise<void> {
   if (!db) throw new Error("Firebase DB not initialized");
 
   const user = auth.currentUser;
@@ -63,7 +63,10 @@ export async function addDocument(docData: Omit<Document, 'id'>): Promise<void> 
     throw new Error("Usuário não autenticado.");
   }
   
-  const dataToSave = { ...docData };
+  const dataToSave = { 
+    ...docData,
+    createdAt: serverTimestamp(),
+  };
 
   try {
     await addDoc(collection(db, 'documents'), dataToSave);
@@ -156,3 +159,5 @@ export async function getDownloadUrl(filePath: string): Promise<string> {
     const url = await getDownloadURL(fileRef);
     return url;
 }
+
+    
