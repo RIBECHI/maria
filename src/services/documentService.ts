@@ -1,6 +1,6 @@
 
 import { auth, db, storage } from '@/lib/firebase';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDoc, query, orderBy, FirestoreError } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDoc, query, orderBy, FirestoreError, where } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import type { Document, DocumentFormValues } from '@/components/documents/DocumentFormDialog';
 import type { DocumentData } from 'firebase/firestore';
@@ -17,6 +17,7 @@ const fromFirestore = (docSnap: DocumentData): Document => {
     uploadDate: data.uploadDate,
     fileUrl: data.fileUrl,
     filePath: data.filePath,
+    ownerId: data.ownerId,
   };
    if (data.createdAt) {
       document.createdAt = data.createdAt.toDate().toISOString();
@@ -27,8 +28,16 @@ const fromFirestore = (docSnap: DocumentData): Document => {
 // READ
 export function getDocuments(): Promise<Document[]> {
   if (!db) throw new Error("Firebase DB not initialized");
+  
+  const user = auth.currentUser;
+  if (!user) {
+    // If no user, return no documents.
+    return Promise.resolve([]);
+  }
+
   const documentsCollectionRef = collection(db, 'documents');
-  const q = query(documentsCollectionRef, orderBy("createdAt", "desc"));
+  // Filter documents by the current user's ID
+  const q = query(documentsCollectionRef, where("ownerId", "==", user.uid), orderBy("createdAt", "desc"));
   
   return getDocs(q)
     .then(querySnapshot => querySnapshot.docs.map(fromFirestore))
@@ -50,10 +59,15 @@ export async function addDocument(docData: DocumentFormValues & { name: string }
   if (!db || !storage) throw new Error("Firebase not initialized");
   if (!file) throw new Error("File is required for upload.");
 
-  const filePath = `documents/${Date.now()}-${file.name}`;
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("Usuário não autenticado. Impossível carregar o arquivo.");
+  }
+
+  // Use user-specific path for security
+  const filePath = `documents/${user.uid}/${Date.now()}-${file.name}`;
   const storageRef = ref(storage, filePath);
   
-  // Storage operations can also have security rules, but we focus on Firestore for this pattern.
   await uploadBytes(storageRef, file);
   const fileUrl = await getDownloadURL(storageRef);
 
@@ -65,10 +79,12 @@ export async function addDocument(docData: DocumentFormValues & { name: string }
     createdAt: serverTimestamp(),
     fileUrl: fileUrl,
     filePath: filePath,
+    ownerId: user.uid, // Add ownerId for future read rules
   };
 
-  addDoc(collection(db, 'documents'), dataToSave)
-    .catch(error => {
+  try {
+    await addDoc(collection(db, 'documents'), dataToSave);
+  } catch (error) {
      if (error instanceof FirestoreError && error.code === 'permission-denied') {
       const context: SecurityRuleContext = {
         path: 'documents',
@@ -77,8 +93,10 @@ export async function addDocument(docData: DocumentFormValues & { name: string }
         resource: dataToSave,
       };
       errorEmitter.emit('permission-error', new FirestorePermissionError(context));
-    }
-  });
+     }
+     // Re-throw the error so the calling function can catch it.
+     throw error;
+  }
 }
 
 // UPDATE (metadata only)
@@ -110,17 +128,29 @@ export function updateDocument(documentId: string, docData: DocumentFormValues &
 export async function deleteDocument(document: Document): Promise<void> {
   if (!db || !storage) throw new Error("Firebase not initialized");
 
+  const user = auth.currentUser;
+  if (!user) throw new Error("Usuário não autenticado.");
+
+  // For security, ideally we check ownership before deleting
+  if (document.ownerId && document.ownerId !== user.uid) {
+    throw new Error("Você não tem permissão para excluir este arquivo.");
+  }
+
+
   if (document.filePath) {
       const fileRef = ref(storage, document.filePath);
       await deleteObject(fileRef).catch(error => {
           if (error.code !== 'storage/object-not-found') {
               console.error("Error deleting file from storage:", error);
+              throw error; 
           }
       });
   }
 
   const docRef = doc(db, 'documents', document.id);
-  deleteDoc(docRef).catch(error => {
+  try {
+    await deleteDoc(docRef);
+  } catch(error) {
     if (error instanceof FirestoreError && error.code === 'permission-denied') {
       const context: SecurityRuleContext = {
         path: `documents/${document.id}`,
@@ -129,7 +159,8 @@ export async function deleteDocument(document: Document): Promise<void> {
       };
       errorEmitter.emit('permission-error', new FirestorePermissionError(context));
     }
-  });
+    throw error;
+  }
 }
 
 // DOWNLOAD URL GETTER

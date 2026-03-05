@@ -38,6 +38,7 @@ export interface Document extends DocumentData {
   createdAt?: string;
   fileUrl: string;
   filePath: string;
+  ownerId?: string;
 }
 
 const documentFormSchemaBase = z.object({

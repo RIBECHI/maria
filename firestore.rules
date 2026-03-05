@@ -324,13 +324,13 @@ service cloud.firestore {
     }
 
     /**
-     * @description Manages documents metadata. All authenticated users can read and write.
-     * @path /documents/{documentId}
-     * @principle Allows global read/write for collaboration. Storage file access
-     *            should be controlled by Firebase Storage security rules.
+     * @description Manages documents metadata.
+     * @principle Users can create their own documents and can only read/manage documents they own.
      */
     match /documents/{documentId} {
-      allow read, write: if isSignedIn();
+      allow read: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
+      allow update, delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
     }
 
     /**
