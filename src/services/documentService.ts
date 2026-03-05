@@ -54,24 +54,42 @@ export function getDocuments(): Promise<Document[]> {
   });
 }
 
-// CREATE (metadata only)
-export async function addDocument(docData: Omit<Document, 'id' | 'createdAt'>): Promise<void> {
-  if (!db) throw new Error("Firebase DB not initialized");
-
+// CREATE (handles both upload and metadata)
+export async function addDocument(docData: DocumentFormValues, file: File): Promise<void> {
+  if (!db || !storage) throw new Error("Firebase não foi inicializado corretamente.");
   const user = auth.currentUser;
   if (!user) {
-    throw new Error("Usuário não autenticado.");
+    throw new Error("Usuário não autenticado. Por favor, faça o login novamente.");
+  }
+
+  // 1. Upload file to Storage
+  const filePath = `documents/${user.uid}/${Date.now()}-${file.name}`;
+  const storageRef = ref(storage, filePath);
+  let fileUrl = '';
+  try {
+    await uploadBytes(storageRef, file);
+    fileUrl = await getDownloadURL(storageRef);
+  } catch (storageError) {
+    console.error("Erro no upload para o Firebase Storage:", storageError);
+    throw new Error(`Falha no upload do arquivo: ${(storageError as Error).message}`);
   }
   
-  const dataToSave = { 
-    ...docData,
+  // 2. Create document metadata in Firestore
+  const dataToSave = {
+    name: file.name,
+    process: docData.process,
+    tags: docData.tagsString ? docData.tagsString.split(',').map(t => t.trim()).filter(t => t) : [],
+    uploadDate: new Date().toISOString().split('T')[0],
+    fileUrl: fileUrl,
+    filePath: filePath,
+    ownerId: user.uid,
     createdAt: serverTimestamp(),
   };
 
   try {
     await addDoc(collection(db, 'documents'), dataToSave);
-  } catch (error) {
-     if (error instanceof FirestoreError && error.code === 'permission-denied') {
+  } catch (firestoreError) {
+     if (firestoreError instanceof FirestoreError && firestoreError.code === 'permission-denied') {
       const context: SecurityRuleContext = {
         path: 'documents',
         operation: 'create',
@@ -80,8 +98,8 @@ export async function addDocument(docData: Omit<Document, 'id' | 'createdAt'>): 
       };
       errorEmitter.emit('permission-error', new FirestorePermissionError(context));
      }
-     // Re-throw the error so the calling function can catch it.
-     throw error;
+     console.error("Erro ao salvar metadados no Firestore:", firestoreError);
+     throw firestoreError;
   }
 }
 
@@ -159,5 +177,3 @@ export async function getDownloadUrl(filePath: string): Promise<string> {
     const url = await getDownloadURL(fileRef);
     return url;
 }
-
-    

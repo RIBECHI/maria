@@ -42,7 +42,6 @@ export interface Document extends DocumentData {
 }
 
 const documentFormSchemaBase = z.object({
-  name: z.string().optional(),
   process: z.string().min(3, { message: "O processo vinculado é obrigatório." }),
   tagsString: z.string().optional(),
 });
@@ -63,7 +62,7 @@ export type DocumentFormValues = z.infer<typeof documentFormSchemaCreate>;
 interface DocumentFormDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: Partial<DocumentFormValues>, file?: File) => Promise<void>;
+  onSubmit: (data: DocumentFormValues, file?: File) => Promise<void>;
   documentData?: Document;
 }
 
@@ -96,9 +95,10 @@ export function DocumentFormDialog({ isOpen, onClose, onSubmit, documentData }: 
     setIsLoading(true);
     try {
       const file = data.file?.[0];
-      await onSubmit({ ...data, name: file?.name }, file);
+      await onSubmit(data, file);
     } catch (error) {
-      // O erro já é tratado na página, aqui apenas garantimos o fim do loading
+      // O erro já é tratado e exibido na página, o catch aqui serve para
+      // garantir que o `finally` seja executado e o spinner pare.
     } finally {
       setIsLoading(false);
     }
@@ -212,5 +212,3 @@ export function DocumentFormDialog({ isOpen, onClose, onSubmit, documentData }: 
     </>
   );
 }
-
-    

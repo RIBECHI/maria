@@ -22,8 +22,6 @@ import {
 import { DocumentFormDialog, type DocumentFormValues, type Document } from "@/components/documents/DocumentFormDialog";
 import { getDocuments, addDocument, updateDocument, deleteDocument, getDownloadUrl } from "@/services/documentService";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { auth } from "@/lib/firebase";
 
 export default function DocumentsPage() {
   const [documents, setDocuments] = React.useState<Document[]>([]);
@@ -66,63 +64,33 @@ export default function DocumentsPage() {
     setIsFormDialogOpen(false);
   };
 
-  const handleSubmitDocumentForm = async (data: Partial<DocumentFormValues>, file?: File) => {
+  const handleSubmitDocumentForm = async (data: DocumentFormValues, file?: File) => {
     try {
       if (editingDocument) {
-        if (file) {
-            toast({ title: "Aviso", description: "A substituição de arquivos não é suportada. Apenas os metadados foram atualizados." });
-        }
+        // A lógica de edição não lida com o upload de um novo arquivo, apenas com metadados.
         const dataToUpdate = { ...data, name: editingDocument.name };
         await updateDocument(editingDocument.id, dataToUpdate as DocumentFormValues & { name: string });
-        toast({ title: "Documento atualizado!", description: `O documento ${dataToUpdate.name} foi atualizado.` });
+        toast({ title: "Documento atualizado!", description: `Os metadados do documento ${dataToUpdate.name} foram atualizados.` });
       } else {
         if (!file) {
             toast({ title: "Arquivo Faltando", description: "Por favor, selecione um arquivo para carregar.", variant: "destructive"});
-            return;
+            // Lança um erro para que o formulário saiba que a submissão falhou
+            throw new Error("Arquivo não fornecido.");
         }
-
-        const user = auth.currentUser;
-        if (!user) {
-          throw new Error("Usuário não autenticado. Por favor, faça o login novamente.");
-        }
+        toast({ title: "Iniciando upload...", description: `Enviando o arquivo ${file.name}. Isso pode levar um momento.` });
         
-        toast({ title: "Iniciando upload...", description: `Enviando o arquivo ${file.name}.` });
-
-        const storage = getStorage();
-        const filePath = `documents/${user.uid}/${Date.now()}-${file.name}`;
-        const storageRef = ref(storage, filePath);
+        // O serviço agora lida com o upload e a criação do documento no Firestore.
+        await addDocument(data, file);
         
-        await uploadBytes(storageRef, file).catch(err => {
-          console.error("Upload error:", err);
-          throw new Error(`Falha no upload do arquivo: ${err.message}`);
-        });
-
-        toast({ title: "Upload completo!", description: "Obtendo link do arquivo..." });
-        
-        const fileUrl = await getDownloadURL(storageRef);
-
-        toast({ title: "Link obtido!", description: "Salvando informações no banco de dados..." });
-
-        const docDataForService = {
-          name: file.name,
-          process: data.process!,
-          tags: data.tagsString ? data.tagsString.split(',').map(t => t.trim()).filter(t => t) : [],
-          uploadDate: new Date().toISOString().split('T')[0],
-          fileUrl: fileUrl,
-          filePath: filePath,
-          ownerId: user.uid,
-        };
-
-        await addDocument(docDataForService as any); 
-
-        toast({ title: "Documento adicionado!", description: `O documento ${file.name} foi adicionado.` });
+        toast({ title: "Documento adicionado!", description: `O documento ${file.name} foi carregado e salvo com sucesso.` });
       }
       handleCloseFormDialog();
+      // Use um pequeno atraso para dar tempo ao Firestore de atualizar antes de refazer a busca
       setTimeout(() => fetchDocuments(), 500);
     } catch (error: any) {
-      console.error("Failed to save document:", error);
-      toast({ title: "Erro ao salvar", description: error.message || "Não foi possível salvar o documento.", variant: "destructive" });
-      // Re-throw para ser pego pelo finally no dialog
+      console.error("Falha ao salvar o documento:", error);
+      toast({ title: "Erro ao Salvar", description: error.message || "Não foi possível salvar o documento.", variant: "destructive" });
+      // Re-lançar o erro garante que o estado de 'loading' no formulário seja tratado corretamente.
       throw error;
     }
   };
@@ -153,7 +121,6 @@ export default function DocumentsPage() {
     try {
         const url = await getDownloadUrl(doc.filePath);
         
-        // Client-side download logic
         const response = await fetch(url);
         const blob = await response.blob();
         const blobUrl = window.URL.createObjectURL(blob);
@@ -283,5 +250,3 @@ export default function DocumentsPage() {
     </div>
   );
 }
-
-    
