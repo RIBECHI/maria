@@ -2,73 +2,124 @@
 "use client";
 
 import * as React from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { getClients } from "@/services/clientService";
-import { getProcesses } from "@/services/processService";
+import { getClients, updateClient } from "@/services/clientService";
+import { getProcesses, updateProcess } from "@/services/processService";
 import type { Client } from "@/components/clients/ClientFormDialog";
 import type { Process } from "@/components/processes/ProcessFormDialog";
-import { FileText, Search, ExternalLink } from "lucide-react";
+import { FileText, Search, ExternalLink, Link as LinkIcon, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 
 interface DocumentLink {
   parentType: 'Cliente' | 'Processo';
   parentName: string;
+  parentObject: Client | Process;
   link: string;
 }
 
 export default function DocumentsPage() {
   const [documentLinks, setDocumentLinks] = React.useState<DocumentLink[]>([]);
+  const [clients, setClients] = React.useState<Client[]>([]);
+  const [processes, setProcesses] = React.useState<Process[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [searchTerm, setSearchTerm] = React.useState("");
   const { toast } = useToast();
 
-  React.useEffect(() => {
-    async function fetchData() {
-      setIsLoading(true);
-      try {
-        const [clients, processes] = await Promise.all([
-          getClients(),
-          getProcesses(),
-        ]);
+  // State for the new link form
+  const [selectedParentType, setSelectedParentType] = React.useState<'client' | 'process'>('client');
+  const [selectedParentId, setSelectedParentId] = React.useState<string | undefined>();
+  const [newLink, setNewLink] = React.useState('');
+  const [isSaving, setIsSaving] = React.useState(false);
 
-        const clientLinks = clients.flatMap((client: Client) => 
-          (client.driveLinks || []).map(link => ({
-            parentType: 'Cliente' as const,
-            parentName: client.name,
-            link,
-          }))
-        );
 
-        const processLinks = processes.flatMap((process: Process) => 
-          (process.driveLinks || []).map(link => ({
-            parentType: 'Processo' as const,
-            parentName: process.processNumber,
-            link,
-          }))
-        );
+  const fetchData = React.useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [clientsData, processesData] = await Promise.all([
+        getClients(),
+        getProcesses(),
+      ]);
 
-        setDocumentLinks([...clientLinks, ...processLinks]);
+      setClients(clientsData);
+      setProcesses(processesData);
 
-      } catch (error) {
-        console.error("Error fetching document links:", error);
-        toast({
-          title: "Erro ao carregar documentos",
-          description: "Não foi possível buscar os links de clientes e processos.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
+      const clientLinks: DocumentLink[] = clientsData.flatMap((client: Client) =>
+        (client.driveLinks || []).map(link => ({
+          parentType: 'Cliente' as const,
+          parentName: client.name,
+          parentObject: client,
+          link,
+        }))
+      );
+
+      const processLinks: DocumentLink[] = processesData.flatMap((process: Process) =>
+        (process.driveLinks || []).map(link => ({
+          parentType: 'Processo' as const,
+          parentName: process.processNumber,
+          parentObject: process,
+          link,
+        }))
+      );
+
+      setDocumentLinks([...clientLinks, ...processLinks].sort((a,b) => a.parentName.localeCompare(b.parentName)));
+
+    } catch (error) {
+      console.error("Error fetching document links:", error);
+      toast({
+        title: "Erro ao carregar documentos",
+        description: "Não foi possível buscar os links de clientes e processos.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
-
-    fetchData();
   }, [toast]);
+
+  React.useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const handleAddLink = async () => {
+    if (!selectedParentId || !newLink) {
+        toast({ title: "Informação incompleta", description: "Por favor, selecione um cliente/processo e insira um link.", variant: "destructive" });
+        return;
+    }
+    
+    setIsSaving(true);
+    try {
+        if (selectedParentType === 'client') {
+            const client = clients.find(c => c.id === selectedParentId);
+            if (!client) throw new Error("Cliente não encontrado.");
+            const updatedLinks = [...(client.driveLinks || []), newLink];
+            await updateClient(client.id, { driveLinks: updatedLinks });
+        } else {
+            const process = processes.find(p => p.id === selectedParentId);
+            if (!process) throw new Error("Processo não encontrado.");
+            const updatedLinks = [...(process.driveLinks || []), newLink];
+            await updateProcess(process.id, { driveLinks: updatedLinks });
+        }
+        
+        toast({ title: "Link Adicionado!", description: "O novo documento foi vinculado com sucesso." });
+        setNewLink('');
+        setSelectedParentId(undefined);
+        fetchData(); // Refresh the list
+    } catch (error: any) {
+        toast({ title: "Erro ao salvar", description: error.message, variant: "destructive"});
+    } finally {
+        setIsSaving(false);
+    }
+  };
+
 
   const filteredLinks = documentLinks.filter(doc =>
     doc.link.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -78,15 +129,12 @@ export default function DocumentsPage() {
   const getLinkName = (url: string) => {
     try {
         const urlObject = new URL(url);
-        // Tenta pegar a última parte do caminho, que geralmente é o nome do arquivo ou pasta
         const pathParts = urlObject.pathname.split('/').filter(p => p);
         if (pathParts.length > 0) {
             return decodeURIComponent(pathParts[pathParts.length - 1]);
         }
-        // Se não houver caminho, usa o hostname
         return urlObject.hostname;
     } catch (e) {
-        // Se for um link inválido, apenas retorna o link
         return url;
     }
   };
@@ -97,10 +145,73 @@ export default function DocumentsPage() {
         <FileText className="h-10 w-10 text-primary" />
         <div>
             <h1 className="text-4xl font-headline font-extrabold text-primary">Repositório de Documentos</h1>
-            <p className="text-muted-foreground">Todos os links de documentos e pastas do Google Drive em um só lugar.</p>
+            <p className="text-muted-foreground">Adicione e gerencie os links de documentos e pastas do Google Drive.</p>
         </div>
       </div>
       
+       {/* Add New Link Card */}
+      <Card className="shadow-lg mb-8">
+        <CardHeader>
+          <CardTitle>Adicionar Documento por Link</CardTitle>
+          <CardDescription>
+            Selecione um cliente ou processo e cole o link do Google Drive para vinculá-lo.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+            <div className="space-y-2">
+                <Label>1. Vincular a:</Label>
+                <RadioGroup 
+                    defaultValue="client" 
+                    onValueChange={(value) => {
+                        setSelectedParentType(value as any);
+                        setSelectedParentId(undefined);
+                    }}
+                    className="flex gap-4"
+                >
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="client" id="r-client" />
+                        <Label htmlFor="r-client">Cliente</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="process" id="r-process" />
+                        <Label htmlFor="r-process">Processo</Label>
+                    </div>
+                </RadioGroup>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>2. Selecione o item específico:</Label>
+                <Select onValueChange={setSelectedParentId} value={selectedParentId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={`Selecione um ${selectedParentType === 'client' ? 'cliente' : 'processo'}`} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {selectedParentType === 'client' ? (
+                        clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)
+                    ) : (
+                        processes.map(p => <SelectItem key={p.id} value={p.id}>{p.processNumber} - {p.clients.join(', ')}</SelectItem>)
+                    )}
+                  </SelectContent>
+                </Select>
+            </div>
+             <div className="space-y-2">
+                <Label htmlFor="new-link">3. Cole o link do documento:</Label>
+                <Input
+                    id="new-link"
+                    placeholder="https://docs.google.com/document/d/..."
+                    value={newLink}
+                    onChange={(e) => setNewLink(e.target.value)}
+                />
+            </div>
+        </CardContent>
+        <CardFooter>
+            <Button onClick={handleAddLink} disabled={isSaving}>
+                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LinkIcon className="mr-2 h-4 w-4" />}
+                Adicionar Link
+            </Button>
+        </CardFooter>
+      </Card>
+
       <div className="mb-6 flex items-center gap-2">
         <Search className="h-5 w-5 text-muted-foreground" />
         <Input
