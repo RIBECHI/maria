@@ -328,9 +328,7 @@ service cloud.firestore {
      * @principle Users can create their own documents and can only read/manage documents they own.
      */
     match /documents/{documentId} {
-      allow read: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
-      allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
-      allow update, delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow read, write: if isSignedIn();
     }
 
     /**
@@ -344,20 +342,20 @@ service cloud.firestore {
 
     /**
      * @description Manages the phases (columns) for the process pipeline.
-     *              Admins can create, update, and delete phases. All authenticated users can read them.
+     *              All authenticated users can manage phases.
      */
     match /documentPhases/{phaseId} {
         allow read: if isSignedIn();
-        allow write: if isAdmin();
+        allow write: if isSignedIn();
     }
     
     /**
      * @description Manages text templates for document generation.
-     *              Admins can manage templates, and all authenticated users can read them.
+     *              All authenticated users can manage templates.
      */
     match /documentTemplates/{templateId} {
         allow read: if isSignedIn();
-        allow write: if isAdmin();
+        allow write: if isSignedIn();
     }
   }
 }
