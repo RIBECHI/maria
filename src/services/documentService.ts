@@ -53,11 +53,11 @@ export function getDocuments(): Promise<Document[]> {
 }
 
 // CREATE (handles both upload and metadata)
-export async function addDocument(docData: DocumentFormValues, file: File): Promise<void> {
+export async function addDocument(docData: DocumentFormValues, file: File): Promise<{ success: boolean; error?: string; }> {
   const { firestore, storage, auth } = initializeFirebase();
   const user = auth.currentUser;
   if (!user) {
-    throw new Error("Usuário não autenticado. Por favor, faça o login novamente.");
+    return { success: false, error: "Usuário não autenticado. Por favor, faça o login novamente." };
   }
 
   // 1. Upload file to Storage
@@ -65,24 +65,19 @@ export async function addDocument(docData: DocumentFormValues, file: File): Prom
   const storageRef = ref(storage, filePath);
   let fileUrl = '';
   try {
-    console.log(`Uploading file to: ${filePath}`);
     const uploadResult = await uploadBytes(storageRef, file);
     fileUrl = await getDownloadURL(uploadResult.ref);
-    console.log(`File uploaded successfully. URL: ${fileUrl}`);
   } catch (storageError: any) {
     console.error("Erro no upload para o Firebase Storage:", storageError.code, storageError.message);
-
     let friendlyMessage = "Falha no upload do arquivo. Verifique o console do navegador para mais detalhes.";
 
-    // Check for specific Firebase Storage error codes
     if (storageError.code === 'storage/unauthorized') {
-        friendlyMessage = "Erro de permissão (CORS). O seu ambiente de desenvolvimento não tem permissão para enviar arquivos. Siga as instruções de configuração CORS.";
+        friendlyMessage = "Erro de permissão (CORS). Verifique se o bucket do Storage permite uploads do seu domínio de desenvolvimento. Siga as instruções de configuração de CORS.";
     } else if (storageError.code === 'storage/retry-limit-exceeded') {
         friendlyMessage = "O tempo limite da conexão foi excedido. Isso geralmente é um problema de configuração de CORS ou de rede. Verifique se as regras de CORS do seu bucket do Storage estão corretas.";
     }
     
-    // Re-throw a new error with the user-friendly message.
-    throw new Error(friendlyMessage);
+    return { success: false, error: friendlyMessage };
   }
   
   // 2. Create document metadata in Firestore
@@ -98,9 +93,7 @@ export async function addDocument(docData: DocumentFormValues, file: File): Prom
   };
 
   try {
-    console.log("Saving metadata to Firestore...");
     await addDoc(collection(firestore, 'documents'), dataToSave);
-    console.log("Metadata saved successfully.");
   } catch (firestoreError) {
      if (firestoreError instanceof FirestoreError && firestoreError.code === 'permission-denied') {
       errorEmitter.emit('permission-error', new FirestorePermissionError({
@@ -114,13 +107,15 @@ export async function addDocument(docData: DocumentFormValues, file: File): Prom
      await deleteObject(storageRef).catch(cleanupError => {
         console.error("Failed to clean up uploaded file after Firestore error:", cleanupError);
      });
-     throw firestoreError;
+     return { success: false, error: "Falha ao salvar os metadados do arquivo no banco de dados." };
   }
+  
+  return { success: true };
 }
 
 // UPDATE (metadata only)
-export async function updateDocument(documentId: string, docData: DocumentFormValues & { name: string }): Promise<void> {
-  const { firestore, auth } = initializeFirebase();
+export async function updateDocument(documentId: string, docData: DocumentFormValues & { name: string }): Promise<{ success: boolean; error?: string; }> {
+  const { firestore } = initializeFirebase();
   const docRef = doc(firestore, 'documents', documentId);
   
   const dataToUpdate = {
@@ -131,6 +126,7 @@ export async function updateDocument(documentId: string, docData: DocumentFormVa
 
   try {
     await updateDoc(docRef, dataToUpdate);
+    return { success: true };
   }
   catch(error) {
      if (error instanceof FirestoreError && error.code === 'permission-denied') {
@@ -139,8 +135,9 @@ export async function updateDocument(documentId: string, docData: DocumentFormVa
         operation: 'update',
         requestResourceData: dataToUpdate,
       }));
+      return { success: false, error: "Você não tem permissão para atualizar este documento." };
     }
-    throw error;
+    return { success: false, error: "Ocorreu um erro desconhecido ao atualizar." };
   }
 }
 

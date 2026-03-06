@@ -65,34 +65,34 @@ export default function DocumentsPage() {
   };
 
   const handleSubmitDocumentForm = async (data: DocumentFormValues, file?: File) => {
-    try {
-      if (editingDocument) {
-        // A lógica de edição não lida com o upload de um novo arquivo, apenas com metadados.
-        const dataToUpdate = { ...data, name: editingDocument.name };
-        await updateDocument(editingDocument.id, dataToUpdate as DocumentFormValues & { name: string });
+    if (editingDocument) {
+      const dataToUpdate = { ...data, name: editingDocument.name };
+      const result = await updateDocument(editingDocument.id, dataToUpdate as DocumentFormValues & { name: string });
+      
+      if (result.success) {
         toast({ title: "Documento atualizado!", description: `Os metadados do documento ${dataToUpdate.name} foram atualizados.` });
+        handleCloseFormDialog();
+        setTimeout(() => fetchDocuments(), 500);
       } else {
-        if (!file) {
-            toast({ title: "Arquivo Faltando", description: "Por favor, selecione um arquivo para carregar.", variant: "destructive"});
-            // Lança um erro para que o formulário saiba que a submissão falhou.
-            throw new Error("Arquivo não fornecido.");
-        }
-        toast({ title: "Iniciando upload...", description: `Enviando o arquivo ${file.name}. Isso pode levar um momento.` });
-        
-        // O serviço agora lida com o upload e a criação do documento no Firestore.
-        await addDocument(data, file);
-        
-        toast({ title: "Documento adicionado!", description: `O documento ${file.name} foi carregado e salvo com sucesso.` });
+        toast({ title: "Erro ao Atualizar", description: result.error, variant: "destructive" });
       }
-      handleCloseFormDialog();
-      // Use um pequeno atraso para dar tempo ao Firestore de atualizar antes de refazer a busca
-      setTimeout(() => fetchDocuments(), 500);
-    } catch (error: any) {
-      console.error("Falha ao salvar o documento:", error);
-      const errorMessage = error.message || "Não foi possível salvar o documento. Verifique o console para mais detalhes.";
-      toast({ title: "Erro ao Salvar", description: errorMessage, variant: "destructive" });
-      // Re-lançar o erro garante que o estado de 'loading' no formulário seja tratado corretamente.
-      throw error;
+
+    } else {
+      if (!file) {
+          toast({ title: "Arquivo Faltando", description: "Por favor, selecione um arquivo para carregar.", variant: "destructive"});
+          return;
+      }
+      toast({ title: "Iniciando upload...", description: `Enviando o arquivo ${file.name}. Isso pode levar um momento.` });
+      
+      const result = await addDocument(data, file);
+      
+      if (result.success) {
+        toast({ title: "Documento adicionado!", description: `O documento ${file.name} foi carregado e salvo com sucesso.` });
+        handleCloseFormDialog();
+        setTimeout(() => fetchDocuments(), 500);
+      } else {
+        toast({ title: "Erro ao Salvar", description: result.error, variant: "destructive" });
+      }
     }
   };
 

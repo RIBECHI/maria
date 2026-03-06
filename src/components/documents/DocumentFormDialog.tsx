@@ -95,12 +95,8 @@ export function DocumentFormDialog({ isOpen, onClose, onSubmit, documentData }: 
     setIsLoading(true);
     try {
       const file = data.file?.[0];
-      // The onSubmit prop is the handleSubmitDocumentForm from the page,
-      // which already has its own try/catch for showing toasts.
       await onSubmit(data, file);
     } finally {
-      // This ensures the loading spinner is always turned off,
-      // regardless of whether the submission succeeded or failed.
       setIsLoading(false);
     }
   };
