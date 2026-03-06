@@ -64,10 +64,10 @@ interface DocumentFormDialogProps {
   onClose: () => void;
   onSubmit: (data: DocumentFormValues, file?: File) => Promise<void>;
   documentData?: Document;
+  isSubmitting: boolean;
 }
 
-export function DocumentFormDialog({ isOpen, onClose, onSubmit, documentData }: DocumentFormDialogProps) {
-  const [isLoading, setIsLoading] = React.useState(false);
+export function DocumentFormDialog({ isOpen, onClose, onSubmit, documentData, isSubmitting }: DocumentFormDialogProps) {
   const [isProcessSearchOpen, setIsProcessSearchOpen] = React.useState(false);
 
   const form = useForm<DocumentFormValues>({
@@ -91,18 +91,13 @@ export function DocumentFormDialog({ isOpen, onClose, onSubmit, documentData }: 
     }
   }, [documentData, form, isOpen]);
 
-  const handleFormSubmit: SubmitHandler<DocumentFormValues> = async (data) => {
-    setIsLoading(true);
-    try {
-      const file = data.file?.[0];
-      await onSubmit(data, file);
-    } finally {
-      setIsLoading(false);
-    }
+  const handleFormSubmit: SubmitHandler<DocumentFormValues> = (data) => {
+    const file = data.file?.[0];
+    onSubmit(data, file);
   };
 
   const handleDialogClose = () => {
-    if (!isLoading) {
+    if (!isSubmitting) {
       onClose();
     }
   };
@@ -131,7 +126,7 @@ export function DocumentFormDialog({ isOpen, onClose, onSubmit, documentData }: 
                   <FormItem>
                     <FormLabel>Arquivo</FormLabel>
                     <FormControl>
-                       <Input type="file" {...fileRef} disabled={!!documentData} />
+                       <Input type="file" {...fileRef} disabled={!!documentData || isSubmitting} />
                     </FormControl>
                     <FormDescriptionUI>
                       {documentData ? `Arquivo carregado: ${documentData.name}` : 'Tamanho máximo: 5MB.'}
@@ -149,7 +144,7 @@ export function DocumentFormDialog({ isOpen, onClose, onSubmit, documentData }: 
                     <FormLabel>Processo Vinculado (ID)</FormLabel>
                     <div className="flex items-center gap-2">
                       <FormControl>
-                        <Input placeholder="Ex: PROC001" {...field} />
+                        <Input placeholder="Ex: PROC001" {...field} disabled={isSubmitting} />
                       </FormControl>
                        <Button
                         type="button"
@@ -157,6 +152,7 @@ export function DocumentFormDialog({ isOpen, onClose, onSubmit, documentData }: 
                         size="icon"
                         onClick={() => setIsProcessSearchOpen(true)}
                         aria-label="Buscar processo"
+                        disabled={isSubmitting}
                       >
                         <Search className="h-4 w-4" />
                       </Button>
@@ -172,18 +168,18 @@ export function DocumentFormDialog({ isOpen, onClose, onSubmit, documentData }: 
                   <FormItem>
                     <FormLabel>Tags (separadas por vírgula)</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="Ex: Contrato, Petição, Importante" {...field} />
+                      <Textarea placeholder="Ex: Contrato, Petição, Importante" {...field} disabled={isSubmitting}/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={handleDialogClose} disabled={isLoading}>
+                <Button type="button" variant="outline" onClick={handleDialogClose} disabled={isSubmitting}>
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading ? (
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Salvando...

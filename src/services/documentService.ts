@@ -53,11 +53,11 @@ export function getDocuments(): Promise<Document[]> {
 }
 
 // CREATE (handles both upload and metadata)
-export async function addDocument(docData: DocumentFormValues, file: File): Promise<{ success: boolean; error?: string; }> {
+export async function addDocument(docData: DocumentFormValues, file: File): Promise<void> {
   const { firestore, storage, auth } = initializeFirebase();
   const user = auth.currentUser;
   if (!user) {
-    return { success: false, error: "Usuário não autenticado. Por favor, faça o login novamente." };
+    throw new Error("Usuário não autenticado. Por favor, faça o login novamente.");
   }
 
   // 1. Upload file to Storage
@@ -68,16 +68,16 @@ export async function addDocument(docData: DocumentFormValues, file: File): Prom
     const uploadResult = await uploadBytes(storageRef, file);
     fileUrl = await getDownloadURL(uploadResult.ref);
   } catch (storageError: any) {
-    console.error("Erro no upload para o Firebase Storage:", storageError.code, storageError.message);
+    console.error("Erro no upload para o Firebase Storage:", storageError);
     let friendlyMessage = "Falha no upload do arquivo. Verifique o console do navegador para mais detalhes.";
 
-    if (storageError.code === 'storage/unauthorized') {
-        friendlyMessage = "Erro de permissão (CORS). Verifique se o bucket do Storage permite uploads do seu domínio de desenvolvimento. Siga as instruções de configuração de CORS.";
-    } else if (storageError.code === 'storage/retry-limit-exceeded') {
-        friendlyMessage = "O tempo limite da conexão foi excedido. Isso geralmente é um problema de configuração de CORS ou de rede. Verifique se as regras de CORS do seu bucket do Storage estão corretas.";
+    // Provide a more specific error message for CORS issues.
+    if (storageError.code === 'storage/unauthorized' || storageError.code === 'storage/retry-limit-exceeded') {
+        friendlyMessage = `O upload falhou devido a um problema de permissão (CORS). Certifique-se de que as regras de segurança do seu Firebase Storage permitem uploads do seu domínio.`;
     }
     
-    return { success: false, error: friendlyMessage };
+    // Throw an error to be caught by the calling function.
+    throw new Error(friendlyMessage);
   }
   
   // 2. Create document metadata in Firestore
@@ -107,14 +107,12 @@ export async function addDocument(docData: DocumentFormValues, file: File): Prom
      await deleteObject(storageRef).catch(cleanupError => {
         console.error("Failed to clean up uploaded file after Firestore error:", cleanupError);
      });
-     return { success: false, error: "Falha ao salvar os metadados do arquivo no banco de dados." };
+     throw new Error("Falha ao salvar os metadados do arquivo no banco de dados.");
   }
-  
-  return { success: true };
 }
 
 // UPDATE (metadata only)
-export async function updateDocument(documentId: string, docData: DocumentFormValues & { name: string }): Promise<{ success: boolean; error?: string; }> {
+export async function updateDocument(documentId: string, docData: DocumentFormValues & { name: string }): Promise<void> {
   const { firestore } = initializeFirebase();
   const docRef = doc(firestore, 'documents', documentId);
   
@@ -126,7 +124,6 @@ export async function updateDocument(documentId: string, docData: DocumentFormVa
 
   try {
     await updateDoc(docRef, dataToUpdate);
-    return { success: true };
   }
   catch(error) {
      if (error instanceof FirestoreError && error.code === 'permission-denied') {
@@ -135,9 +132,9 @@ export async function updateDocument(documentId: string, docData: DocumentFormVa
         operation: 'update',
         requestResourceData: dataToUpdate,
       }));
-      return { success: false, error: "Você não tem permissão para atualizar este documento." };
+      throw new Error("Você não tem permissão para atualizar este documento.");
     }
-    return { success: false, error: "Ocorreu um erro desconhecido ao atualizar." };
+    throw new Error("Ocorreu um erro desconhecido ao atualizar.");
   }
 }
 

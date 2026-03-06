@@ -26,6 +26,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function DocumentsPage() {
   const [documents, setDocuments] = React.useState<Document[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isFormDialogOpen, setIsFormDialogOpen] = React.useState(false);
   const [editingDocument, setEditingDocument] = React.useState<Document | undefined>(undefined);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
@@ -65,36 +66,34 @@ export default function DocumentsPage() {
   };
 
   const handleSubmitDocumentForm = async (data: DocumentFormValues, file?: File) => {
-    if (editingDocument) {
-      const dataToUpdate = { ...data, name: editingDocument.name };
-      const result = await updateDocument(editingDocument.id, dataToUpdate as DocumentFormValues & { name: string });
-      
-      if (result.success) {
+    setIsSubmitting(true);
+    try {
+      if (editingDocument) {
+        // Apenas metadados são atualizados, o arquivo não pode ser trocado.
+        const dataToUpdate = { ...data, name: editingDocument.name };
+        await updateDocument(editingDocument.id, dataToUpdate);
         toast({ title: "Documento atualizado!", description: `Os metadados do documento ${dataToUpdate.name} foram atualizados.` });
-        handleCloseFormDialog();
-        setTimeout(() => fetchDocuments(), 500);
       } else {
-        toast({ title: "Erro ao Atualizar", description: result.error, variant: "destructive" });
-      }
-
-    } else {
-      if (!file) {
+        if (!file) {
           toast({ title: "Arquivo Faltando", description: "Por favor, selecione um arquivo para carregar.", variant: "destructive"});
           return;
-      }
-      toast({ title: "Iniciando upload...", description: `Enviando o arquivo ${file.name}. Isso pode levar um momento.` });
-      
-      const result = await addDocument(data, file);
-      
-      if (result.success) {
+        }
+        toast({ title: "Iniciando upload...", description: `Enviando o arquivo ${file.name}. Isso pode levar um momento.` });
+        
+        await addDocument(data, file);
+        
         toast({ title: "Documento adicionado!", description: `O documento ${file.name} foi carregado e salvo com sucesso.` });
-        handleCloseFormDialog();
-        setTimeout(() => fetchDocuments(), 500);
-      } else {
-        toast({ title: "Erro ao Salvar", description: result.error, variant: "destructive" });
       }
+      handleCloseFormDialog();
+      setTimeout(() => fetchDocuments(), 500); // Aguarda a propagação do Firestore
+    } catch (error: any) {
+        console.error("Submission error:", error);
+        toast({ title: "Erro ao Salvar", description: error.message, variant: "destructive" });
+    } finally {
+        setIsSubmitting(false);
     }
   };
+
 
   const handleDeleteConfirmation = (doc: Document) => {
     setDocumentToDelete(doc);
@@ -230,6 +229,7 @@ export default function DocumentsPage() {
         onClose={handleCloseFormDialog}
         onSubmit={handleSubmitDocumentForm}
         documentData={editingDocument}
+        isSubmitting={isSubmitting}
       />
 
       {documentToDelete && (
