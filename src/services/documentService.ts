@@ -1,7 +1,7 @@
 
 import { initializeFirebase } from '@/firebase';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDoc, query, orderBy, FirestoreError, where } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { collection, getDocs, updateDoc, deleteDoc, doc, serverTimestamp, getDoc, query, orderBy, FirestoreError, where } from 'firebase/firestore';
+import { ref, getDownloadURL, deleteObject } from "firebase/storage";
 import type { Document, DocumentFormValues } from '@/components/documents/DocumentFormDialog';
 import type { DocumentData } from 'firebase/firestore';
 import { errorEmitter, FirestorePermissionError } from '@/firebase';
@@ -50,65 +50,6 @@ export function getDocuments(): Promise<Document[]> {
       }
       return [];
   });
-}
-
-// CREATE (handles both upload and metadata)
-export async function addDocument(docData: DocumentFormValues, file: File): Promise<void> {
-  const { firestore, storage, auth } = initializeFirebase();
-  const user = auth.currentUser;
-  if (!user) {
-    throw new Error("Usuário não autenticado. Por favor, faça o login novamente.");
-  }
-
-  // 1. Upload file to Storage
-  const filePath = `documents/${user.uid}/${Date.now()}-${file.name}`;
-  const storageRef = ref(storage, filePath);
-  let fileUrl = '';
-  try {
-    const uploadResult = await uploadBytes(storageRef, file);
-    fileUrl = await getDownloadURL(uploadResult.ref);
-  } catch (storageError: any) {
-    console.error("Erro no upload para o Firebase Storage:", storageError);
-    let friendlyMessage = "Falha no upload do arquivo. Verifique o console do navegador para mais detalhes.";
-
-    // Provide a more specific error message for CORS issues.
-    if (storageError.code === 'storage/unauthorized' || storageError.code === 'storage/retry-limit-exceeded') {
-        friendlyMessage = `O upload falhou devido a um problema de permissão (CORS). Certifique-se de que as regras de segurança do seu Firebase Storage permitem uploads do seu domínio.`;
-    }
-    
-    // Throw an error to be caught by the calling function.
-    throw new Error(friendlyMessage);
-  }
-  
-  // 2. Create document metadata in Firestore
-  const dataToSave = {
-    name: file.name,
-    process: docData.process,
-    tags: docData.tagsString ? docData.tagsString.split(',').map(t => t.trim()).filter(t => t) : [],
-    uploadDate: new Date().toISOString().split('T')[0],
-    fileUrl: fileUrl,
-    filePath: filePath,
-    ownerId: user.uid,
-    createdAt: serverTimestamp(),
-  };
-
-  try {
-    await addDoc(collection(firestore, 'documents'), dataToSave);
-  } catch (firestoreError) {
-     if (firestoreError instanceof FirestoreError && firestoreError.code === 'permission-denied') {
-      errorEmitter.emit('permission-error', new FirestorePermissionError({
-        path: 'documents',
-        operation: 'create',
-        requestResourceData: dataToSave,
-      }));
-     }
-     console.error("Erro ao salvar metadados no Firestore:", firestoreError);
-     // Clean up uploaded file if metadata fails
-     await deleteObject(storageRef).catch(cleanupError => {
-        console.error("Failed to clean up uploaded file after Firestore error:", cleanupError);
-     });
-     throw new Error("Falha ao salvar os metadados do arquivo no banco de dados.");
-  }
 }
 
 // UPDATE (metadata only)

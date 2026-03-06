@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -20,8 +19,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { DocumentFormDialog, type DocumentFormValues, type Document } from "@/components/documents/DocumentFormDialog";
-import { getDocuments, addDocument, updateDocument, deleteDocument, getDownloadUrl } from "@/services/documentService";
+import { getDocuments, updateDocument, deleteDocument, getDownloadUrl } from "@/services/documentService";
 import { Skeleton } from "@/components/ui/skeleton";
+
+// NEW IMPORTS
+import { initializeFirebase } from '@/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 export default function DocumentsPage() {
   const [documents, setDocuments] = React.useState<Document[]>([]);
@@ -43,7 +47,7 @@ export default function DocumentsPage() {
       console.error("Error fetching documents:", error);
       toast({
         title: "Erro ao buscar documentos",
-        description: "Não foi possível carregar la lista de documentos.",
+        description: "Não foi possível carregar a lista de documentos.",
         variant: "destructive",
       });
     } finally {
@@ -61,6 +65,7 @@ export default function DocumentsPage() {
   };
 
   const handleCloseFormDialog = () => {
+    if (isSubmitting) return;
     setEditingDocument(undefined);
     setIsFormDialogOpen(false);
   };
@@ -69,31 +74,62 @@ export default function DocumentsPage() {
     setIsSubmitting(true);
     try {
       if (editingDocument) {
-        // Apenas metadados são atualizados, o arquivo não pode ser trocado.
+        // Update logic remains simple, as it doesn't involve file upload
         const dataToUpdate = { ...data, name: editingDocument.name };
         await updateDocument(editingDocument.id, dataToUpdate);
         toast({ title: "Documento atualizado!", description: `Os metadados do documento ${dataToUpdate.name} foram atualizados.` });
       } else {
+        // Create logic is now handled directly in this component
         if (!file) {
-          toast({ title: "Arquivo Faltando", description: "Por favor, selecione um arquivo para carregar.", variant: "destructive"});
-          return;
+          toast({ title: "Arquivo Faltando", description: "Por favor, selecione um arquivo para carregar.", variant: "destructive" });
+          return; 
         }
+        
+        const { firestore, storage, auth } = initializeFirebase();
+        const user = auth.currentUser;
+        if (!user) {
+          throw new Error("Usuário não autenticado. Por favor, faça o login novamente.");
+        }
+
         toast({ title: "Iniciando upload...", description: `Enviando o arquivo ${file.name}. Isso pode levar um momento.` });
         
-        await addDocument(data, file);
+        // 1. Upload file to Storage
+        const filePath = `documents/${user.uid}/${Date.now()}-${file.name}`;
+        const storageRef = ref(storage, filePath);
+        const uploadResult = await uploadBytes(storageRef, file);
+        const fileUrl = await getDownloadURL(uploadResult.ref);
+
+        // 2. Create document metadata in Firestore
+        const dataToSave = {
+          name: file.name,
+          process: data.process,
+          tags: data.tagsString ? data.tagsString.split(',').map(t => t.trim()).filter(t => t) : [],
+          uploadDate: new Date().toISOString().split('T')[0],
+          fileUrl: fileUrl,
+          filePath: filePath,
+          ownerId: user.uid,
+          createdAt: serverTimestamp(),
+        };
+        await addDoc(collection(firestore, 'documents'), dataToSave);
         
         toast({ title: "Documento adicionado!", description: `O documento ${file.name} foi carregado e salvo com sucesso.` });
       }
       handleCloseFormDialog();
-      setTimeout(() => fetchDocuments(), 500); // Aguarda a propagação do Firestore
+      setTimeout(() => fetchDocuments(), 500);
     } catch (error: any) {
+        let friendlyMessage = "Ocorreu um erro desconhecido ao salvar.";
+        // This specifically checks for the timeout/CORS error from Firebase Storage
+        if (error.code === 'storage/unauthorized' || error.code === 'storage/retry-limit-exceeded') {
+          friendlyMessage = `Falha no upload: O tempo limite da conexão foi excedido. Isso geralmente é um problema de configuração de CORS no seu bucket do Firebase Storage.`;
+        } else if (error.message) {
+            friendlyMessage = error.message;
+        }
         console.error("Submission error:", error);
-        toast({ title: "Erro ao Salvar", description: error.message, variant: "destructive" });
+        toast({ title: "Erro ao Salvar", description: friendlyMessage, variant: "destructive" });
     } finally {
         setIsSubmitting(false);
     }
   };
-
 
   const handleDeleteConfirmation = (doc: Document) => {
     setDocumentToDelete(doc);
