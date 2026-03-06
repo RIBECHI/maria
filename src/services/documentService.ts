@@ -71,29 +71,8 @@ export async function addDocument(docData: DocumentFormValues, file: File): Prom
     console.log(`File uploaded successfully. URL: ${fileUrl}`);
   } catch (storageError: any) {
     console.error("Erro no upload para o Firebase Storage:", storageError);
-    // Create a more informative error message
-    let friendlyMessage = 'Falha no upload do arquivo. Ocorreu um erro desconhecido.';
-    if (storageError && storageError.code) {
-        switch (storageError.code) {
-            case 'storage/unauthorized':
-                friendlyMessage = 'Falha no upload: Você não tem permissão para enviar arquivos. Verifique as Regras de Segurança do Storage.';
-                break;
-            case 'storage/retry-limit-exceeded':
-                friendlyMessage = 'Falha no upload: O tempo limite da conexão foi excedido. Isso pode ser um problema de rede ou, mais provavelmente, de configuração de CORS no seu bucket do Storage.';
-                break;
-            case 'storage/object-not-found':
-                friendlyMessage = 'Falha no upload: O arquivo ou local de destino não foi encontrado.';
-                break;
-            case 'storage/no-default-bucket':
-                 friendlyMessage = 'Falha na configuração: Nenhum bucket de armazenamento padrão foi encontrado. Verifique a configuração do Firebase.';
-                 break;
-            default:
-                friendlyMessage = `Falha no upload: ${storageError.message} (código: ${storageError.code})`;
-        }
-    } else if (storageError instanceof Error) {
-        friendlyMessage = storageError.message;
-    }
-    throw new Error(friendlyMessage);
+    // Re-throw the original Firebase Storage error for better debugging.
+    throw storageError;
   }
   
   // 2. Create document metadata in Firestore
