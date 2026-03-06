@@ -95,14 +95,13 @@ export function DocumentFormDialog({ isOpen, onClose, onSubmit, documentData }: 
     setIsLoading(true);
     try {
       const file = data.file?.[0];
+      // The onSubmit prop is the handleSubmitDocumentForm from the page,
+      // which already has its own try/catch for showing toasts.
       await onSubmit(data, file);
-    } catch (error) {
-      // The error is now thrown up from the page, and it's caught here.
-      // The page already shows a toast, so we don't need another one.
-      // The main purpose of this try/catch is to ensure the `finally` block runs.
-      console.error("Error during form submission:", error);
     } finally {
-      setIsLoading(false); // This MUST run to stop the spinner.
+      // This ensures the loading spinner is always turned off,
+      // regardless of whether the submission succeeded or failed.
+      setIsLoading(false);
     }
   };
 

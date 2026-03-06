@@ -70,9 +70,19 @@ export async function addDocument(docData: DocumentFormValues, file: File): Prom
     fileUrl = await getDownloadURL(uploadResult.ref);
     console.log(`File uploaded successfully. URL: ${fileUrl}`);
   } catch (storageError: any) {
-    console.error("Erro no upload para o Firebase Storage:", storageError);
-    // Re-throw the original Firebase Storage error for better debugging.
-    throw storageError;
+    console.error("Erro no upload para o Firebase Storage:", storageError.code, storageError.message);
+
+    let friendlyMessage = "Falha no upload do arquivo. Verifique o console do navegador para mais detalhes.";
+
+    // Check for specific Firebase Storage error codes
+    if (storageError.code === 'storage/unauthorized') {
+        friendlyMessage = "Erro de permissão (CORS). O seu ambiente de desenvolvimento não tem permissão para enviar arquivos. Siga as instruções de configuração CORS.";
+    } else if (storageError.code === 'storage/retry-limit-exceeded') {
+        friendlyMessage = "O tempo limite da conexão foi excedido. Isso geralmente é um problema de configuração de CORS ou de rede. Verifique se as regras de CORS do seu bucket do Storage estão corretas.";
+    }
+    
+    // Re-throw a new error with the user-friendly message.
+    throw new Error(friendlyMessage);
   }
   
   // 2. Create document metadata in Firestore
