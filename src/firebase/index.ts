@@ -31,7 +31,8 @@ export function initializeFirebase() {
   // Obtém as instâncias dos serviços associados à app.
   const auth = getAuth(app);
   const firestore = getFirestore(app);
-  const storage = getStorage(app);
+  // Força o uso do bucket correto, fornecendo o URL completo.
+  const storage = getStorage(app, `gs://${firebaseConfig.storageBucket}`);
 
   // Armazena as instâncias na variável do módulo para uso futuro.
   firebaseServices = { firebaseApp: app, auth, firestore, storage };
