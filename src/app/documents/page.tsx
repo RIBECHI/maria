@@ -154,7 +154,7 @@ export default function DocumentsPage() {
         <CardHeader>
           <CardTitle>Adicionar Documento por Link</CardTitle>
           <CardDescription>
-            Selecione um cliente ou processo e cole o link do Google Drive para vinculá-lo.
+            Vincule documentos ou pastas do Google Drive a seus clientes e processos.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -195,13 +195,24 @@ export default function DocumentsPage() {
                 </Select>
             </div>
              <div className="space-y-2">
-                <Label htmlFor="new-link">3. Cole o link do documento:</Label>
+                <div className="flex items-center justify-between">
+                    <Label htmlFor="new-link">3. Cole o link do documento:</Label>
+                    <Button variant="link" asChild className="text-xs p-0 h-auto">
+                        <Link href="https://drive.google.com" target="_blank">
+                            <ExternalLink className="mr-1 h-3 w-3" />
+                            Abrir Google Drive
+                        </Link>
+                    </Button>
+                </div>
                 <Input
                     id="new-link"
                     placeholder="https://docs.google.com/document/d/..."
                     value={newLink}
                     onChange={(e) => setNewLink(e.target.value)}
                 />
+                 <p className="text-xs text-muted-foreground pt-1">
+                    No Google Drive, clique com o botão direito no arquivo/pasta e selecione "Copiar link".
+                </p>
             </div>
         </CardContent>
         <CardFooter>
