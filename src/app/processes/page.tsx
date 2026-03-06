@@ -109,17 +109,18 @@ function ProcessesPageComponent() {
     setIsDetailsSheetOpen(false);
   };
 
-  const handleSubmitProcessForm = async (data: ProcessFormValues & { timeline?: TimelineEvent[] }) => {
+  const handleSubmitProcessForm = async (data: ProcessFormValues & { timeline?: TimelineEvent[], driveLinks?: string[] }) => {
     try {
       if (editingProcess) {
-        const updatedData = { ...data, timeline: data.timeline || editingProcess.timeline };
+        const updatedData = { ...data, timeline: data.timeline || editingProcess.timeline, driveLinks: data.driveLinks || editingProcess.driveLinks };
         await updateProcess(editingProcess.id, updatedData);
         toast({ title: "Processo atualizado!", description: `O processo para ${data.clients.join(', ')} foi atualizado.` });
       } else {
         const newProcessData = {
           ...data,
           documents: 0,
-          timeline: data.timeline || []
+          timeline: data.timeline || [],
+          driveLinks: data.driveLinks || [],
         };
         await addProcess(newProcessData);
         toast({ title: "Processo adicionado!", description: `Novo processo para ${data.clients.join(', ')} foi adicionado.` });
@@ -426,3 +427,5 @@ export default function ProcessesPage() {
     </React.Suspense>
   );
 }
+
+    

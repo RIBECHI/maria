@@ -15,7 +15,7 @@ import {
 import type { Client } from "./ClientFormDialog";
 import type { Process } from "@/components/processes/ProcessFormDialog";
 import { List, ListItem } from "@/components/ui/list";
-import { Briefcase } from "lucide-react";
+import { Briefcase, Link as LinkIcon } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 
@@ -100,6 +100,29 @@ export function ClientDetailsDialog({ isOpen, onClose, clientData, allProcesses 
               <span className="text-foreground break-words whitespace-pre-wrap">{clientData.notes}</span>
             </div>
            )}
+
+            {/* Seção de Links do Drive */}
+            {clientData.driveLinks && clientData.driveLinks.length > 0 && (
+                <div className="pt-4">
+                    <h3 className="font-semibold text-foreground mb-2 flex items-center">
+                        <LinkIcon className="mr-2 h-4 w-4" />
+                        Links do Google Drive
+                    </h3>
+                    <div className="flex flex-col gap-2">
+                        {clientData.driveLinks.map((link, index) => (
+                             <a 
+                                href={link} 
+                                key={index} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="text-sm text-blue-600 hover:underline truncate"
+                            >
+                                {link}
+                            </a>
+                        ))}
+                    </div>
+                </div>
+            )}
           
           {/* Seção de Processos Vinculados */}
           <div className="pt-4">
@@ -136,3 +159,5 @@ export function ClientDetailsDialog({ isOpen, onClose, clientData, allProcesses 
     </Dialog>
   );
 }
+
+    

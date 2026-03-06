@@ -33,7 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, PlusCircle, Trash2, Search, UserPlus, X } from "lucide-react";
+import { Loader2, PlusCircle, Trash2, Search, UserPlus, X, Link as LinkIcon } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardDescription as CardTimelineDescription, CardHeader, CardTitle as CardTimelineTitle } from "@/components/ui/card";
@@ -80,6 +80,7 @@ export interface Process extends DocumentData {
   uhd?: number;
   certidao?: boolean;
   apensos?: string[];
+  driveLinks?: string[];
   timeline: TimelineEvent[];
   createdAt?: string;
   client?: string; // Campo legado para compatibilidade
@@ -112,13 +113,15 @@ type TimelineEventFormValues = z.infer<typeof timelineEventSchema>;
 interface ProcessFormDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: ProcessFormValues & { timeline?: TimelineEvent[] }) => void;
+  onSubmit: (data: ProcessFormValues & { timeline?: TimelineEvent[], driveLinks?: string[] }) => void;
   processData?: Process;
 }
 
 export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: ProcessFormDialogProps) {
   const [isLoading, setIsLoading] = React.useState(false);
   const [currentTimeline, setCurrentTimeline] = React.useState<TimelineEvent[]>([]);
+  const [driveLinks, setDriveLinks] = React.useState<string[]>([]);
+  const [currentDriveLink, setCurrentDriveLink] = React.useState("");
   const [timelineEventToDelete, setTimelineEventToDelete] = React.useState<TimelineEvent | null>(null);
   const [isDeleteTimelineAlertOpen, setIsDeleteTimelineAlertOpen] = React.useState(false);
   const [isClientSearchOpen, setIsClientSearchOpen] = React.useState(false);
@@ -187,6 +190,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
               phaseId: processData.phaseId || undefined,
             });
             setCurrentTimeline((processData.timeline || []).sort((a, b) => parseISO(b.date).getTime() - parseISO(a.date).getTime()));
+            setDriveLinks(processData.driveLinks || []);
         } else {
             form.reset({
               processNumber: "",
@@ -201,6 +205,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
               phaseId: undefined,
             });
             setCurrentTimeline([]);
+            setDriveLinks([]);
         }
         timelineForm.reset({
           eventDate: format(new Date(), 'yyyy-MM-dd'),
@@ -208,6 +213,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
           eventSource: "Nota Manual",
           isTask: false,
         });
+        setCurrentDriveLink("");
     }
   }, [processData, form, timelineForm, isOpen]);
 
@@ -260,7 +266,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
   const handleFormSubmit: SubmitHandler<ProcessFormValues> = async (data) => {
     setIsLoading(true);
     const deadline = data.nextDeadline === '' || data.nextDeadline === '-' ? '-' : format(parseISO(data.nextDeadline + 'T00:00:00'), 'yyyy-MM-dd');
-    onSubmit({ ...data, nextDeadline: deadline, timeline: currentTimeline });
+    onSubmit({ ...data, nextDeadline: deadline, timeline: currentTimeline, driveLinks: driveLinks });
     setIsLoading(false);
   };
   
@@ -290,6 +296,7 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
           ...data,
           caseCount: 0,
           lastActivity: new Date().toISOString().split('T')[0],
+          driveLinks: [],
         });
         toast({ title: "Cliente adicionado!", description: `O cliente ${data.name} foi adicionado com sucesso.` });
         if (!clients.includes(data.name)) {
@@ -308,6 +315,17 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
   
   const removeClient = (clientToRemove: string) => {
     form.setValue('clients', clients.filter(client => client !== clientToRemove));
+  };
+
+  const handleAddDriveLink = () => {
+    if (currentDriveLink && !driveLinks.includes(currentDriveLink)) {
+        setDriveLinks([...driveLinks, currentDriveLink]);
+        setCurrentDriveLink("");
+    }
+  };
+
+  const handleRemoveDriveLink = (linkToRemove: string) => {
+    setDriveLinks(driveLinks.filter(link => link !== linkToRemove));
   };
 
 
@@ -548,6 +566,32 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
                       </FormItem>
                   )}
                   />
+
+                <div className="space-y-2 pt-4 border-t">
+                    <FormLabel>Links do Google Drive (Opcional)</FormLabel>
+                    <div className="flex items-center gap-2">
+                        <Input
+                            placeholder="Cole um link do Google Drive aqui"
+                            value={currentDriveLink}
+                            onChange={(e) => setCurrentDriveLink(e.target.value)}
+                        />
+                        <Button type="button" variant="outline" onClick={handleAddDriveLink}>Adicionar</Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2 p-2 border rounded-md min-h-[40px] bg-background">
+                        {driveLinks.length > 0 ? (
+                            driveLinks.map((link, index) => (
+                                <Badge key={index} variant="secondary" className="flex items-center gap-2">
+                                    <a href={link} target="_blank" rel="noopener noreferrer" className="truncate max-w-[200px] hover:underline">{link}</a>
+                                    <button type="button" onClick={() => handleRemoveDriveLink(link)} className="rounded-full hover:bg-destructive/20 p-0.5">
+                                        <X className="h-3 w-3" />
+                                    </button>
+                                </Badge>
+                            ))
+                        ) : (
+                            <span className="text-sm text-muted-foreground px-1">Nenhum link adicionado.</span>
+                        )}
+                    </div>
+                </div>
               
               {/* Seção da Linha do Tempo */}
               <Card className="mt-6 pt-2">
@@ -744,3 +788,5 @@ export function ProcessFormDialog({ isOpen, onClose, onSubmit, processData }: Pr
     </>
   );
 }
+
+    

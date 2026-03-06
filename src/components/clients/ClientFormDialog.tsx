@@ -24,8 +24,9 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2 } from "lucide-react";
+import { Loader2, Trash2, X } from "lucide-react";
 import type { DocumentData } from "firebase/firestore";
+import { Badge } from "../ui/badge";
 
 export interface Client extends DocumentData {
   id: string;
@@ -38,6 +39,7 @@ export interface Client extends DocumentData {
   notes?: string;
   maritalStatus?: string;
   occupation?: string;
+  driveLinks?: string[];
   createdAt?: string; // Can be a string (ISO date) or undefined
 }
 
@@ -56,12 +58,14 @@ export type ClientFormValues = z.infer<typeof clientFormSchema>;
 interface ClientFormDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: ClientFormValues) => void;
+  onSubmit: (data: ClientFormValues & { driveLinks: string[] }) => void;
   clientData?: Client; // Para preencher o formulário em modo de edição
 }
 
 export function ClientFormDialog({ isOpen, onClose, onSubmit, clientData }: ClientFormDialogProps) {
   const [isLoading, setIsLoading] = React.useState(false);
+  const [links, setLinks] = React.useState<string[]>([]);
+  const [currentLink, setCurrentLink] = React.useState("");
 
   const form = useForm<ClientFormValues>({
     resolver: zodResolver(clientFormSchema),
@@ -77,32 +81,37 @@ export function ClientFormDialog({ isOpen, onClose, onSubmit, clientData }: Clie
   });
 
   React.useEffect(() => {
-    if (clientData) {
-      form.reset({
-        name: clientData.name,
-        contact: clientData.contact,
-        cpf: clientData.cpf || "",
-        maritalStatus: clientData.maritalStatus || "",
-        occupation: clientData.occupation || "",
-        address: clientData.address || "",
-        notes: clientData.notes || "",
-      });
-    } else {
-      form.reset({
-        name: "",
-        contact: "",
-        cpf: "",
-        maritalStatus: "",
-        occupation: "",
-        address: "",
-        notes: "",
-      });
+    if (isOpen) {
+      if (clientData) {
+        form.reset({
+          name: clientData.name,
+          contact: clientData.contact,
+          cpf: clientData.cpf || "",
+          maritalStatus: clientData.maritalStatus || "",
+          occupation: clientData.occupation || "",
+          address: clientData.address || "",
+          notes: clientData.notes || "",
+        });
+        setLinks(clientData.driveLinks || []);
+      } else {
+        form.reset({
+          name: "",
+          contact: "",
+          cpf: "",
+          maritalStatus: "",
+          occupation: "",
+          address: "",
+          notes: "",
+        });
+        setLinks([]);
+      }
+      setCurrentLink("");
     }
-  }, [clientData, form, isOpen]); // Adicionado isOpen para resetar quando o dialog reabre
+  }, [clientData, form, isOpen]);
 
   const handleFormSubmit: SubmitHandler<ClientFormValues> = (data) => {
     setIsLoading(true);
-    onSubmit(data); 
+    onSubmit({ ...data, driveLinks: links }); 
     setIsLoading(false);
   };
   
@@ -112,10 +121,21 @@ export function ClientFormDialog({ isOpen, onClose, onSubmit, clientData }: Clie
     }
   };
 
+  const handleAddLink = () => {
+    if (currentLink && !links.includes(currentLink)) {
+      setLinks([...links, currentLink]);
+      setCurrentLink("");
+    }
+  };
+
+  const handleRemoveLink = (linkToRemove: string) => {
+    setLinks(links.filter(link => link !== linkToRemove));
+  };
+
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleDialogClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{clientData ? "Editar Cliente" : "Adicionar Novo Cliente"}</DialogTitle>
           <DialogDescription>
@@ -219,7 +239,33 @@ export function ClientFormDialog({ isOpen, onClose, onSubmit, clientData }: Clie
                 </FormItem>
               )}
             />
-            <DialogFooter>
+            {/* Campo para Links do Drive */}
+            <div className="space-y-2 pt-2">
+                <FormLabel>Links do Google Drive</FormLabel>
+                <div className="flex items-center gap-2">
+                    <Input
+                        placeholder="Cole um link do Google Drive aqui"
+                        value={currentLink}
+                        onChange={(e) => setCurrentLink(e.target.value)}
+                    />
+                    <Button type="button" variant="outline" onClick={handleAddLink}>Adicionar</Button>
+                </div>
+                <div className="flex flex-wrap gap-2 p-2 border rounded-md min-h-[40px] bg-background">
+                    {links.length > 0 ? (
+                        links.map((link, index) => (
+                            <Badge key={index} variant="secondary" className="flex items-center gap-2">
+                                <a href={link} target="_blank" rel="noopener noreferrer" className="truncate max-w-[200px] hover:underline">{link}</a>
+                                <button type="button" onClick={() => handleRemoveLink(link)} className="rounded-full hover:bg-destructive/20 p-0.5">
+                                    <X className="h-3 w-3" />
+                                </button>
+                            </Badge>
+                        ))
+                    ) : (
+                        <span className="text-sm text-muted-foreground px-1">Nenhum link adicionado.</span>
+                    )}
+                </div>
+            </div>
+            <DialogFooter className="pt-4">
               <Button type="button" variant="outline" onClick={handleDialogClose} disabled={isLoading}>
                 Cancelar
               </Button>
@@ -240,3 +286,4 @@ export function ClientFormDialog({ isOpen, onClose, onSubmit, clientData }: Clie
     </Dialog>
   );
 }
+    

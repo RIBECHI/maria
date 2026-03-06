@@ -47,6 +47,7 @@ const fromFirestore = (docSnap: DocumentData, phases: any[]): Process => {
     uhd: data.uhd,
     certidao: data.certidao,
     apensos: data.apensos || [],
+    driveLinks: data.driveLinks || [],
     timeline: (data.timeline || []).sort((a: TimelineEvent, b: TimelineEvent) => new Date(b.date).getTime() - new Date(a.date).getTime()),
   };
   if (data.createdAt && data.createdAt instanceof Timestamp) {
@@ -142,7 +143,7 @@ export async function addProcess(processData: Omit<Process, 'id' | 'createdAt' |
 }
 
 // UPDATE
-export async function updateProcess(processId: string, processData: Partial<ProcessFormValues & { timeline?: TimelineEvent[] }>): Promise<void> {
+export async function updateProcess(processId: string, processData: Partial<ProcessFormValues & { timeline?: TimelineEvent[], driveLinks?: string[] }>): Promise<void> {
   const { firestore, auth } = initializeFirebase();
   const processDocRef = doc(firestore, 'processes', processId);
   const cleanData = removeUndefinedKeys(processData);
@@ -184,3 +185,5 @@ export function deleteProcess(processId: string): void {
     }
   });
 }
+
+    

@@ -82,6 +82,14 @@
           "type": "string",
           "description": "General description or summary of billing arrangements for the client."
         },
+        "driveLinks": {
+          "type": "array",
+          "description": "Links para pastas ou documentos do Google Drive relevantes para o cliente.",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
         "createdAt": {
           "type": "string",
           "description": "Timestamp when the client record was created.",
@@ -161,6 +169,14 @@
           "description": "References to Tags applied to this legal process for categorization. (Relationship: Tag N:N LegalProcess)",
           "items": {
             "type": "string"
+          }
+        },
+        "driveLinks": {
+          "type": "array",
+          "description": "Links para pastas ou documentos do Google Drive relevantes para o processo.",
+          "items": {
+            "type": "string",
+            "format": "uri"
           }
         },
         "createdAt": {
@@ -614,3 +630,4 @@
     "reasoning": "The recommended Firestore structure for LexManager prioritizes Authorization Independence and Structural Segregation to ensure robust, debuggable security rules and efficient queries (QAPs). \n\n**Authorization Independence via Denormalization:**\nAll user-specific data (Clients, Legal Processes, Documents, Deadlines, and Alerts) is nested under the `/users/{userId}` path. This establishes a clear ownership hierarchy where the `{userId}` in the path directly corresponds to the owner/manager of the nested data. To eliminate the need for `get()` operations in security rules, crucial authorization fields are denormalized directly into each document:\n*   **Client:** The `createdBy` field must match the `{userId}` in the path.\n*   **LegalProcess:** The `responsibleUserId` and `createdBy` fields must match the `{userId}` in the path, and the `clientId` field must match the `{clientId}` in the path.\n*   **Document:** The `uploadedBy` field must match the `{userId}` in the path, and both `clientId` and `legalProcessId` must match their respective path parameters. \n*   **Deadline:** The `createdBy` field must match the `{userId}` in the path. Crucially, `clientId` is denormalized into the Deadline document (even though it's implicitly available from the parent LegalProcess's path) to allow direct authorization checks without fetching the LegalProcess document. The `legalProcessId` also matches its path parameter.\n*   **Alert:** The `userId` field must match the `{userId}` in the path.\nThis denormalization strategy means that any authorization check can be performed solely using `request.auth.uid`, the path parameters (`{userId}`, `{clientId}`, etc.), and the fields within the `resource.data` of the document being accessed, thereby avoiding complex and expensive `get()` calls.\n\n**QAPs (Query as a Proxy to Security) Support:**\nStructural Segregation ensures that all documents within a given collection share a homogeneous security posture. For instance, all documents under `/users/{userId}/clients/{clientId}/legalProcesses` are privately owned by the `{userId}` and associated with the `{clientId}`. This allows for secure `list` queries. A user can query `users/{request.auth.uid}/clients` to retrieve all their clients, and Firebase's security rules can simply verify that `request.auth.uid` matches the `{userId}` wildcard in the path, and that the `createdBy` field (or `responsibleUserId`, `uploadedBy`) in the document matches this `uid`. This makes list operations secure by design, as the path itself acts as a primary filter. Global data like `Tags` resides in a separate collection (`/tags`), allowing for different, typically more permissive read-access rules (e.g., read by all authenticated users) and restricted write-access (e.g., only by 'Admin' roles, checked via a `role` field on the user's profile document `users/{request.auth.uid}.role`)."
   }
 }
+    

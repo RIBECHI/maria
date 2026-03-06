@@ -18,6 +18,7 @@ const fromFirestore = (docSnap: DocumentData): Client => {
     lastActivity: data.lastActivity,
     address: data.address,
     notes: data.notes,
+    driveLinks: data.driveLinks || [],
   };
   if (data.createdAt && data.createdAt instanceof Timestamp) {
       client.createdAt = data.createdAt.toDate().toISOString();
@@ -89,7 +90,7 @@ export async function addClient(clientData: Omit<Client, 'id' | 'createdAt'>): P
 }
 
 // UPDATE
-export async function updateClient(clientId: string, clientData: ClientFormValues): Promise<void> {
+export async function updateClient(clientId: string, clientData: Partial<Client>): Promise<void> {
     const { firestore, auth } = initializeFirebase();
     const clientDocRef = doc(firestore, 'clients', clientId);
     const dataToUpdate = {
@@ -125,3 +126,5 @@ export function deleteClient(clientId: string): void {
         }
     });
 }
+
+    

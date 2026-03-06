@@ -35,7 +35,7 @@ import {
 import type { Process, TimelineEvent } from "./ProcessFormDialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Briefcase, Calendar, CheckCircle, Edit, Info, Loader2, PlusCircle, Trash2, XCircle, Save, Link2 } from "lucide-react";
+import { Briefcase, Calendar, CheckCircle, Edit, Info, Loader2, PlusCircle, Trash2, XCircle, Save, Link2, Link as LinkIcon } from "lucide-react";
 import { format, parseISO, isFuture, isToday } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -329,6 +329,29 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
                         </div>
                     </div>
                 )}
+                
+                {/* Seção de Links do Drive */}
+                {processData.driveLinks && processData.driveLinks.length > 0 && (
+                    <div className="pt-4 border-t">
+                        <h4 className="font-semibold mb-2 flex items-center gap-2">
+                            <LinkIcon className="h-4 w-4 text-muted-foreground" />
+                            Links do Google Drive
+                        </h4>
+                        <div className="flex flex-col gap-2">
+                            {processData.driveLinks.map((link, index) => (
+                                <a 
+                                    href={link} 
+                                    key={index} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    className="text-sm text-blue-600 hover:underline truncate"
+                                >
+                                    {link}
+                                </a>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
 
                 {/* Adicionar Evento na Timeline */}
@@ -507,3 +530,5 @@ export function ProcessDetailsSheet({ isOpen, onClose, processData, onTimelineUp
     </>
   );
 }
+
+    

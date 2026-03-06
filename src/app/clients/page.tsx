@@ -73,14 +73,19 @@ export default function ClientsPage() {
     setIsFormDialogOpen(false);
   };
 
-  const handleSubmitClientForm = async (data: ClientFormValues) => {
+  const handleSubmitClientForm = async (data: ClientFormValues & { driveLinks: string[] }) => {
     try {
+      const dataToSave = {
+          ...data,
+          driveLinks: data.driveLinks || [],
+      };
+
       if (editingClient) {
-        await updateClient(editingClient.id, data);
+        await updateClient(editingClient.id, dataToSave);
         toast({ title: "Cliente atualizado!", description: `O cliente ${data.name} foi atualizado com sucesso.` });
       } else {
         await addClient({
-          ...data,
+          ...dataToSave,
           caseCount: 0,
           lastActivity: new Date().toISOString().split('T')[0],
         });
@@ -311,5 +316,7 @@ export default function ClientsPage() {
     </div>
   );
 }
+
+    
 
     
