@@ -16,6 +16,7 @@ import {
   FileSignature,
   ListChecks,
   KanbanSquare,
+  BrainCircuit,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -55,6 +56,7 @@ const navItems = [
   { href: '/documents', label: 'Documentos', icon: <FileText className="text-rose-400" /> },
   { href: '/agenda', label: 'Agenda', icon: <CalendarDays className="text-violet-400" /> },
   { href: '/legal-reminder', label: 'Lembrete Legal', icon: <Lightbulb className="text-yellow-400" /> },
+  { href: '/document-analyzer', label: 'Analisador (IA)', icon: <BrainCircuit className="text-indigo-400" /> },
   { href: '/document-generator', label: 'Gerador de Documentos', icon: <FileSignature className="text-cyan-400" /> },
   { href: '/pdf-tools', label: 'Ferramentas PDF', icon: <FileCog className="text-emerald-400" /> },
 ];
