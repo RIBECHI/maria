@@ -147,21 +147,41 @@ export default function PdfToolsPage() {
             pdf.addImage(headerTemplate, 'PNG', 0, 0, pageWidth, headerImageHeight);
         }
         
-        const img = new Image();
-        img.src = imageFile.previewUrl;
-        
-        await new Promise<void>(resolve => {
-            img.onload = () => resolve();
-        });
-        
-        let imgWidth = img.width;
-        let imgHeight = img.height;
+        const originalImg = new Image();
+        originalImg.src = imageFile.previewUrl;
+        await new Promise<void>(resolve => { originalImg.onload = () => resolve(); });
 
-        if (imageFile.rotation === 90 || imageFile.rotation === 270) {
-            [imgWidth, imgHeight] = [imgHeight, imgWidth]; // Swap dimensions for rotation
+        let finalImageData = imageFile.previewUrl;
+        let finalImgWidth = originalImg.width;
+        let finalImgHeight = originalImg.height;
+
+        // If rotation is needed, use a canvas to pre-rotate the image
+        if (imageFile.rotation > 0) {
+            setProgressMessage(`Rotacionando imagem ${i + 1}...`);
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            if (!ctx) throw new Error('Falha ao criar canvas para rotação.');
+
+            // Swap dimensions for 90/270 degree rotations
+            if (imageFile.rotation === 90 || imageFile.rotation === 270) {
+                canvas.width = originalImg.height;
+                canvas.height = originalImg.width;
+            } else { // 180 degrees
+                canvas.width = originalImg.width;
+                canvas.height = originalImg.height;
+            }
+
+            // Translate to center, rotate, and draw the image back on the un-rotated context
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate(imageFile.rotation * Math.PI / 180);
+            ctx.drawImage(originalImg, -originalImg.width / 2, -originalImg.height / 2);
+
+            finalImageData = canvas.toDataURL('image/jpeg', quality[0] / 100);
+            finalImgWidth = canvas.width;
+            finalImgHeight = canvas.height;
         }
 
-        const aspectRatio = imgWidth / imgHeight;
+        const aspectRatio = finalImgWidth / finalImgHeight;
         
         const availableHeight = pageHeight - headerImageHeight - footerImageHeight - (imageMargin * 2);
         const availableWidth = pageWidth - imageMargin * 2;
@@ -179,9 +199,8 @@ export default function PdfToolsPage() {
         const x_pos = (pageWidth - pdfWidth) / 2;
         const y_pos = headerImageHeight + imageMargin;
         
-        const imgData = imageFile.previewUrl;
-
-        pdf.addImage(imgData, 'JPEG', x_pos, y_pos, pdfWidth, pdfHeight, undefined, 'SLOW', imageFile.rotation);
+        // The image data is now pre-rotated, so we pass 0 for rotation to jsPDF
+        pdf.addImage(finalImageData, 'JPEG', x_pos, y_pos, pdfWidth, pdfHeight, undefined, 'SLOW');
 
         if (footerTemplate && footerImageHeight > 0) {
             const footerY = pageHeight - footerImageHeight;
